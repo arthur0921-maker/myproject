@@ -3,102 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>立利餐坊 - 線上點餐 (雲端同步版)</title>
-    <!-- 修正：加入 plugins=typography 以支援 Markdown 排版 -->
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <!-- Markdown Parser for AI responses -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <!-- Firebase SDKs -->
-    <script type="module">
-        // 引入 Firebase 核心與分析
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-        
-        // 引入 Firestore 資料庫與 Auth 驗證
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy, getDocs, writeBatch, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-
-        // 您的 Firebase 設定
-        const firebaseConfig = {
-            apiKey: "AIzaSyAOeqs-8K5q0NH3IL996yIVNoBk1DWn5fc",
-            authDomain: "myorder-lili.firebaseapp.com",
-            projectId: "myorder-lili",
-            storageBucket: "myorder-lili.firebasestorage.app",
-            messagingSenderId: "693715367698",
-            appId: "1:693715367698:web:08e4046604c80a2c0ca5cb",
-            measurementId: "G-JXJJRWZP85"
-        };
-
-        // 初始化 Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        let isFirebaseReady = false;
-
-        // --- 初始化流程 ---
-        // 嘗試匿名登入，若失敗則嘗試直接連線 (針對公開規則的資料庫)
-        async function initApp() {
-            try {
-                await signInAnonymously(auth);
-                console.log("✅ Firebase 登入成功 (匿名模式)");
-                isFirebaseReady = true;
-                setupRealtimeListener();
-            } catch (error) {
-                console.warn("⚠️ Firebase 驗證失敗，嘗試以公開模式連線...", error.code);
-                
-                if (error.code === 'auth/configuration-not-found' || error.code === 'auth/operation-not-allowed') {
-                    setTimeout(() => {
-                        showToast("⚠️ 請至 Firebase Console 開啟 '匿名登入'", true);
-                    }, 1500);
-                }
-
-                // 即使驗證失敗，如果是公開資料庫，仍可嘗試連線
-                isFirebaseReady = true; 
-                setupRealtimeListener();
-            }
-        }
-
-        initApp();
-
-        // 將必要功能掛載到 window 物件
-        window.db = db;
-        window.auth = auth;
-        window.isFirebaseReady = () => isFirebaseReady;
-        
-        // 設定資料庫集合路徑
-        window.getOrdersCollection = () => {
-            return collection(db, 'orders');
-        };
-        
-        // 掛載 Firestore 函式
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
-        window.onSnapshot = onSnapshot;
-        window.query = query;
-        window.orderBy = orderBy;
-        window.getDocs = getDocs;
-        window.writeBatch = writeBatch;
-        window.where = where;
-    </script>
-
+    <title>偶鵝嚐嚐 - 碧華國中教務處午餐團 V2 (AI 助手版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
         body {
-            background-color: #fefce8; /* 淡黃色背景 */
-            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
-            -webkit-tap-highlight-color: transparent;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f7f3e8; /* 米色背景 */
+            -webkit-font-smoothing: antialiased;
         }
-        .menu-card {
-            transition: all 0.2s;
+
+        .watermark {
+            font-size: 0.8rem;
+            color: #a89b97;
+            text-align: center;
+            opacity: 0.6;
+            margin-top: 4px;
         }
-        .menu-card:active {
-            transform: scale(0.98);
+
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        /* 隱藏捲軸但保留功能 */
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4a373; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #bc8a5f; 
+        }
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -106,1263 +44,1071 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        /* 自訂 Toast 動畫 */
-        .toast-enter {
-            transform: translateY(100%);
-            opacity: 0;
+
+        /* Toast 動畫 */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
-        .toast-enter-active {
-            transform: translateY(0);
-            opacity: 1;
-            transition: all 0.3s ease-out;
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .toast-enter {
+            animation: slideIn 0.3s ease-out forwards;
         }
         .toast-exit {
-            transform: translateY(0);
-            opacity: 1;
+            animation: fadeOut 0.3s ease-out forwards;
         }
-        .toast-exit-active {
-            transform: translateY(100%);
+
+        /* Modal 動畫 */
+        .modal-enter {
             opacity: 0;
-            transition: all 0.3s ease-in;
+            transform: scale(0.95);
         }
-        /* Checkbox/Radio Custom Style */
-        .custom-checkbox:checked + div {
-            background-color: #fef08a; /* yellow-200 */
-            border-color: #eab308; /* yellow-500 */
-            color: #854d0e; /* yellow-800 */
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.2s, transform 0.2s;
         }
-        .custom-radio:checked + div {
-            background-color: #fbbf24; /* amber-400 */
-            border-color: #d97706; /* amber-600 */
-            color: white;
-            font-weight: bold;
+        
+        /* Chat Animations */
+        .chat-enter {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
         }
-        /* AI Chat Bubble Animation */
-        .chat-bubble {
-            animation: fadeIn 0.3s ease-out;
+        .chat-enter-active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        
+        /* Blinking Cursor for Typewriter */
+        .cursor::after {
+            content: '▋';
+            display: inline-block;
+            margin-left: 2px;
+            color: #4f46e5;
+            animation: blink 1s infinite;
         }
-        /* Typing indicator */
-        .typing-dot {
-            animation: typing 1.4s infinite ease-in-out both;
-        }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
-        /* Tweak Prose styles for Chat */
-        .prose p {
-            margin-top: 0.5em;
-            margin-bottom: 0.5em;
-        }
-        .prose > :first-child {
-            margin-top: 0;
-        }
-        .prose > :last-child {
-            margin-bottom: 0;
-        }
-        .prose ul {
-            margin-top: 0.5em;
-            margin-bottom: 0.5em;
-            padding-left: 1.2em;
-        }
-        .prose li {
-            margin-top: 0.2em;
-            margin-bottom: 0.2em;
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
     </style>
 </head>
-<body class="text-gray-800 pb-32">
+<body class="h-screen flex flex-col overflow-hidden text-gray-800 relative">
 
     <!-- Header -->
-    <header class="bg-yellow-400 shadow-md sticky top-0 z-40">
+    <header class="bg-white shadow-md z-20 shrink-0 border-t-4 border-orange-500">
         <div class="container mx-auto px-4 py-3">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <span>🍳</span> 立利餐坊
-                    </h1>
-                    <span id="displayDate" class="text-sm font-medium bg-white/80 px-2 py-1 rounded shadow-sm"></span>
-                </div>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 
-                <!-- Time & Cutoff Display -->
-                <div class="bg-gray-800 text-white px-4 py-2 rounded-lg shadow-sm flex items-center justify-between md:justify-end gap-4 min-w-[240px]">
-                    <div class="text-xs text-gray-300 flex flex-col items-end border-r border-gray-600 pr-4 mr-1">
-                        <div class="mb-1">截止時間</div>
-                        <div class="font-bold text-yellow-400 text-3xl leading-none">10:00</div>
+                <div class="text-center md:text-left flex-1">
+                    <!-- 標題 -->
+                    <div class="flex flex-wrap items-center gap-3 justify-center md:justify-start mb-2">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-wide flex items-center gap-2">
+                            <span>🦢 偶鵝嚐嚐</span>
+                            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-lg border border-orange-200">碧華國中團</span>
+                        </h1>
+                        <!-- 連線狀態指示燈 -->
+                        <span id="connectionStatus" class="hidden text-[10px] text-green-700 bg-green-100 px-2 py-0.5 rounded-full border border-green-200 flex items-center gap-1 animate-pulse">
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span> 雲端已連線
+                        </span>
+                        <span id="offlineStatus" class="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
+                            <span>⏳</span> 連線中...
+                        </span>
                     </div>
-                    <div class="text-right">
-                        <div id="statusText" class="text-xs font-bold text-green-400 mb-0.5">訂購中</div>
-                        <div id="currentTime" class="text-xl font-mono font-bold leading-none">--:--:--</div>
+                    
+                    <!-- 放大顯示的時間與日期區塊 -->
+                    <div class="flex flex-col md:flex-row items-center md:items-end gap-3 justify-center md:justify-start">
+                        <!-- 時間顯示 (加大) -->
+                        <div id="clockDisplay" class="text-3xl font-mono font-bold text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border-2 border-gray-200 shadow-sm transition-colors duration-300 flex items-center gap-2">
+                            00:00:00
+                        </div>
+
+                        <!-- 日期與地點資訊 -->
+                        <div class="flex flex-col items-center md:items-start gap-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-bold text-gray-700">📅 <span id="currentDate"></span></span>
+                                <span class="text-sm bg-gray-200 text-gray-600 px-2 py-0.5 rounded">每日 10:00 截止</span>
+                            </div>
+                            <p class="text-xs text-gray-500">📍 碧華國中教務處午餐團</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Info & Name Input -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
-                <div class="text-sm text-gray-800 space-y-1 bg-white/50 p-2 rounded">
-                    <p>📍 <span class="font-bold">地址：</span>三重區自強路五段33號之1</p>
-                    <p>📞 <span class="font-bold">電話：</span><a href="tel:0229833055" class="underline">02-2983-3055</a></p>
-                </div>
-                
-                <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-yellow-600">
-                    <label for="orderName" class="block text-xs font-bold text-gray-500 uppercase mb-1">點餐者姓名 <span class="text-red-500">*</span></label>
-                    <input type="text" id="orderName" placeholder="請輸入您的大名" class="w-full border-b-2 border-yellow-300 focus:border-yellow-500 outline-none py-1 text-lg transition-colors bg-transparent">
+
+                <div class="flex gap-2 w-full md:w-auto justify-center mt-2 md:mt-0 flex-wrap">
+                    <!-- 匯出 Excel 按鈕 -->
+                    <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-all text-sm flex items-center gap-1 active:scale-95">
+                        <span>📊</span> 匯出 Excel
+                    </button>
+                    <!-- 複製按鈕 -->
+                    <button onclick="copyAllOrders()" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-all text-sm flex items-center gap-1 active:scale-95">
+                        <span>📋</span> 複製文字
+                    </button>
+                    <!-- 重置按鈕 -->
+                    <button onclick="confirmClearAll()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm flex items-center gap-1 active:scale-95">
+                        <span>🗑️</span> 重置
+                    </button>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Layout -->
-    <div class="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
-        <!-- Left Column: Menu -->
-        <main class="lg:col-span-2">
+        <!-- 左側：菜單區 -->
+        <section class="w-full md:w-2/3 flex flex-col border-r border-gray-200 bg-[#fbfbfb] h-full relative">
             
-            <!-- Category Tabs -->
-            <div class="sticky top-[180px] md:top-[160px] lg:top-[170px] z-30 bg-[#fefce8]/95 backdrop-blur-sm py-2 -mx-4 px-4 mb-2 border-b border-yellow-200">
-                 <div class="flex overflow-x-auto gap-2 no-scrollbar" id="categoryTabs">
-                    <!-- Categories will be injected here -->
-                </div>
-            </div>
-
-            <!-- Note Section (Add-on Instructions) -->
-            <div class="mb-6 p-4 bg-yellow-100 rounded-lg border border-yellow-300 text-sm shadow-sm">
-                <h3 class="font-bold mb-2 flex items-center gap-2 text-yellow-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                    </svg>
-                    加料價格說明 (請點選餐點進行勾選)
-                </h3>
-                <div class="flex flex-wrap gap-x-6 gap-y-1 text-gray-700">
-                    <span>🍚 加飯/麵/肉/菜/鳳梨：<span class="font-bold text-red-600">+$10</span></span>
-                    <span>🥚 加蛋/泡菜：<span class="font-bold text-red-600">+$20</span></span>
-                </div>
-            </div>
-
-            <!-- Menu Grid -->
-            <div id="menuGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]">
-                <!-- Menu items will be injected here -->
-            </div>
-
-        </main>
-
-        <!-- Right Column: Order History -->
-        <aside class="lg:col-span-1 space-y-4">
-            <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden sticky top-24">
-                <div class="bg-gray-800 text-white p-3">
-                    <div class="flex justify-between items-start mb-2">
-                        <h2 class="font-bold text-lg flex items-center gap-2 mt-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            已送出訂單
-                            <span id="historyCount" class="bg-gray-600 px-2 py-0.5 rounded text-xs ml-1">0</span>
-                        </h2>
-                        <div class="flex flex-col gap-2 items-end">
-                            <!-- Clear All Button -->
-                            <button onclick="confirmClearHistory()" class="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded transition-colors font-bold shadow border border-red-400">
-                                結束今天訂購
-                            </button>
-                            <!-- Copy All Button -->
-                            <button onclick="copyAllOrders()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors font-bold shadow border border-blue-400 flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                </svg>
-                                複製全部訂單
-                            </button>
+            <!-- 輸入名字區 -->
+            <div class="p-3 bg-white border-b border-orange-100 shrink-0 shadow-sm z-10">
+                <div class="flex gap-2 items-end max-w-2xl mx-auto md:mx-0">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">誰要點餐？</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">👤</span>
+                            <input type="text" id="userName" placeholder="請輸入姓名 / 處室" class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:outline-none transition-all">
                         </div>
                     </div>
-                    <!-- Total Sum Display -->
-                    <div class="text-yellow-400 text-sm font-medium flex justify-between items-center border-t border-gray-600 pt-2">
-                        <span>今日累計總金額：</span>
-                        <span class="text-xl font-bold text-white">$<span id="historyTotalSum">0</span></span>
-                    </div>
-                </div>
-                
-                <div id="orderHistoryList" class="p-4 space-y-4 max-h-[60vh] overflow-y-auto bg-gray-50">
-                    <p class="text-gray-400 text-center py-4 text-sm">正在連線至雲端資料庫...</p>
+                    <button onclick="submitOrder()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-md whitespace-nowrap h-[42px] flex items-center gap-2 transition-transform active:scale-95">
+                        <span>送出</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
                 </div>
             </div>
-        </aside>
 
-    </div>
-    
-    <!-- Author Declaration -->
-    <div class="w-full text-center py-6 mb-4">
-        <p class="inline-block bg-gray-800 text-yellow-400 px-6 py-2 rounded-full font-bold shadow-lg text-sm transform hover:scale-105 transition-transform cursor-default border-2 border-yellow-500">
-            ★ 系統製作 By Arthur WU ★
-        </p>
-    </div>
+            <!-- 分類標籤 -->
+            <div class="flex overflow-x-auto gap-2 p-2 bg-white border-b border-gray-200 shrink-0 no-scrollbar shadow-[0_2px_5px_rgba(0,0,0,0.02)] z-10 items-center" id="categoryTabs">
+                <!-- Javascript will inject tabs -->
+            </div>
 
-    <!-- AI Floating Button -->
-    <button onclick="toggleAIChat()" class="fixed bottom-40 right-4 z-50 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all border-2 border-white flex items-center justify-center gap-2 group">
-        <span class="text-xl group-hover:animate-spin">✨</span>
-        <span class="font-bold hidden sm:inline">AI 點餐助手</span>
+            <!-- 菜單網格 -->
+            <div id="menuContainer" class="flex-1 overflow-y-auto p-4 bg-[#f7f3e8]">
+                
+                <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 pb-20">
+                    <!-- Javascript will inject menu items -->
+                </div>
+            </div>
+            
+            <!-- 底部浮動：目前選擇 -->
+            <div id="currentSelectionBar" class="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] bg-gray-800 text-white p-3 rounded-full shadow-2xl flex justify-between items-center z-20 hidden transform transition-all duration-300 hover:scale-105 cursor-pointer" onclick="submitOrder()">
+                <div class="flex items-center gap-2 px-2">
+                    <div class="bg-orange-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold" id="currentCount">0</div>
+                    <span class="text-sm">準備下單...</span>
+                </div>
+                <div class="flex items-center gap-2 px-2 border-l border-gray-600 pl-3">
+                    <span class="text-xs text-gray-400">小計</span>
+                    <span class="font-bold text-lg text-orange-400">$<span id="currentTotal">0</span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側：訂單清單區 -->
+        <section class="w-full md:w-1/3 bg-white flex flex-col h-full border-t md:border-t-0 md:border-l border-gray-200 shadow-xl z-30">
+            <div class="p-3 bg-gray-100 font-bold text-gray-700 flex justify-between items-center shrink-0 border-b border-gray-200">
+                <span class="flex items-center gap-2">📋 今日訂單清單</span>
+                <span class="text-xs bg-gray-700 text-white px-2 py-1 rounded-full" id="totalOrdersCount">0筆</span>
+            </div>
+            
+            <div id="ordersList" class="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
+                <div class="text-center text-gray-400 mt-20 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
+                    <p>目前還沒有人點餐</p>
+                    <p class="text-xs mt-2">碧華國中教務處午餐團開跑囉！</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div class="flex justify-between items-center text-xl font-bold">
+                    <span class="text-gray-600 text-base">本日總金額</span>
+                    <span class="text-red-600 font-mono text-2xl">$<span id="grandTotal">0</span></span>
+                </div>
+                <div class="text-xs text-right text-gray-400 mt-1 watermark">Designed by Arthur WU</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- AI Chat Button -->
+    <button onclick="toggleAiChat()" class="fixed bottom-20 right-6 z-40 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-3 rounded-full shadow-2xl hover:scale-105 transition-transform duration-200 group flex items-center gap-2 border-2 border-white">
+        <span class="text-xl group-hover:rotate-12 transition-transform">✨</span>
+        <span class="font-bold text-sm">點餐AI小幫手</span>
     </button>
 
-    <!-- AI Chat Modal -->
-    <div id="aiChatModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-[80] flex justify-center items-center backdrop-blur-sm transition-opacity">
-        <div class="bg-white w-full sm:w-[500px] h-[80vh] sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
-            
-            <!-- AI Header -->
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-700 p-4 text-white flex justify-between items-center shadow-md">
-                <div class="flex items-center gap-3">
-                    <div class="bg-white/20 p-2 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg">AI 智慧服務生</h3>
-                        <p class="text-xs text-purple-200">✨ Powered by Gemini</p>
-                    </div>
-                </div>
-                <button onclick="toggleAIChat()" class="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Chat Area -->
-            <div id="aiChatArea" class="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4">
-                <!-- Welcome Message -->
-                <div class="flex items-start gap-2 chat-bubble">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        AI
-                    </div>
-                    <div class="bg-white border border-gray-200 text-gray-800 px-4 py-2.5 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm leading-relaxed prose prose-sm prose-purple">
-                        <p>您好！我是立利餐坊的 AI 服務生 🤖<br>
-                        不管是<b>推薦菜色</b>、<b>預算搭配</b>或是<b>詢問食材</b>，我都能幫您！<br>
-                        試試看問我：「有什麼不辣的推薦？」或「我有 200 元想吃飽」。</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input Area -->
-            <div class="p-3 bg-white border-t border-gray-100 flex gap-2 items-end">
-                <textarea id="aiInput" rows="1" class="flex-1 bg-gray-100 border-0 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all resize-none max-h-32 outline-none text-sm" placeholder="輸入您的問題... (Shift+Enter 換行)"></textarea>
-                <button onclick="sendAIMessage()" id="aiSendBtn" class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bottom Cart Bar -->
-    <div class="fixed bottom-0 left-0 w-full bg-white shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)] border-t border-gray-200 z-50 pb-safe">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-between items-center mb-3">
+    <!-- AI Chat Window -->
+    <div id="aiChatWindow" class="fixed bottom-36 right-6 z-50 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 hidden flex flex-col overflow-hidden chat-enter h-[500px]">
+        <!-- Chat Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-2 text-white">
+                <span class="text-xl">🤖</span>
                 <div>
-                    <p class="text-xs text-gray-500">目前購物車金額</p>
-                    <p class="text-2xl font-bold text-red-600">$<span id="totalPrice">0</span></p>
+                    <h3 class="font-bold text-sm">AI 點餐助手</h3>
+                    <p class="text-[10px] text-indigo-100 opacity-80">熟讀菜單的美食家</p>
                 </div>
-                <button onclick="toggleCartDetail()" class="flex items-center gap-1 text-blue-600 text-sm font-medium hover:bg-blue-50 px-3 py-1 rounded transition-colors">
-                    查看目前明細 (<span id="itemCount">0</span>)
-                </button>
             </div>
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="confirmClearCart()" class="col-span-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors">
-                    清空
-                </button>
-                <button onclick="trySubmitOrder()" class="col-span-2 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 shadow-md active:bg-green-800 transition-colors flex justify-center items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    送出訂單
-                </button>
+            <button onclick="toggleAiChat()" class="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            <!-- Welcome Message -->
+            <div class="flex gap-2 items-start">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-sm border border-indigo-200">🤖</div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm text-sm text-gray-700">
+                    嗨！我是你的點餐助手 👋<br>
+                    不管你想找「便宜好吃的」、「適合多人分享的」或是「重口味的」，都可以直接問我喔！
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Product Options Modal -->
-    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-[70] flex justify-center items-end sm:items-center backdrop-blur-sm transition-opacity" onclick="closeProductModal()">
-        <div class="bg-white w-full sm:w-[480px] rounded-t-2xl sm:rounded-2xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl transform transition-transform" onclick="event.stopPropagation()">
-            
-            <!-- Header -->
-            <div class="flex justify-between items-start mb-4 border-b border-gray-100 pb-3">
-                <div>
-                    <h2 id="modalTitle" class="text-xl font-bold text-gray-900">餐點名稱</h2>
-                    <p class="text-gray-500">$<span id="modalBasePrice">0</span></p>
-                </div>
-                <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600 p-1 bg-gray-100 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <!-- Chat Input -->
+        <div class="p-3 bg-white border-t border-gray-100 shrink-0">
+            <div class="flex gap-2">
+                <input type="text" id="chatInput" placeholder="輸入你的需求..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" onkeypress="if(event.key === 'Enter') sendAiMessage()">
+                <button onclick="sendAiMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-sm transition-colors active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                     </svg>
                 </button>
             </div>
+        </div>
+    </div>
 
-            <!-- Content -->
-            <div class="space-y-6">
-                
-                <!-- Sauce Selection (Dynamic) -->
-                <div id="modalSauceSection" class="hidden">
-                    <h3 class="font-bold text-gray-800 mb-2">選擇醬料 <span class="text-red-500 text-xs">*必選</span></h3>
-                    <div class="grid grid-cols-3 gap-2" id="modalSauces">
-                        <!-- Sauces injected via JS -->
-                    </div>
-                </div>
-
-                <!-- Spiciness Selection -->
-                <div>
-                    <h3 class="font-bold text-gray-800 mb-2">選擇辣度 <span class="text-red-500 text-xs">*必選</span></h3>
-                    <div class="grid grid-cols-4 gap-2">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="spiciness" value="不辣" class="custom-radio peer sr-only" checked>
-                            <div class="text-center py-2 rounded-lg border border-gray-200 text-sm transition-all text-gray-600">不辣</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="spiciness" value="小辣" class="custom-radio peer sr-only">
-                            <div class="text-center py-2 rounded-lg border border-gray-200 text-sm transition-all text-gray-600">小辣</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="spiciness" value="中辣" class="custom-radio peer sr-only">
-                            <div class="text-center py-2 rounded-lg border border-gray-200 text-sm transition-all text-gray-600">中辣</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="spiciness" value="大辣" class="custom-radio peer sr-only">
-                            <div class="text-center py-2 rounded-lg border border-gray-200 text-sm transition-all text-gray-600">大辣</div>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Add-ons Selection -->
-                <div>
-                    <h3 class="font-bold text-gray-800 mb-2">加料選擇 <span class="text-gray-400 text-xs">(可複選)</span></h3>
-                    <div class="grid grid-cols-2 gap-2" id="modalAddons">
-                        <!-- Add-ons injected via JS -->
-                    </div>
-                </div>
-
-                <!-- Quantity -->
-                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                    <span class="font-bold">數量</span>
-                    <div class="flex items-center bg-white rounded-lg border border-gray-200">
-                        <button onclick="adjustModalQty(-1)" class="w-10 h-10 flex items-center justify-center text-gray-600 active:bg-gray-100 text-xl font-bold">-</button>
-                        <span id="modalQty" class="w-10 text-center font-bold text-gray-800">1</span>
-                        <button onclick="adjustModalQty(1)" class="w-10 h-10 flex items-center justify-center text-yellow-600 active:bg-yellow-50 text-xl font-bold">+</button>
-                    </div>
-                </div>
-
+    <!-- Custom Modal Overlay -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-200 modal-overlay-enter">
+        <div id="modalContent" class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-200 modal-enter flex flex-col max-h-[90vh]">
+            <h3 id="modalTitle" class="text-lg font-bold text-gray-800 mb-2 shrink-0">提示</h3>
+            <div id="modalBody" class="overflow-y-auto mb-4 flex-1">
+                <p id="modalMessage" class="text-gray-600 leading-relaxed">內容...</p>
+                <textarea id="modalTextarea" class="w-full h-40 border border-gray-300 rounded-lg p-2 text-sm hidden focus:ring-2 focus:ring-indigo-400 focus:outline-none bg-gray-50" readonly></textarea>
             </div>
-
-            <!-- Footer -->
-            <div class="mt-6 pt-4 border-t border-gray-100">
-                <button onclick="confirmAddToCart()" class="w-full bg-yellow-500 text-white font-bold py-3 rounded-xl hover:bg-yellow-600 shadow-md active:bg-yellow-700 transition-all flex justify-between px-6">
-                    <span>加入購物車</span>
-                    <span>$<span id="modalTotalPrice">0</span></span>
-                </button>
+            <div class="flex justify-end gap-3 shrink-0" id="modalButtons">
+                <!-- Buttons injected by JS -->
             </div>
         </div>
     </div>
 
-    <!-- Cart Modal (View Details) -->
-    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-[60] flex justify-center items-end sm:items-center backdrop-blur-sm transition-opacity" onclick="toggleCartDetail()">
-        <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 max-h-[80vh] overflow-y-auto shadow-2xl transform transition-transform" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-4 border-b pb-3 border-gray-100">
-                <h2 class="text-xl font-bold text-gray-800">準備中的餐點</h2>
-                <button onclick="toggleCartDetail()" class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div id="cartItemsList" class="space-y-3 mb-6 min-h-[100px]">
-                <!-- Cart items here -->
-            </div>
-            <div class="pt-2">
-                 <button onclick="toggleCartDetail()" class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold w-full hover:bg-gray-900 transition-colors">關閉</button>
-            </div>
-        </div>
-    </div>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-20 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Custom Confirm Modal -->
-    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform transition-all">
-            <h3 id="confirmTitle" class="text-lg font-bold text-gray-900 mb-3">確認清空</h3>
-            <p id="confirmMessage" class="text-gray-600 mb-6 text-sm leading-relaxed whitespace-pre-wrap">您確定要清空目前選擇的餐點嗎？</p>
-            <div class="flex gap-3">
-                <button onclick="closeConfirmModal()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors">取消</button>
-                <button id="confirmActionBtn" onclick="handleConfirmAction()" class="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-200">確認</button>
-            </div>
-        </div>
-    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[80] w-max max-w-[90vw] pointer-events-none"></div>
+        // --- Firebase Configuration ---
+        let firebaseConfig, app, auth, db, appId;
+        let isOnline = false;
+        const apiKey = ""; // Gemini API Key
 
-    <script>
-        // --- Gemini API Setup ---
-        const apiKey = ""; 
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = JSON.parse(__firebase_config);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                isOnline = true;
+                initAuth();
+            } else {
+                console.warn("無法讀取 Firebase 設定，目前為離線模式");
+                showToast("⚠️ 離線模式：無法與他人同步", "error");
+            }
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            showToast("初始化錯誤", "error");
+        }
 
-        async function callGeminiAPI(userMessage) {
-            const systemPrompt = `你現在是「立利餐坊」的熱情服務生。
-你的任務是協助顧客點餐、推薦菜色，並解答關於菜單的問題。
-請使用繁體中文（台灣用語）回答。語氣親切、有禮貌、生動。
-可以使用 Emoji 讓對話更有趣。
-
-以下是我們的完整菜單資料：
-${JSON.stringify(menuData)}
-
-排版規則 (非常重要)：
-1. 請大量使用 Markdown 語法來優化閱讀體驗。
-2. 推薦餐點時，請務必使用「條列式」(Bullet points)。
-3. 餐點名稱與價格請用 **粗體** 標示。
-4. 段落之間請保留空行。
-5. 不要一大段文字擠在一起。
-
-其他規則：
-1. 只能推薦菜單上有的餐點。
-2. 若顧客詢問價格，請依據菜單回答。
-3. 若顧客有特殊飲食需求（如不吃牛、想吃辣），請篩選合適的餐點。
-4. 若顧客要求推薦套餐，請計算總金額確保在預算內（若有預算限制）。
-5. 如果顧客詢問截止時間，請回答每天早上 10:00 截止。
-`;
-
-            const payload = {
-                contents: [
-                    {
-                        parts: [
-                            { text: systemPrompt + "\n\n顧客：" + userMessage }
-                        ]
-                    }
-                ]
-            };
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            // Exponential Backoff Logic
-            const maxRetries = 5;
-            let delay = 1000;
-
-            for (let i = 0; i < maxRetries; i++) {
+        async function initAuth() {
+            if (!isOnline) return;
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.warn("Auth Error, trying anonymous fallback:", error);
                 try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return data.candidates[0].content.parts[0].text;
-
-                } catch (error) {
-                    console.error(`Attempt ${i + 1} failed:`, error);
-                    if (i === maxRetries - 1) throw error;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2;
+                    await signInAnonymously(auth);
+                } catch (anonErr) {
+                    console.error("Anonymous Auth Failed:", anonErr);
+                    showToast("登入失敗，無法同步資料", "error");
                 }
             }
         }
 
-        // --- Data ---
+        // --- 1. Data Structure (資料結構) ---
         const menuData = [
             {
-                category: "蛋炒飯類",
-                sauces: ["原味", "黑胡椒", "咖哩", "沙茶", "茄汁", "泡菜"],
+                category: "便當系列",
+                icon: "🍱",
                 items: [
-                    { name: "蛋炒飯", price: 70 },
-                    { name: "青椒蛋炒飯", price: 70 },
-                    { name: "火腿蛋炒飯", price: 80 },
-                    { name: "豬肉蛋炒飯", price: 80 },
-                    { name: "鳳梨蝦仁蛋炒飯", price: 80 },
-                    { name: "蝦仁蛋炒飯", price: 80 },
-                    { name: "牛肉蛋炒飯", price: 80 },
-                    { name: "羊肉蛋炒飯", price: 80 },
-                    { name: "雞肉蛋炒飯", price: 80 },
-                    { name: "吻仔魚炒飯", price: 80 },
-                    { name: "培根蛋炒飯", price: 80 },
-                    { name: "泡菜蛋炒飯", price: 80 },
-                    { name: "臘肉蛋炒飯", price: 80 },
-                    { name: "香腸蛋炒飯", price: 80 },
-                    { name: "三鮮蛋炒飯", price: 80 },
-                    { name: "鮭魚蛋炒飯", price: 80 },
-                    { name: "夏威夷炒飯", price: 80 }
+                    { name: "招牌無骨鵝肉飯便當", price: 110, tag: "人氣" },
+                    { name: "蔗香煙燻鵝肉飯便當", price: 110 },
+                    { name: "鮮嫩鹹水鵝肉飯便當", price: 110 },
+                    { name: "鵝肉壽喜燒便當", price: 110 },
+                    { name: "無骨蔗香鵝肉飯便當", price: 120 },
+                    { name: "鮮嫩無骨鹹水鵝肉飯便當", price: 120, tag: "推" },
+                    { name: "台式打拋鵝肉便當", price: 130 },
+                    { name: "蔥醬鵝腿便當", price: 150, tag: "限量" }
                 ]
             },
             {
-                category: "炒河粉",
-                sauces: ["原味", "沙茶", "咖哩", "茄汁", "泡菜"],
+                category: "偶鵝肉盤",
+                icon: "🦢",
                 items: [
-                    { name: "干炒牛河粉", price: 100 },
-                    { name: "干炒羊河粉", price: 100 },
-                    { name: "干炒豬河粉", price: 100 },
-                    { name: "干炒雞河粉", price: 100 },
-                    { name: "泡菜炒河粉", price: 100 },
-                    { name: "三鮮炒河粉", price: 100 },
-                    { name: "香腸炒河粉", price: 100 },
-                    { name: "鮭魚炒河粉", price: 100 },
-                    { name: "臘肉炒河粉", price: 100 }
+                    { name: "招牌糖燻鵝肉(1~2人)", price: 200 },
+                    { name: "招牌糖燻鵝肉(3~4人)", price: 350 },
+                    { name: "招牌嫩鹹水鵝(1~2人)", price: 200 },
+                    { name: "招牌嫩鹹水鵝(3~4人)", price: 350 }
                 ]
             },
             {
-                category: "炒麵類",
-                sauces: ["原味"],
+                category: "人氣主食",
+                icon: "🍜",
                 items: [
-                    { name: "豬肉炒麵", price: 80 },
-                    { name: "豬肝炒麵", price: 80 },
-                    { name: "牛肉炒麵", price: 80 },
-                    { name: "羊肉炒麵", price: 80 },
-                    { name: "蝦仁炒麵", price: 80 },
-                    { name: "泡菜炒麵", price: 80 },
-                    { name: "什錦炒麵", price: 80 },
-                    { name: "鮮蝦炒麵", price: 80 }
+                    { name: "香蔥鵝油乾拌麵線", price: 40 },
+                    { name: "偶鵝嚐嚐(招牌飯)", price: 65, tag: "招牌" },
+                    { name: "特上鵝肉飯", price: 65 },
+                    { name: "鵝肉乾麵", price: 80 },
+                    { name: "鵝肉湯麵", price: 80 },
+                    { name: "香蔥鵝油飯", price: 20 },
+                    { name: "古早味瓜仔鵝燥飯", price: 35 },
+                    { name: "乾麵", price: 40 },
+                    { name: "湯麵", price: 40 },
+                    { name: "乾冬粉", price: 40 },
+                    { name: "湯冬粉", price: 40 },
+                    { name: "鵝肉乾冬粉", price: 80 },
+                    { name: "鵝肉湯冬粉", price: 80 },
+                    { name: "白飯", price: 15 }
                 ]
             },
             {
-                category: "燴飯類",
-                sauces: ["原味", "沙茶", "咖哩"],
+                category: "美味小菜",
+                icon: "🥦",
                 items: [
-                    { name: "豬肉燴飯", price: 80 },
-                    { name: "豬肝燴飯", price: 80 },
-                    { name: "牛肉燴飯", price: 80 },
-                    { name: "羊肉燴飯", price: 80 },
-                    { name: "雞肉燴飯", price: 80 },
-                    { name: "什錦燴飯", price: 80 },
-                    { name: "鮮蝦燴飯", price: 80 }
+                    { name: "招牌化骨鵝掌(5支)", price: 70 },
+                    { name: "綜合下水", price: 100 },
+                    { name: "米血糕", price: 50 },
+                    { name: "限量炸鵝蛋", price: 50, tag: "獨家" },
+                    { name: "鵝腳(隻)", price: 20 },
+                    { name: "鵝屁股(個)", price: 10 },
+                    { name: "鵝翅(隻)", price: 40 },
+                    { name: "鵝腱", price: 60 },
+                    { name: "鵝頭(1隻)", price: 60 },
+                    { name: "鵝頭(2隻)", price: 100 },
+                    { name: "鵝心+肝", price: 50 },
+                    { name: "酸菜鵝腸", price: 80 },
+                    { name: "韭菜鵝腸", price: 80 },
+                    { name: "鵝肉香腸", price: 60 },
+                    { name: "桂竹筍", price: 50 },
+                    { name: "燙青菜/時蔬", price: 50 },
+                    { name: "麻辣鴨血", price: 50 },
+                    { name: "麻辣豆腐", price: 50 },
+                    { name: "綜合麻辣", price: 70 },
+                    { name: "鵝油黃金荷包蛋", price: 20 }
                 ]
             },
             {
-                category: "湯麵/湯類",
-                sauces: [],
+                category: "鮮美湯品",
+                icon: "🥣",
                 items: [
-                    { name: "豬肉湯麵", price: 80 },
-                    { name: "豬肝湯麵", price: 80 },
-                    { name: "羊肉湯麵", price: 80 },
-                    { name: "泡菜湯麵", price: 80 },
-                    { name: "什錦湯麵", price: 80 },
-                    { name: "鮮蝦湯麵", price: 80 },
-                    { name: "青菜豆腐湯", price: 40 },
-                    { name: "貢丸湯", price: 40 },
-                    { name: "蛋花湯", price: 40 },
-                    { name: "豬肝湯", price: 40 },
-                    { name: "蛤蜊湯", price: 40 },
-                    { name: "赤肉湯", price: 40 },
-                    { name: "薑絲羊肉湯", price: 40 }
-                ]
-            },
-            {
-                category: "單點",
-                sauces: [],
-                items: [
-                    { name: "炒青菜", price: 50 },
-                    { name: "蔥花煎蛋", price: 70 },
-                    { name: "吻仔魚煎蛋", price: 80 },
-                    { name: "蝦仁煎蛋", price: 80 },
-                    { name: "炒牛肉", price: 120 },
-                    { name: "炒羊肉", price: 120 }
+                    { name: "鵝肉湯", price: 70 },
+                    { name: "下水湯", price: 60 },
+                    { name: "酸菜鵝腸湯", price: 60 },
+                    { name: "鵝丸湯", price: 50 }
                 ]
             }
         ];
 
-        // --- Add-ons Configuration ---
-        const addOnsList = [
-            { name: "加飯/麵", price: 10 },
-            { name: "加肉", price: 10 },
-            { name: "加菜", price: 10 },
-            { name: "加鳳梨", price: 10 },
-            { name: "加蛋", price: 20 },
-            { name: "加泡菜", price: 20 }
-        ];
+        let currentCategory = "便當系列";
+        let tempCart = {}; 
+        let submittedOrders = []; 
+        let currentUser = null;
 
-        // --- State ---
-        let cart = []; 
-        let orderHistory = [];
-        let currentCategory = "蛋炒飯類";
-        let cutoffHour = 10;
-        let isPastCutoff = false;
-        
-        // Temporary state for Modal
-        let currentModalItem = null;
-        let currentModalCategory = null;
-        let currentModalQty = 1;
+        // --- 2. Realtime Listener ---
+        if (isOnline) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    // 更新 UI 狀態
+                    document.getElementById('connectionStatus').classList.remove('hidden');
+                    document.getElementById('connectionStatus').classList.add('flex');
+                    document.getElementById('offlineStatus').classList.add('hidden');
 
-        // --- Initialization ---
+                    // 啟動監聽
+                    const q = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+                    onSnapshot(q, (snapshot) => {
+                        submittedOrders = [];
+                        snapshot.forEach((doc) => {
+                            submittedOrders.push(doc.data());
+                        });
+                        submittedOrders.sort((a, b) => a.id - b.id);
+                        renderSubmittedOrders();
+                    }, (error) => {
+                        console.error("Sync Error:", error);
+                        showToast("同步發生錯誤", "error");
+                    });
+                }
+            });
+        }
+
+        // --- UI Setup ---
         window.onload = () => {
             updateTime();
-            setInterval(updateTime, 1000); // Update time every second
-
+            setInterval(updateTime, 1000);
+            
             const today = new Date();
-            document.getElementById('displayDate').innerText = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+            document.getElementById('currentDate').innerText = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
             
-            renderCategories();
-            renderMenu(currentCategory);
-            renderModalAddons();
-
-            // Set up Firestore Realtime Listener handled by initApp()
-            
-            // AI Input Keydown
-            document.getElementById('aiInput').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendAIMessage();
-                }
-            });
+            renderCategoryTabs();
+            renderMenu();
         };
 
-        // --- Firestore Logic ---
-        function setupRealtimeListener() {
-            if (!window.db) return;
-            
-            const q = window.query(window.getOrdersCollection(), window.orderBy("timestamp", "desc"));
-            
-            window.onSnapshot(q, (querySnapshot) => {
-                orderHistory = [];
-                querySnapshot.forEach((doc) => {
-                    orderHistory.push({ id: doc.id, ...doc.data() });
-                });
-                renderHistory();
-            }, (error) => {
-                console.error("Snapshot error:", error);
-                if (error.code === 'permission-denied') {
-                    document.getElementById('orderHistoryList').innerHTML = 
-                        '<p class="text-red-500 text-center py-4 text-sm px-2">權限不足：請確認 Firebase 規則或啟用匿名登入。<br>目前無法讀取歷史訂單。</p>';
-                } else {
-                    showToast("同步資料時發生錯誤", true);
-                }
-            });
-        }
-
-        // --- AI Chat Logic (Keep Existing) ---
-        function toggleAIChat() {
-            const modal = document.getElementById('aiChatModal');
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
-                const chatArea = document.getElementById('aiChatArea');
-                chatArea.scrollTop = chatArea.scrollHeight;
-                setTimeout(() => document.getElementById('aiInput').focus(), 100);
-            } else {
-                modal.classList.add('hidden');
-            }
-        }
-
-        async function sendAIMessage() {
-            const input = document.getElementById('aiInput');
-            const btn = document.getElementById('aiSendBtn');
-            const message = input.value.trim();
-            const chatArea = document.getElementById('aiChatArea');
-
-            if (!message) return;
-
-            renderChatMessage('user', message);
-            input.value = '';
-            input.style.height = 'auto'; 
-            btn.disabled = true;
-
-            const loadingId = 'loading-' + Date.now();
-            const loadingHTML = `
-                <div id="${loadingId}" class="flex items-start gap-2 chat-bubble">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        AI
-                    </div>
-                    <div class="bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1">
-                        <div class="w-2 h-2 bg-purple-400 rounded-full typing-dot"></div>
-                        <div class="w-2 h-2 bg-purple-400 rounded-full typing-dot"></div>
-                        <div class="w-2 h-2 bg-purple-400 rounded-full typing-dot"></div>
-                    </div>
-                </div>
-            `;
-            chatArea.insertAdjacentHTML('beforeend', loadingHTML);
-            chatArea.scrollTop = chatArea.scrollHeight;
-
-            try {
-                const aiResponse = await callGeminiAPI(message);
-                document.getElementById(loadingId).remove();
-                renderChatMessage('ai', aiResponse);
-            } catch (error) {
-                console.error("AI Error:", error);
-                document.getElementById(loadingId).remove();
-                renderChatMessage('ai', "抱歉，我目前連線有點問題，請稍後再試！😅");
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        function renderChatMessage(role, text) {
-            const chatArea = document.getElementById('aiChatArea');
-            let html = '';
-
-            if (role === 'user') {
-                html = `
-                    <div class="flex items-start justify-end gap-2 chat-bubble">
-                        <div class="bg-purple-100 text-purple-900 px-4 py-2.5 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap">${text}</div>
-                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold flex-shrink-0">
-                            您
-                        </div>
-                    </div>
-                `;
-            } else {
-                const rawMarkup = marked.parse(text);
-                html = `
-                    <div class="flex items-start gap-2 chat-bubble">
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                            AI
-                        </div>
-                        <div class="bg-white border border-gray-200 text-gray-800 px-4 py-2.5 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm leading-relaxed prose prose-sm prose-purple">
-                            ${rawMarkup}
-                        </div>
-                    </div>
-                `;
-            }
-
-            chatArea.insertAdjacentHTML('beforeend', html);
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-
-        // --- Time Logic ---
-        function updateTime() {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-            
-            const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            document.getElementById('currentTime').innerText = timeString;
-
-            const statusText = document.getElementById('statusText');
-            const timeContainer = document.getElementById('currentTime');
-
-            if (hours >= cutoffHour) {
-                isPastCutoff = true;
-                statusText.innerText = "已截止";
-                statusText.className = "text-xs font-bold text-red-400 mb-0.5";
-                timeContainer.classList.add('text-red-400');
-            } else {
-                isPastCutoff = false;
-                statusText.innerText = "訂購中";
-                statusText.className = "text-xs font-bold text-green-400 mb-0.5";
-                timeContainer.classList.remove('text-red-400');
-            }
-        }
-
-        // --- Toast System ---
-        function showToast(message, isError = false) {
+        // --- 3. UI Helpers (Toast & Modal) ---
+        function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             
-            toast.className = `
-                mb-3 px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center transform transition-all duration-300
-                ${isError ? 'bg-red-500 text-white' : 'bg-gray-800 text-white'}
-                toast-enter
-            `;
-            toast.innerText = message;
+            const bgClass = type === 'error' ? 'bg-red-500' : 
+                            type === 'info' ? 'bg-blue-600' : 'bg-gray-800';
+            const icon = type === 'error' ? '⚠️' : 
+                         type === 'info' ? 'ℹ️' : '✅';
+            
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 toast-enter pointer-events-auto`;
+            toast.innerHTML = `<span>${icon}</span><span class="font-bold text-sm">${message}</span>`;
             
             container.appendChild(toast);
             
-            requestAnimationFrame(() => {
-                toast.classList.remove('toast-enter');
-                toast.classList.add('toast-enter-active');
-            });
-
             setTimeout(() => {
-                toast.classList.remove('toast-enter-active');
-                toast.classList.add('toast-exit-active');
-                setTimeout(() => {
-                    if (container.contains(toast)) {
-                        container.removeChild(toast);
-                    }
-                }, 300);
-            }, 2500);
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        // --- Render Functions ---
-        function renderCategories() {
+        // Modal 函數
+        window.showConfirmModal = function(title, message, confirmCallback, confirmText = "確定", isDestructive = false, showTextArea = false, textAreaValue = "") {
+            const overlay = document.getElementById('modalOverlay');
+            const content = document.getElementById('modalContent');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const btnContainer = document.getElementById('modalButtons');
+            const textAreaEl = document.getElementById('modalTextarea');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            
+            // Text Area Logic
+            if (showTextArea) {
+                textAreaEl.classList.remove('hidden');
+                textAreaEl.value = textAreaValue;
+                msgEl.classList.add('mb-2');
+                msgEl.classList.remove('mb-6');
+            } else {
+                textAreaEl.classList.add('hidden');
+                msgEl.classList.add('mb-6');
+                msgEl.classList.remove('mb-2');
+            }
+
+            const confirmBtnClass = isDestructive 
+                ? 'bg-red-500 hover:bg-red-600 text-white' 
+                : 'bg-orange-500 hover:bg-orange-600 text-white';
+            
+            const confirmBtnHtml = confirmText ? `<button id="modalConfirm" class="px-4 py-2 ${confirmBtnClass} rounded-lg font-bold shadow-md transition-colors">${confirmText}</button>` : '';
+
+            if (isDestructive) {
+                content.classList.add('border-2', 'border-red-500');
+            } else {
+                content.classList.remove('border-2', 'border-red-500');
+            }
+
+            btnContainer.innerHTML = `
+                <button id="modalCancel" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition-colors">關閉</button>
+                ${confirmBtnHtml}
+            `;
+
+            const cleanup = () => {
+                document.removeEventListener('keydown', handleEsc);
+                overlay.onclick = null;
+            };
+
+            const close = () => {
+                cleanup();
+                overlay.classList.remove('opacity-100');
+                content.classList.remove('scale-100');
+                setTimeout(() => overlay.classList.add('hidden'), 200);
+            };
+
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') close();
+            };
+
+            overlay.onclick = (e) => {
+                if (e.target === overlay) close();
+            };
+
+            document.addEventListener('keydown', handleEsc);
+
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.add('opacity-100');
+                content.classList.add('scale-100');
+            }, 10);
+
+            document.getElementById('modalCancel').onclick = close;
+            if (confirmText) {
+                document.getElementById('modalConfirm').onclick = () => {
+                    confirmCallback();
+                    close();
+                };
+            }
+        }
+
+        // --- 4. Time & Clock ---
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            const clockEl = document.getElementById('clockDisplay');
+            
+            if (now.getHours() >= 10) {
+                clockEl.classList.remove('text-gray-700', 'bg-gray-50', 'border-gray-200');
+                clockEl.classList.add('text-red-600', 'bg-red-50', 'border-red-400', 'animate-pulse');
+                clockEl.innerHTML = `<span>${timeString}</span><span class="text-sm md:text-base font-bold ml-2">⚠️ 已超過訂餐時間</span>`;
+            } else {
+                clockEl.classList.add('text-gray-700', 'bg-gray-50', 'border-gray-200');
+                clockEl.classList.remove('text-red-600', 'bg-red-50', 'border-red-400', 'animate-pulse');
+                clockEl.innerText = timeString;
+            }
+        }
+
+        // --- 5. Render Functions ---
+        function renderCategoryTabs() {
             const container = document.getElementById('categoryTabs');
             container.innerHTML = menuData.map(cat => `
-                <button onclick="switchCategory('${cat.category}')" 
-                    class="whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all transform active:scale-95 duration-200
-                    ${cat.category === currentCategory 
-                        ? 'bg-yellow-500 text-white shadow-md ring-2 ring-yellow-200' 
-                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-yellow-50'}">
-                    ${cat.category}
+                <button onclick="window.switchCategory('${cat.category}')" 
+                    class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${cat.category === currentCategory 
+                    ? 'bg-gray-800 text-white shadow-md transform scale-105' 
+                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'}">
+                    <span>${cat.icon}</span> ${cat.category}
                 </button>
             `).join('');
         }
 
-        function switchCategory(catName) {
-            currentCategory = catName;
-            renderCategories();
-            renderMenu(catName);
+        window.switchCategory = function(cat) {
+            currentCategory = cat;
+            renderCategoryTabs();
+            renderMenu();
         }
 
-        function renderMenu(catName) {
+        function renderMenu() {
             const container = document.getElementById('menuGrid');
-            const categoryData = menuData.find(c => c.category === catName);
+            const categoryData = menuData.find(c => c.category === currentCategory);
             
-            if (!categoryData) return;
-
             container.innerHTML = categoryData.items.map(item => {
-                const totalInCart = cart
-                    .filter(c => c.name === item.name)
-                    .reduce((sum, c) => sum + c.count, 0);
-
-                return `
-                <div class="menu-card bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center relative overflow-hidden group hover:border-yellow-300 transition-colors cursor-pointer" onclick="openProductModal('${item.name}', ${item.price}, '${catName}')">
-                    <div class="flex-1">
-                        <h4 class="font-bold text-lg text-gray-800 leading-tight mb-1">${item.name}</h4>
-                        <p class="text-gray-500 font-medium">$${item.price}</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        ${totalInCart > 0 ? `<span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full border border-yellow-200">${totalInCart} 份</span>` : ''}
-                        <button class="bg-yellow-500 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow hover:bg-yellow-600 active:scale-95 transition-all">
-                            選購
-                        </button>
-                    </div>
-                </div>
-            `}).join('');
-        }
-
-        function renderModalAddons() {
-            const container = document.getElementById('modalAddons');
-            container.innerHTML = addOnsList.map((addon, index) => `
-                <label class="cursor-pointer relative">
-                    <input type="checkbox" value="${index}" class="custom-checkbox peer sr-only" onchange="calculateModalTotal()">
-                    <div class="border border-gray-200 rounded-lg p-2 text-center transition-all peer-checked:bg-yellow-100 peer-checked:border-yellow-500">
-                        <div class="font-bold text-sm text-gray-700">${addon.name}</div>
-                        <div class="text-xs text-red-500 font-bold">+$${addon.price}</div>
-                    </div>
-                </label>
-            `).join('');
-        }
-
-        // --- Modal Logic ---
-        function openProductModal(name, price, categoryName) {
-            currentModalItem = { name, price };
-            currentModalCategory = menuData.find(c => c.category === categoryName);
-            currentModalQty = 1;
-            
-            document.getElementById('modalTitle').innerText = name;
-            document.getElementById('modalBasePrice').innerText = price;
-            document.getElementById('modalQty').innerText = 1;
-            
-            const radios = document.getElementsByName('spiciness');
-            radios.forEach(r => r.checked = (r.value === '不辣'));
-
-            const sauceSection = document.getElementById('modalSauceSection');
-            const sauceContainer = document.getElementById('modalSauces');
-            
-            if (currentModalCategory && currentModalCategory.sauces && currentModalCategory.sauces.length > 0) {
-                sauceSection.classList.remove('hidden');
-                sauceContainer.innerHTML = currentModalCategory.sauces.map((sauce, idx) => `
-                    <label class="cursor-pointer">
-                        <input type="radio" name="modal_sauce" value="${sauce}" class="custom-radio peer sr-only" ${idx === 0 ? 'checked' : ''}>
-                        <div class="text-center py-2 rounded-lg border border-gray-200 text-sm transition-all text-gray-600">${sauce}</div>
-                    </label>
-                `).join('');
-            } else {
-                sauceSection.classList.add('hidden');
-                sauceContainer.innerHTML = ''; 
-            }
-
-            const checkboxes = document.querySelectorAll('#modalAddons input[type="checkbox"]');
-            checkboxes.forEach(c => c.checked = false);
-
-            calculateModalTotal();
-            
-            const modal = document.getElementById('productModal');
-            modal.classList.remove('hidden');
-        }
-
-        function closeProductModal() {
-            document.getElementById('productModal').classList.add('hidden');
-        }
-
-        function adjustModalQty(change) {
-            if (currentModalQty + change >= 1) {
-                currentModalQty += change;
-                document.getElementById('modalQty').innerText = currentModalQty;
-                calculateModalTotal();
-            }
-        }
-
-        function calculateModalTotal() {
-            if (!currentModalItem) return;
-            
-            let total = currentModalItem.price;
-            
-            const checkboxes = document.querySelectorAll('#modalAddons input[type="checkbox"]:checked');
-            checkboxes.forEach(cb => {
-                total += addOnsList[parseInt(cb.value)].price;
-            });
-
-            document.getElementById('modalTotalPrice').innerText = total * currentModalQty;
-        }
-
-        function confirmAddToCart() {
-            if (!currentModalItem) return;
-
-            const spiciness = document.querySelector('input[name="spiciness"]:checked').value;
-
-            let sauce = null;
-            const sauceInput = document.querySelector('input[name="modal_sauce"]:checked');
-            if (sauceInput) {
-                sauce = sauceInput.value;
-            }
-
-            const selectedAddOns = [];
-            let addOnsPrice = 0;
-            document.querySelectorAll('#modalAddons input[type="checkbox"]:checked').forEach(cb => {
-                const addon = addOnsList[parseInt(cb.value)];
-                selectedAddOns.push(addon);
-                addOnsPrice += addon.price;
-            });
-
-            const unitTotal = currentModalItem.price + addOnsPrice;
-
-            const addonsKey = selectedAddOns.map(a => a.name).sort().join(',');
-            const sauceKey = sauce ? sauce : 'NA';
-            const cartKey = `${currentModalItem.name}|${sauceKey}|${spiciness}|${addonsKey}`;
-
-            const existingItemIndex = cart.findIndex(item => item.cartKey === cartKey);
-
-            if (existingItemIndex > -1) {
-                cart[existingItemIndex].count += currentModalQty;
-            } else {
-                cart.push({
-                    cartKey: cartKey,
-                    name: currentModalItem.name,
-                    basePrice: currentModalItem.price,
-                    unitTotal: unitTotal,
-                    sauce: sauce,
-                    spiciness: spiciness,
-                    addons: selectedAddOns,
-                    count: currentModalQty
-                });
-            }
-
-            closeProductModal();
-            updateUI();
-            showToast('已加入購物車');
-        }
-
-        function renderCartList() {
-            const container = document.getElementById('cartItemsList');
-            if (cart.length === 0) {
-                container.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-10 text-gray-400">
-                    <p>尚未選擇任何餐點</p>
-                </div>`;
-                return;
-            }
-            container.innerHTML = cart.map((item, index) => {
-                const addonText = item.addons.length > 0 ? `+ ${item.addons.map(a => a.name).join(', ')}` : '';
-                const sauceText = item.sauce ? `<span class="bg-yellow-100 text-yellow-800 px-1 rounded mr-1">${item.sauce}</span>` : '';
-                const spicinessText = item.spiciness !== '不辣' ? `<span class="text-red-500 font-bold">${item.spiciness}</span>` : '<span class="text-gray-400">不辣</span>';
+                const count = tempCart[item.name] ? tempCart[item.name].count : 0;
+                const activeClass = count > 0 ? "border-orange-400 ring-1 ring-orange-400 shadow-md bg-orange-50" : "border-gray-100 shadow-sm hover:shadow-md bg-white";
                 
+                let tagHtml = '';
+                if(item.tag) {
+                    tagHtml = `<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg rounded-tr-lg font-bold shadow-sm">${item.tag}</span>`;
+                }
+
                 return `
-                <div class="flex justify-between items-start border-b border-dashed border-gray-200 py-3 last:border-0">
-                    <div class="flex-1">
-                        <div class="font-bold text-gray-800 text-lg">${item.name}</div>
-                        <div class="text-sm mt-1 flex flex-wrap gap-y-1 items-center">
-                            ${sauceText}
-                            ${spicinessText}
-                            ${addonText ? `<span class="text-blue-600 ml-1 text-xs border-l pl-1 border-gray-300">${addonText}</span>` : ''}
-                        </div>
-                        <div class="text-xs text-gray-400 mt-1">單價 $${item.unitTotal} x ${item.count}</div>
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <span class="font-bold text-gray-800 text-lg">$${item.unitTotal * item.count}</span>
-                        <button onclick="removeCartItem(${index})" class="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors">
-                            刪除
-                        </button>
-                    </div>
-                </div>
-            `}).join('');
-        }
-
-        function removeCartItem(index) {
-            cart.splice(index, 1);
-            updateUI();
-        }
-
-        function updateUI() {
-            const total = cart.reduce((sum, item) => sum + (item.unitTotal * item.count), 0);
-            document.getElementById('totalPrice').innerText = total;
-            
-            const count = cart.reduce((sum, item) => sum + item.count, 0);
-            document.getElementById('itemCount').innerText = count;
-
-            renderMenu(currentCategory); 
-            renderCartList();
-        }
-
-        function toggleCartDetail() {
-            const modal = document.getElementById('cartModal');
-            modal.classList.toggle('hidden');
-        }
-
-        let confirmCallback = null;
-
-        function confirmClearCart() {
-            if (cart.length === 0) {
-                showToast('目前沒有選擇任何餐點', true);
-                return;
-            }
-            showConfirmDialog('確認清空', '您確定要清空目前選擇的餐點嗎？', executeClearCart);
-        }
-
-        function confirmClearHistory() {
-             if (orderHistory.length === 0) {
-                showToast('目前沒有歷史訂單', true);
-                return;
-            }
-            showConfirmDialog('結束今天訂購', '確定要清空所有已送出的歷史訂單嗎？\n(此操作無法復原)', executeClearHistory);
-        }
-
-        function showConfirmDialog(title, message, action) {
-            document.getElementById('confirmTitle').innerText = title;
-            document.getElementById('confirmMessage').innerText = message;
-            confirmCallback = action;
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-            confirmCallback = null;
-        }
-        
-        function handleConfirmAction() {
-            if(confirmCallback) confirmCallback();
-            closeConfirmModal();
-        }
-
-        function executeClearCart() {
-            cart = [];
-            updateUI();
-            document.getElementById('cartModal').classList.add('hidden');
-            showToast('已清空選擇');
-        }
-        
-        async function executeClearHistory() {
-            if (!window.isFirebaseReady()) return;
-            
-            const q = window.query(window.getOrdersCollection());
-            const snapshot = await window.getDocs(q);
-            const batch = window.writeBatch(window.db);
-            
-            snapshot.forEach((doc) => {
-                batch.delete(doc.ref);
-            });
-
-            await batch.commit();
-            showToast('已清空所有歷史訂單');
-        }
-
-        async function executeDeleteOrder(id) {
-            if (!window.isFirebaseReady()) return;
-            await window.deleteDoc(window.doc(window.db, "orders", id));
-            showToast('已刪除訂單');
-        }
-
-        async function executeRecallOrder(order) {
-            cart = JSON.parse(JSON.stringify(order.items));
-            document.getElementById('orderName').value = order.name;
-            
-            if (window.isFirebaseReady()) {
-                await window.deleteDoc(window.doc(window.db, "orders", order.id));
-            }
-
-            updateUI();
-            showToast('✏️ 訂單已載入，請修改後再次送出');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function trySubmitOrder() {
-            const nameInput = document.getElementById('orderName');
-            const name = nameInput.value.trim();
-            
-            if (!name) {
-                showToast('請先輸入點餐者姓名！', true);
-                nameInput.focus();
-                nameInput.parentElement.classList.add('animate-pulse', 'ring-2', 'ring-red-400');
-                setTimeout(() => nameInput.parentElement.classList.remove('animate-pulse', 'ring-2', 'ring-red-400'), 1000);
-                return;
-            }
-
-            if (cart.length === 0) {
-                showToast('請先選擇餐點再送出！', true);
-                return;
-            }
-
-            if(isPastCutoff) {
-                const warningMsg = '現在已超過 10:00 截止時間，確定要繼續送出訂單嗎？\n\n送出的訂單請確實與餐點發起人告知。避免沒有訂到!';
-                showConfirmDialog('逾時提醒', warningMsg, performSubmitOrder);
-                return;
-            }
-            
-            performSubmitOrder();
-        }
-
-        async function performSubmitOrder() {
-            if (!window.isFirebaseReady()) {
-                showToast("⚠️ 資料庫尚未連線", true);
-                return;
-            }
-
-            const nameInput = document.getElementById('orderName');
-            const name = nameInput.value.trim();
-            
-            const total = cart.reduce((sum, item) => sum + (item.unitTotal * item.count), 0);
-            const now = new Date();
-            const timeString = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-
-            const newOrder = {
-                name: name,
-                items: JSON.parse(JSON.stringify(cart)),
-                total: total,
-                time: timeString,
-                timestamp: new Date().getTime()
-            };
-
-            await window.addDoc(window.getOrdersCollection(), newOrder);
-            
-            cart = [];
-            updateUI();
-            showToast('✅ 訂單已送出！');
-            nameInput.value = '';
-        }
-
-        function renderHistory() {
-            const container = document.getElementById('orderHistoryList');
-            const countBadge = document.getElementById('historyCount');
-            const totalSumEl = document.getElementById('historyTotalSum');
-            
-            countBadge.innerText = orderHistory.length;
-            
-            const grandTotal = orderHistory.reduce((sum, order) => sum + order.total, 0);
-            totalSumEl.innerText = grandTotal;
-
-            if (orderHistory.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-center py-8 text-sm">尚未有送出的訂單</p>';
-                return;
-            }
-
-            container.innerHTML = orderHistory.map(order => {
-                const itemsHtml = order.items.map(i => {
-                    const sauceStr = i.sauce ? `[${i.sauce}]` : '';
-                    const spicyStr = i.spiciness !== '不辣' ? `(${i.spiciness})` : '';
-                    const addonStr = i.addons.length > 0 ? ` +${i.addons.map(a=>a.name).join('+')}` : '';
-                    
-                    return `<div class="text-xs bg-gray-50 border px-2 py-1 rounded text-gray-700 w-full mb-1 flex justify-between">
-                        <span>${i.name} ${sauceStr} ${spicyStr} ${addonStr}</span>
-                        <span class="font-bold">x${i.count}</span>
-                    </div>`;
-                }).join('');
-                
-                return `
-                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm relative group">
-                    <div class="flex justify-between items-start mb-2 border-b pb-2">
-                        <div>
-                            <span class="font-bold text-gray-800">#${order.timestamp ? order.timestamp.toString().slice(-4) : '----'}</span>
-                            <span class="text-xs text-gray-500 ml-1">${order.time}</span>
-                            <div class="text-sm font-bold text-yellow-700 mt-0.5">${order.name}</div>
-                        </div>
-                        <span class="text-red-600 font-bold text-lg">$${order.total}</span>
-                    </div>
+                <div class="relative p-4 rounded-xl border flex flex-col justify-between h-full transition-all duration-200 ${activeClass}">
+                    ${tagHtml}
                     <div class="mb-3">
+                        <h3 class="font-bold text-gray-800 text-lg leading-tight pr-4">${item.name}</h3>
+                        <p class="text-orange-600 font-bold mt-1 text-lg">$${item.price}</p>
+                    </div>
+                    <div class="flex items-center justify-end rounded-lg p-1">
+                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, -1)" 
+                            class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-md text-gray-600 font-bold hover:bg-red-50 hover:text-red-500 active:scale-95 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors" 
+                            ${count === 0 ? 'disabled' : ''}>-</button>
+                        <span class="w-10 text-center font-bold text-gray-800 text-lg">${count}</span>
+                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, 1)" 
+                            class="w-8 h-8 flex items-center justify-center bg-orange-500 border border-orange-500 rounded-md text-white font-bold hover:bg-orange-600 active:scale-95 shadow-sm transition-colors">+</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function renderSubmittedOrders() {
+            const container = document.getElementById('ordersList');
+            const countBadge = document.getElementById('totalOrdersCount');
+            const grandTotalEl = document.getElementById('grandTotal');
+
+            if (submittedOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 mt-20 flex flex-col items-center animate-pulse">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
+                        <p>目前還沒有人點餐</p>
+                        <p class="text-xs mt-2">碧華國中教務處午餐團開跑囉！</p>
+                    </div>`;
+                countBadge.innerText = "0筆";
+                grandTotalEl.innerText = "0";
+                return;
+            }
+
+            let totalMoney = 0;
+            const sortedOrders = [...submittedOrders].reverse();
+
+            container.innerHTML = sortedOrders.map(order => {
+                totalMoney += order.total;
+                const itemsHtml = order.items.map(i => 
+                    `<div class="flex justify-between text-sm text-gray-600 pl-2 border-l-2 border-gray-200">
+                        <span>${i.name} <span class="text-gray-400">x${i.count}</span></span>
+                        <span class="font-mono">$${i.price * i.count}</span>
+                    </div>`
+                ).join('');
+
+                return `
+                <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm relative group hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2 border-b border-dashed border-gray-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs border border-orange-200">
+                                ${order.name.charAt(0)}
+                            </div>
+                            <div>
+                                <span class="font-bold text-gray-800 block leading-none">${order.name}</span>
+                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded">${order.time}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-1">
+                            <!-- 修改按鈕 -->
+                            <button onclick="window.editOrder(${order.id})" class="text-gray-400 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50" title="修改訂單">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <!-- 刪除按鈕 -->
+                            <button onclick="window.deleteOrder(${order.id})" class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50" title="刪除此單">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-1 mb-2">
                         ${itemsHtml}
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="recallOrder('${order.id}')" class="flex-1 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-2 rounded font-bold transition-colors border border-yellow-300">
-                            修改
-                        </button>
-                         <button onclick="deleteOrder('${order.id}')" class="flex-none w-8 flex items-center justify-center text-xs bg-red-100 hover:bg-red-200 text-red-600 py-2 rounded font-bold transition-colors border border-red-200" title="刪除此筆訂單">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                    <div class="text-right font-bold text-orange-600 text-sm bg-orange-50 p-1 rounded">
+                        總計: $${order.total}
                     </div>
                 </div>
             `}).join('');
+
+            countBadge.innerText = `${submittedOrders.length}筆`;
+            grandTotalEl.innerText = totalMoney;
         }
 
-        function recallOrder(id) {
-            const order = orderHistory.find(o => o.id === id);
-            if (!order) return;
+        // --- 6. Logic Functions ---
+        window.adjustTempCart = function(name, price, change) {
+            if (!tempCart[name]) {
+                tempCart[name] = { price: price, count: 0 };
+            }
+            tempCart[name].count += change;
+            
+            if (tempCart[name].count <= 0) {
+                delete tempCart[name];
+            }
 
-            if (cart.length > 0) {
-                showConfirmDialog(
-                    '確認載入',
-                    '目前購物車內已有商品，確定要覆蓋並載入舊訂單嗎？',
-                    () => executeRecallOrder(order)
-                );
+            updateTempCartUI();
+            renderMenu();
+        }
+
+        function updateTempCartUI() {
+            const bar = document.getElementById('currentSelectionBar');
+            let totalCount = 0;
+            let totalPrice = 0;
+
+            for (let key in tempCart) {
+                totalCount += tempCart[key].count;
+                totalPrice += tempCart[key].count * tempCart[key].price;
+            }
+
+            if (totalCount > 0) {
+                bar.classList.remove('hidden');
+                bar.classList.add('flex');
+                document.getElementById('currentCount').innerText = totalCount;
+                document.getElementById('currentTotal').innerText = totalPrice;
+            } else {
+                bar.classList.add('hidden');
+                bar.classList.remove('flex');
+            }
+        }
+
+        window.submitOrder = async function() {
+            if (!isOnline || !currentUser) {
+                showToast("雲端連線中或已離線，請稍後", "error");
                 return;
             }
 
-            executeRecallOrder(order);
+            const nameInput = document.getElementById('userName');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showToast('請輸入訂購人姓名！', 'error');
+                nameInput.focus();
+                nameInput.classList.add('ring-2', 'ring-red-400', 'border-red-400');
+                setTimeout(() => nameInput.classList.remove('ring-2', 'ring-red-400', 'border-red-400'), 2000);
+                return;
+            }
+
+            if (Object.keys(tempCart).length === 0) {
+                showToast('請先選擇餐點！', 'error');
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            let orderItems = [];
+            let orderTotal = 0;
+
+            for (let key in tempCart) {
+                orderItems.push({
+                    name: key,
+                    price: tempCart[key].price,
+                    count: tempCart[key].count
+                });
+                orderTotal += (tempCart[key].price * tempCart[key].count);
+            }
+
+            const orderId = Date.now();
+            const newOrder = {
+                id: orderId,
+                name: name,
+                items: orderItems,
+                total: orderTotal,
+                time: timeStr
+            };
+
+            try {
+                // 寫入 Firestore
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', orderId.toString()), newOrder);
+                
+                tempCart = {};
+                nameInput.value = ''; 
+                updateTempCartUI();
+                renderMenu(); 
+                showToast('訂單已送出並同步！');
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showToast("送出失敗，請檢查網路", "error");
+            }
         }
 
-        function deleteOrder(id) {
-            showConfirmDialog(
-                '刪除訂單', 
-                '確定要刪除這筆歷史訂單嗎？', 
-                () => executeDeleteOrder(id)
+        // --- NEW: AI Chat Assistant Functions ---
+
+        window.toggleAiChat = function() {
+            const chat = document.getElementById('aiChatWindow');
+            if (chat.classList.contains('hidden')) {
+                chat.classList.remove('hidden');
+                // Add entry animation class
+                chat.classList.remove('chat-enter-active');
+                void chat.offsetWidth; // trigger reflow
+                chat.classList.add('chat-enter-active');
+                document.getElementById('chatInput').focus();
+            } else {
+                chat.classList.add('hidden');
+            }
+        }
+
+        async function callGeminiAPI(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                throw error;
+            }
+        }
+
+        window.sendAiMessage = async function() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // 1. Display User Message
+            addChatMessage(message, 'user');
+            input.value = '';
+
+            // 2. Show Thinking Indicator
+            const thinkingId = addChatMessage('思考中...', 'ai', true);
+
+            // 3. Construct Prompt with Menu Context
+            // Simplify menu data for token efficiency
+            const simpleMenu = menuData.map(cat => {
+                return `${cat.category}: ` + cat.items.map(i => `${i.name}($${i.price})`).join(', ');
+            }).join('\n');
+
+            const prompt = `你是一個活潑的午餐訂餐助手。這是完整的菜單資料：\n${simpleMenu}\n\n使用者的問題是：${message}\n\n請根據菜單回答使用者的問題。如果是推薦餐點，請務必提及價格。\n\n**重要排版要求**：\n1. 請務必善用 Emoji (如 🍱, ✨, 💰, 🔥) 來裝飾，增加視覺活潑感。\n2. 請使用「條列式」清單來呈現推薦餐點，每項餐點換一行。\n3. 請適當「換行」分段，讓文字不要擠在一起，閱讀起來更舒適。\n\n回答請用繁體中文，語氣親切幽默。不要使用 Markdown 語法(如 **粗體**)，直接用純文字排版即可。`;
+
+            try {
+                const responseText = await callGeminiAPI(prompt);
+                
+                // Remove thinking indicator
+                const thinkingEl = document.getElementById(thinkingId);
+                if(thinkingEl) thinkingEl.remove();
+
+                // 4. Display AI Response with Typewriter Effect
+                addChatMessage(responseText, 'ai');
+
+            } catch (error) {
+                const thinkingEl = document.getElementById(thinkingId);
+                if(thinkingEl) thinkingEl.innerText = "抱歉，AI 連線有點問題 😣";
+            }
+        }
+
+        function addChatMessage(text, sender, isThinking = false) {
+            const container = document.getElementById('chatMessages');
+            const id = 'msg-' + Date.now();
+            
+            const isUser = sender === 'user';
+            const alignClass = isUser ? 'justify-end' : 'justify-start';
+            const bgClass = isUser ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-gray-700 border border-gray-100 rounded-tl-none shadow-sm';
+            const icon = isUser ? '👤' : '🤖';
+            const iconBg = isUser ? 'bg-indigo-200' : 'bg-indigo-100';
+
+            let html = `
+                <div class="flex gap-2 items-start ${alignClass}" id="${id}-container">
+                    ${!isUser ? `<div class="w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0 text-sm border border-indigo-200">${icon}</div>` : ''}
+                    <div id="${id}" class="${bgClass} p-3 rounded-2xl text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${isThinking ? 'animate-pulse text-gray-400 italic' : ''}">
+                        ${isUser || isThinking ? text : ''} 
+                    </div>
+                    ${isUser ? `<div class="w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0 text-sm border border-indigo-200">${icon}</div>` : ''}
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', html);
+            container.scrollTop = container.scrollHeight;
+
+            if (!isUser && !isThinking) {
+                typewriterEffect(document.getElementById(id), text);
+            }
+
+            return id;
+        }
+
+        function typewriterEffect(element, text) {
+            element.classList.add('cursor');
+            element.innerHTML = ''; // 清空內容準備打字
+            let i = 0;
+            const speed = 20; // 打字速度
+
+            function type() {
+                if (i < text.length) {
+                    const char = text.charAt(i);
+                    
+                    // 處理換行，使用 DOM 操作比 innerHTML += 更穩定
+                    if (char === '\n') {
+                        element.appendChild(document.createElement('br'));
+                    } else {
+                        // 如果最後一個子節點是文字節點，則追加文字；否則建立新的文字節點
+                        if (element.lastChild && element.lastChild.nodeType === Node.TEXT_NODE) {
+                            element.lastChild.nodeValue += char;
+                        } else {
+                            element.appendChild(document.createTextNode(char));
+                        }
+                    }
+                    i++;
+                    
+                    // 自動捲動到底部
+                    const container = document.getElementById('chatMessages');
+                    if(container) container.scrollTop = container.scrollHeight;
+                    
+                    setTimeout(type, speed);
+                } else {
+                    element.classList.remove('cursor');
+                }
+            }
+            type();
+        }
+
+        // --- Other Functions ---
+
+        window.editOrder = function(id) {
+            const order = submittedOrders.find(o => o.id === id);
+            if(!order) return;
+
+            if (Object.keys(tempCart).length > 0) {
+                showConfirmModal(
+                    '覆蓋購物車？', 
+                    '購物車內已有商品，確定要覆蓋並修改此訂單嗎？\n(目前的選擇將被清空)', 
+                    () => executeEdit(order, id),
+                    '確定覆蓋'
+                );
+            } else {
+                executeEdit(order, id);
+            }
+        }
+
+        async function executeEdit(order, id) {
+             // Restore name
+            document.getElementById('userName').value = order.name;
+
+            // Restore cart
+            tempCart = {};
+            order.items.forEach(item => {
+                tempCart[item.name] = {
+                    price: item.price,
+                    count: item.count
+                };
+            });
+
+            // Delete old order from Firestore
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id.toString()));
+                updateTempCartUI();
+                renderMenu();
+                showToast('已載入訂單進行修改', 'info');
+            } catch (e) {
+                console.error("Error deleting for edit: ", e);
+                showToast("載入失敗", "error");
+            }
+        }
+
+        window.confirmClearAll = function() {
+            showConfirmModal(
+                '重置所有資料', 
+                '警告：這將會清空「所有」人的訂單資料。\n\n確定要結束今天訂購並重置嗎？', 
+                () => clearAllOrders(), 
+                '全部重置', 
+                true // 紅框警告
             );
         }
 
-        function copyAllOrders() {
-            if (orderHistory.length === 0) {
-                showToast('沒有訂單可以複製', true);
+        window.deleteOrder = async function(id) {
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id.toString()));
+                showToast('已刪除訂單', 'success');
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showToast("刪除失敗", "error");
+            }
+        }
+
+        window.clearAllOrders = async function() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'orders'));
+                const deletePromises = [];
+                querySnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                
+                tempCart = {};
+                const nameInput = document.getElementById('userName');
+                if(nameInput) nameInput.value = '';
+
+                renderMenu();
+                updateTempCartUI();
+                showToast('已重置所有資料');
+            } catch (e) {
+                console.error("Error clearing all: ", e);
+                showToast("重置失敗", "error");
+            }
+        }
+
+        window.copyAllOrders = function() {
+            if (submittedOrders.length === 0) {
+                showToast("目前沒有任何訂單可複製", 'error');
                 return;
             }
 
-            const date = document.getElementById('displayDate').innerText;
-            let allOrdersText = `【${date} 立利餐坊訂單匯總】\n`;
-            allOrdersText += `========================\n`;
+            let text = `【偶鵝嚐嚐 - 碧華國中教務處午餐團】\n`;
+            text += `日期: ${document.getElementById('currentDate').innerText}\n`;
+            text += `----------------------\n`;
 
-            let grandTotal = 0;
-
-            orderHistory.forEach((order, index) => {
-                allOrdersText += `${order.name} ($${order.total})\n`;
-                order.items.forEach(item => {
-                    const sauceStr = item.sauce ? `[${item.sauce}]` : '';
-                    const spicyStr = item.spiciness !== '不辣' ? `(${item.spiciness})` : '';
-                    const addonStr = item.addons.length > 0 ? ` +${item.addons.map(a=>a.name).join('+')}` : '';
-                    allOrdersText += `  - ${item.name} ${sauceStr}${spicyStr}${addonStr} x${item.count}\n`;
-                });
-                allOrdersText += `------------------------\n`;
-                grandTotal += order.total;
+            submittedOrders.forEach((order, index) => {
+                let itemsStr = order.items.map(i => `${i.name}x${i.count}`).join(', ');
+                text += `${index + 1}. ${order.name}: ${itemsStr} ($${order.total})\n`;
             });
 
-            allOrdersText += `\n總計金額：$${grandTotal}`;
+            const grandTotal = document.getElementById('grandTotal').innerText;
+            text += `----------------------\n`;
+            text += `總金額: $${grandTotal}\n`;
+            text += `統計時間: ${new Date().toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'})}\n`;
+            text += `By Arthur WU`;
 
-            copyTextToClipboard(allOrdersText);
-        }
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
 
-        function copyTextToClipboard(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            
             try {
-                document.execCommand('copy');
-                showToast('📋 訂單文字已複製！');
+                const successful = document.execCommand('copy');
+                if(successful) {
+                    showToast("✅ 訂單內容已複製到剪貼簿！");
+                } else {
+                    throw new Error("Copy failed");
+                }
             } catch (err) {
-                console.error('複製失敗:', err);
-                showToast('複製失敗，請手動選取複製', true);
-            } finally {
-                document.body.removeChild(textarea);
+                console.error('Fallback copy failed', err);
+                showToast("複製失敗，請手動選取複製", 'error');
             }
+
+            document.body.removeChild(textArea);
         }
 
+        window.exportToExcel = function() {
+            if (submittedOrders.length === 0) {
+                showToast("目前沒有訂單可匯出", 'error');
+                return;
+            }
+
+            let csvContent = "\uFEFF"; 
+            csvContent += "訂購人,餐點內容,總金額,訂購時間\n";
+
+            submittedOrders.forEach(order => {
+                let itemsStr = order.items.map(i => `${i.name} x${i.count}`).join('; ');
+                csvContent += `"${order.name}","${itemsStr}",${order.total},"${order.time}"\n`;
+            });
+
+            const grandTotal = document.getElementById('grandTotal').innerText;
+            csvContent += `,,總計: $${grandTotal},\n`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            
+            const today = document.getElementById('currentDate').innerText.replace(/\//g, '-');
+            link.setAttribute("href", url);
+            link.setAttribute("download", `偶鵝嚐嚐_訂單_${today}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("已下載 CSV 檔案！");
+        }
     </script>
 </body>
 </html>
