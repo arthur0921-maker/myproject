@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>偶鵝嚐嚐 - 碧華國中教務處午餐團 V2 (AI 助手版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f7f3e8; /* 米色背景 */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .watermark {
+            font-size: 0.8rem;
+            color: #a89b97;
+            text-align: center;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4a373; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #bc8a5f; 
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Toast 動畫 */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .toast-enter {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        .toast-exit {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+
+        /* Modal 動畫 */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        
+        /* Chat Animations */
+        .chat-enter {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+        .chat-enter-active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        /* Blinking Cursor for Typewriter */
+        .cursor::after {
+            content: '▋';
+            display: inline-block;
+            margin-left: 2px;
+            color: #4f46e5;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-gray-800 relative">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md z-20 shrink-0 border-t-4 border-orange-500">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <div class="text-center md:text-left flex-1">
+                    <!-- 標題 -->
+                    <div class="flex flex-wrap items-center gap-3 justify-center md:justify-start mb-2">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-wide flex items-center gap-2">
+                            <span>🦢 偶鵝嚐嚐</span>
+                            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-lg border border-orange-200">碧華國中團</span>
+                        </h1>
+                        <!-- 連線狀態指示燈 -->
+                        <span id="connectionStatus" class="hidden text-[10px] text-green-700 bg-green-100 px-2 py-0.5 rounded-full border border-green-200 flex items-center gap-1 animate-pulse">
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span> 雲端已連線
+                        </span>
+                        <span id="offlineStatus" class="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
+                            <span>⏳</span> 連線中...
+                        </span>
+                    </div>
+                    
+                    <!-- 放大顯示的時間與日期區塊 -->
+                    <div class="flex flex-col md:flex-row items-center md:items-end gap-3 justify-center md:justify-start">
+                        <!-- 時間顯示 (加大) -->
+                        <div id="clockDisplay" class="text-3xl font-mono font-bold text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border-2 border-gray-200 shadow-sm transition-colors duration-300 flex items-center gap-2">
+                            00:00:00
+                        </div>
+
+                        <!-- 日期與地點資訊 -->
+                        <div class="flex flex-col items-center md:items-start gap-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-bold text-gray-700">📅 <span id="currentDate"></span></span>
+                                <span class="text-sm bg-gray-200 text-gray-600 px-2 py-0.5 rounded">每日 10:00 截止</span>
+                            </div>
+                            <p class="text-xs text-gray-500">📍 碧華國中教務處午餐團</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 w-full md:w-auto justify-center mt-2 md:mt-0 flex-wrap">
+                    <!-- 匯出 Excel 按鈕 -->
+                    <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-all text-sm flex items-center gap-1 active:scale-95">
+                        <span>📊</span> 匯出 Excel
+                    </button>
+                    <!-- 複製按鈕 -->
+                    <button onclick="copyAllOrders()" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-all text-sm flex items-center gap-1 active:scale-95">
+                        <span>📋</span> 複製文字
+                    </button>
+                    <!-- 重置按鈕 -->
+                    <button onclick="confirmClearAll()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm flex items-center gap-1 active:scale-95">
+                        <span>🗑️</span> 重置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- 左側：菜單區 -->
+        <section class="w-full md:w-2/3 flex flex-col border-r border-gray-200 bg-[#fbfbfb] h-full relative">
+            
+            <!-- 輸入名字區 -->
+            <div class="p-3 bg-white border-b border-orange-100 shrink-0 shadow-sm z-10">
+                <div class="flex gap-2 items-end max-w-2xl mx-auto md:mx-0">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">誰要點餐？</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">👤</span>
+                            <input type="text" id="userName" placeholder="請輸入姓名 / 處室" class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:outline-none transition-all">
+                        </div>
+                    </div>
+                    <button onclick="submitOrder()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-md whitespace-nowrap h-[42px] flex items-center gap-2 transition-transform active:scale-95">
+                        <span>送出</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 分類標籤 -->
+            <div class="flex overflow-x-auto gap-2 p-2 bg-white border-b border-gray-200 shrink-0 no-scrollbar shadow-[0_2px_5px_rgba(0,0,0,0.02)] z-10 items-center" id="categoryTabs">
+                <!-- Javascript will inject tabs -->
+            </div>
+
+            <!-- 菜單網格 -->
+            <div id="menuContainer" class="flex-1 overflow-y-auto p-4 bg-[#f7f3e8]">
+                
+                <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 pb-20">
+                    <!-- Javascript will inject menu items -->
+                </div>
+            </div>
+            
+            <!-- 底部浮動：目前選擇 -->
+            <div id="currentSelectionBar" class="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] bg-gray-800 text-white p-3 rounded-full shadow-2xl flex justify-between items-center z-20 hidden transform transition-all duration-300 hover:scale-105 cursor-pointer" onclick="submitOrder()">
+                <div class="flex items-center gap-2 px-2">
+                    <div class="bg-orange-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold" id="currentCount">0</div>
+                    <span class="text-sm">準備下單...</span>
+                </div>
+                <div class="flex items-center gap-2 px-2 border-l border-gray-600 pl-3">
+                    <span class="text-xs text-gray-400">小計</span>
+                    <span class="font-bold text-lg text-orange-400">$<span id="currentTotal">0</span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側：訂單清單區 -->
+        <section class="w-full md:w-1/3 bg-white flex flex-col h-full border-t md:border-t-0 md:border-l border-gray-200 shadow-xl z-30">
+            <div class="p-3 bg-gray-100 font-bold text-gray-700 flex justify-between items-center shrink-0 border-b border-gray-200">
+                <span class="flex items-center gap-2">📋 今日訂單清單</span>
+                <span class="text-xs bg-gray-700 text-white px-2 py-1 rounded-full" id="totalOrdersCount">0筆</span>
+            </div>
+            
+            <div id="ordersList" class="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
+                <div class="text-center text-gray-400 mt-20 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
+                    <p>目前還沒有人點餐</p>
+                    <p class="text-xs mt-2">碧華國中教務處午餐團開跑囉！</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div class="flex justify-between items-center text-xl font-bold">
+                    <span class="text-gray-600 text-base">本日總金額</span>
+                    <span class="text-red-600 font-mono text-2xl">$<span id="grandTotal">0</span></span>
+                </div>
+                <div class="text-xs text-right text-gray-400 mt-1 watermark">Designed by Arthur WU</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- AI Chat Button -->
+    <button onclick="toggleAiChat()" class="fixed bottom-20 right-6 z-40 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-3 rounded-full shadow-2xl hover:scale-105 transition-transform duration-200 group flex items-center gap-2 border-2 border-white">
+        <span class="text-xl group-hover:rotate-12 transition-transform">✨</span>
+        <span class="font-bold text-sm">點餐AI小幫手</span>
+    </button>
+
+    <!-- AI Chat Window -->
+    <div id="aiChatWindow" class="fixed bottom-36 right-6 z-50 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 hidden flex flex-col overflow-hidden chat-enter h-[500px]">
+        <!-- Chat Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-2 text-white">
+                <span class="text-xl">🤖</span>
+                <div>
+                    <h3 class="font-bold text-sm">AI 點餐助手</h3>
+                    <p class="text-[10px] text-indigo-100 opacity-80">熟讀菜單的美食家</p>
+                </div>
+            </div>
+            <button onclick="toggleAiChat()" class="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            <!-- Welcome Message -->
+            <div class="flex gap-2 items-start">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-sm border border-indigo-200">🤖</div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm text-sm text-gray-700">
+                    嗨！我是你的點餐助手 👋<br>
+                    不管你想找「便宜好吃的」、「適合多人分享的」或是「重口味的」，都可以直接問我喔！
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="p-3 bg-white border-t border-gray-100 shrink-0">
+            <div class="flex gap-2">
+                <input type="text" id="chatInput" placeholder="輸入你的需求..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" onkeypress="if(event.key === 'Enter') sendAiMessage()">
+                <button onclick="sendAiMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-sm transition-colors active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal Overlay -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-200 modal-overlay-enter">
+        <div id="modalContent" class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-200 modal-enter flex flex-col max-h-[90vh]">
+            <h3 id="modalTitle" class="text-lg font-bold text-gray-800 mb-2 shrink-0">提示</h3>
+            <div id="modalBody" class="overflow-y-auto mb-4 flex-1">
+                <p id="modalMessage" class="text-gray-600 leading-relaxed">內容...</p>
+                <textarea id="modalTextarea" class="w-full h-40 border border-gray-300 rounded-lg p-2 text-sm hidden focus:ring-2 focus:ring-indigo-400 focus:outline-none bg-gray-50" readonly></textarea>
+            </div>
+            <div class="flex justify-end gap-3 shrink-0" id="modalButtons">
+                <!-- Buttons injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-20 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script type="module">
+        // 使用穩定的 11.6.1 版本以確保相容性
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCi4D6TUHM88K6_gbKlU2RW7ECKfSqR2zk",
+            authDomain: "myorder-o2.firebaseapp.com",
+            projectId: "myorder-o2",
+            storageBucket: "myorder-o2.firebasestorage.app",
+            messagingSenderId: "1018780108356",
+            appId: "1:1018780108356:web:9792d9f2bcbcc0d8209e11",
+            measurementId: "G-9Y8QM1TBVW"
+        };
+
+        // Initialize Firebase
+        let app, analytics, auth, db;
+        let isOnline = false;
+        // 用於 Firestore 路徑的識別碼 (避免與 firebaseConfig.appId 混淆)
+        const firestorePathId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        try {
+            app = initializeApp(firebaseConfig);
+            analytics = getAnalytics(app);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            isOnline = true;
+            initAuth();
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            showToast("初始化錯誤，請檢查 Firebase 設定", "error");
+        }
+
+        // 模擬 Gemini API Key (若您有自己的 Key 可在此填入，否則保留空字串由環境變數注入)
+        const apiKey = ""; 
+
+        async function initAuth() {
+            if (!isOnline) return;
+            try {
+                // 直接嘗試匿名登入
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth Error:", error);
+                showToast("登入失敗，無法同步資料", "error");
+            }
+        }
+
+        // --- 1. Data Structure (資料結構) ---
+        const menuData = [
+            {
+                category: "便當系列",
+                icon: "🍱",
+                items: [
+                    { name: "招牌無骨鵝肉飯便當", price: 110, tag: "人氣" },
+                    { name: "蔗香煙燻鵝肉飯便當", price: 110 },
+                    { name: "鮮嫩鹹水鵝肉飯便當", price: 110 },
+                    { name: "鵝肉壽喜燒便當", price: 110 },
+                    { name: "無骨蔗香鵝肉飯便當", price: 120 },
+                    { name: "鮮嫩無骨鹹水鵝肉飯便當", price: 120, tag: "推" },
+                    { name: "台式打拋鵝肉便當", price: 130 },
+                    { name: "蔥醬鵝腿便當", price: 150, tag: "限量" }
+                ]
+            },
+            {
+                category: "偶鵝肉盤",
+                icon: "🦢",
+                items: [
+                    { name: "招牌糖燻鵝肉(1~2人)", price: 200 },
+                    { name: "招牌糖燻鵝肉(3~4人)", price: 350 },
+                    { name: "招牌嫩鹹水鵝(1~2人)", price: 200 },
+                    { name: "招牌嫩鹹水鵝(3~4人)", price: 350 }
+                ]
+            },
+            {
+                category: "人氣主食",
+                icon: "🍜",
+                items: [
+                    { name: "香蔥鵝油乾拌麵線", price: 40 },
+                    { name: "偶鵝嚐嚐(招牌飯)", price: 65, tag: "招牌" },
+                    { name: "特上鵝肉飯", price: 65 },
+                    { name: "鵝肉乾麵", price: 80 },
+                    { name: "鵝肉湯麵", price: 80 },
+                    { name: "香蔥鵝油飯", price: 20 },
+                    { name: "古早味瓜仔鵝燥飯", price: 35 },
+                    { name: "乾麵", price: 40 },
+                    { name: "湯麵", price: 40 },
+                    { name: "乾冬粉", price: 40 },
+                    { name: "湯冬粉", price: 40 },
+                    { name: "鵝肉乾冬粉", price: 80 },
+                    { name: "鵝肉湯冬粉", price: 80 },
+                    { name: "白飯", price: 15 }
+                ]
+            },
+            {
+                category: "美味小菜",
+                icon: "🥦",
+                items: [
+                    { name: "招牌化骨鵝掌(5支)", price: 70 },
+                    { name: "綜合下水", price: 100 },
+                    { name: "米血糕", price: 50 },
+                    { name: "限量炸鵝蛋", price: 50, tag: "獨家" },
+                    { name: "鵝腳(隻)", price: 20 },
+                    { name: "鵝屁股(個)", price: 10 },
+                    { name: "鵝翅(隻)", price: 40 },
+                    { name: "鵝腱", price: 60 },
+                    { name: "鵝頭(1隻)", price: 60 },
+                    { name: "鵝頭(2隻)", price: 100 },
+                    { name: "鵝心+肝", price: 50 },
+                    { name: "酸菜鵝腸", price: 80 },
+                    { name: "韭菜鵝腸", price: 80 },
+                    { name: "鵝肉香腸", price: 60 },
+                    { name: "桂竹筍", price: 50 },
+                    { name: "燙青菜/時蔬", price: 50 },
+                    { name: "麻辣鴨血", price: 50 },
+                    { name: "麻辣豆腐", price: 50 },
+                    { name: "綜合麻辣", price: 70 },
+                    { name: "鵝油黃金荷包蛋", price: 20 }
+                ]
+            },
+            {
+                category: "鮮美湯品",
+                icon: "🥣",
+                items: [
+                    { name: "鵝肉湯", price: 70 },
+                    { name: "下水湯", price: 60 },
+                    { name: "酸菜鵝腸湯", price: 60 },
+                    { name: "鵝丸湯", price: 50 }
+                ]
+            }
+        ];
+
+        let currentCategory = "便當系列";
+        let tempCart = {}; 
+        let submittedOrders = []; 
+        let currentUser = null;
+
+        // --- 2. Realtime Listener ---
+        if (isOnline) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    // 更新 UI 狀態
+                    document.getElementById('connectionStatus').classList.remove('hidden');
+                    document.getElementById('connectionStatus').classList.add('flex');
+                    document.getElementById('offlineStatus').classList.add('hidden');
+
+                    // 啟動監聽 (使用您的專案路徑)
+                    const q = collection(db, 'artifacts', firestorePathId, 'public', 'data', 'orders');
+                    onSnapshot(q, (snapshot) => {
+                        submittedOrders = [];
+                        snapshot.forEach((doc) => {
+                            submittedOrders.push(doc.data());
+                        });
+                        submittedOrders.sort((a, b) => a.id - b.id);
+                        renderSubmittedOrders();
+                    }, (error) => {
+                        console.error("Sync Error:", error);
+                        // 如果是權限錯誤，提示使用者
+                        if (error.code === 'permission-denied') {
+                            showToast("權限不足，請檢查 Firestore 規則", "error");
+                        } else {
+                            showToast("同步發生錯誤", "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        // --- UI Setup ---
+        window.onload = () => {
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            const today = new Date();
+            document.getElementById('currentDate').innerText = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+            
+            renderCategoryTabs();
+            renderMenu();
+        };
+
+        // --- 3. UI Helpers (Toast & Modal) ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'error' ? 'bg-red-500' : 
+                            type === 'info' ? 'bg-blue-600' : 'bg-gray-800';
+            const icon = type === 'error' ? '⚠️' : 
+                         type === 'info' ? 'ℹ️' : '✅';
+            
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 toast-enter pointer-events-auto`;
+            toast.innerHTML = `<span>${icon}</span><span class="font-bold text-sm">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Modal 函數
+        window.showConfirmModal = function(title, message, confirmCallback, confirmText = "確定", isDestructive = false, showTextArea = false, textAreaValue = "") {
+            const overlay = document.getElementById('modalOverlay');
+            const content = document.getElementById('modalContent');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const btnContainer = document.getElementById('modalButtons');
+            const textAreaEl = document.getElementById('modalTextarea');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            
+            // Text Area Logic
+            if (showTextArea) {
+                textAreaEl.classList.remove('hidden');
+                textAreaEl.value = textAreaValue;
+                msgEl.classList.add('mb-2');
+                msgEl.classList.remove('mb-6');
+            } else {
+                textAreaEl.classList.add('hidden');
+                msgEl.classList.add('mb-6');
+                msgEl.classList.remove('mb-2');
+            }
+
+            const confirmBtnClass = isDestructive 
+                ? 'bg-red-500 hover:bg-red-600 text-white' 
+                : 'bg-orange-500 hover:bg-orange-600 text-white';
+            
+            const confirmBtnHtml = confirmText ? `<button id="modalConfirm" class="px-4 py-2 ${confirmBtnClass} rounded-lg font-bold shadow-md transition-colors">${confirmText}</button>` : '';
+
+            if (isDestructive) {
+                content.classList.add('border-2', 'border-red-500');
+            } else {
+                content.classList.remove('border-2', 'border-red-500');
+            }
+
+            btnContainer.innerHTML = `
+                <button id="modalCancel" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition-colors">關閉</button>
+                ${confirmBtnHtml}
+            `;
+
+            const cleanup = () => {
+                document.removeEventListener('keydown', handleEsc);
+                overlay.onclick = null;
+            };
+
+            const close = () => {
+                cleanup();
+                overlay.classList.remove('opacity-100');
+                content.classList.remove('scale-100');
+                setTimeout(() => overlay.classList.add('hidden'), 200);
+            };
+
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') close();
+            };
+
+            overlay.onclick = (e) => {
+                if (e.target === overlay) close();
+            };
+
+            document.addEventListener('keydown', handleEsc);
+
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.add('opacity-100');
+                content.classList.add('scale-100');
+            }, 10);
+
+            document.getElementById('modalCancel').onclick = close;
+            if (confirmText) {
+                document.getElementById('modalConfirm').onclick = () => {
+                    confirmCallback();
+                    close();
+                };
+            }
+        }
+
+        // --- 4. Time & Clock ---
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            const clockEl = document.getElementById('clockDisplay');
+            
+            if (now.getHours() >= 10) {
+                clockEl.classList.remove('text-gray-700', 'bg-gray-50', 'border-gray-200');
+                clockEl.classList.add('text-red-600', 'bg-red-50', 'border-red-400', 'animate-pulse');
+                clockEl.innerHTML = `<span>${timeString}</span><span class="text-sm md:text-base font-bold ml-2">⚠️ 已超過訂餐時間</span>`;
+            } else {
+                clockEl.classList.add('text-gray-700', 'bg-gray-50', 'border-gray-200');
+                clockEl.classList.remove('text-red-600', 'bg-red-50', 'border-red-400', 'animate-pulse');
+                clockEl.innerText = timeString;
+            }
+        }
+
+        // --- 5. Render Functions ---
+        function renderCategoryTabs() {
+            const container = document.getElementById('categoryTabs');
+            container.innerHTML = menuData.map(cat => `
+                <button onclick="window.switchCategory('${cat.category}')" 
+                    class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${cat.category === currentCategory 
+                    ? 'bg-gray-800 text-white shadow-md transform scale-105' 
+                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'}">
+                    <span>${cat.icon}</span> ${cat.category}
+                </button>
+            `).join('');
+        }
+
+        window.switchCategory = function(cat) {
+            currentCategory = cat;
+            renderCategoryTabs();
+            renderMenu();
+        }
+
+        function renderMenu() {
+            const container = document.getElementById('menuGrid');
+            const categoryData = menuData.find(c => c.category === currentCategory);
+            
+            container.innerHTML = categoryData.items.map(item => {
+                const count = tempCart[item.name] ? tempCart[item.name].count : 0;
+                const activeClass = count > 0 ? "border-orange-400 ring-1 ring-orange-400 shadow-md bg-orange-50" : "border-gray-100 shadow-sm hover:shadow-md bg-white";
+                
+                let tagHtml = '';
+                if(item.tag) {
+                    tagHtml = `<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg rounded-tr-lg font-bold shadow-sm">${item.tag}</span>`;
+                }
+
+                return `
+                <div class="relative p-4 rounded-xl border flex flex-col justify-between h-full transition-all duration-200 ${activeClass}">
+                    ${tagHtml}
+                    <div class="mb-3">
+                        <h3 class="font-bold text-gray-800 text-lg leading-tight pr-4">${item.name}</h3>
+                        <p class="text-orange-600 font-bold mt-1 text-lg">$${item.price}</p>
+                    </div>
+                    <div class="flex items-center justify-end rounded-lg p-1">
+                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, -1)" 
+                            class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-md text-gray-600 font-bold hover:bg-red-50 hover:text-red-500 active:scale-95 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors" 
+                            ${count === 0 ? 'disabled' : ''}>-</button>
+                        <span class="w-10 text-center font-bold text-gray-800 text-lg">${count}</span>
+                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, 1)" 
+                            class="w-8 h-8 flex items-center justify-center bg-orange-500 border border-orange-500 rounded-md text-white font-bold hover:bg-orange-600 active:scale-95 shadow-sm transition-colors">+</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function renderSubmittedOrders() {
+            const container = document.getElementById('ordersList');
+            const countBadge = document.getElementById('totalOrdersCount');
+            const grandTotalEl = document.getElementById('grandTotal');
+
+            if (submittedOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 mt-20 flex flex-col items-center animate-pulse">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
+                        <p>目前還沒有人點餐</p>
+                        <p class="text-xs mt-2">碧華國中教務處午餐團開跑囉！</p>
+                    </div>`;
+                countBadge.innerText = "0筆";
+                grandTotalEl.innerText = "0";
+                return;
+            }
+
+            let totalMoney = 0;
+            const sortedOrders = [...submittedOrders].reverse();
+
+            container.innerHTML = sortedOrders.map(order => {
+                totalMoney += order.total;
+                const itemsHtml = order.items.map(i => 
+                    `<div class="flex justify-between text-sm text-gray-600 pl-2 border-l-2 border-gray-200">
+                        <span>${i.name} <span class="text-gray-400">x${i.count}</span></span>
+                        <span class="font-mono">$${i.price * i.count}</span>
+                    </div>`
+                ).join('');
+
+                return `
+                <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm relative group hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2 border-b border-dashed border-gray-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs border border-orange-200">
+                                ${order.name.charAt(0)}
+                            </div>
+                            <div>
+                                <span class="font-bold text-gray-800 block leading-none">${order.name}</span>
+                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded">${order.time}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-1">
+                            <!-- 修改按鈕 -->
+                            <button onclick="window.editOrder(${order.id})" class="text-gray-400 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50" title="修改訂單">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <!-- 刪除按鈕 -->
+                            <button onclick="window.deleteOrder(${order.id})" class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50" title="刪除此單">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-1 mb-2">
+                        ${itemsHtml}
+                    </div>
+                    <div class="text-right font-bold text-orange-600 text-sm bg-orange-50 p-1 rounded">
+                        總計: $${order.total}
+                    </div>
+                </div>
+            `}).join('');
+
+            countBadge.innerText = `${submittedOrders.length}筆`;
+            grandTotalEl.innerText = totalMoney;
+        }
+
+        // --- 6. Logic Functions ---
+        window.adjustTempCart = function(name, price, change) {
+            if (!tempCart[name]) {
+                tempCart[name] = { price: price, count: 0 };
+            }
+            tempCart[name].count += change;
+            
+            if (tempCart[name].count <= 0) {
+                delete tempCart[name];
+            }
+
+            updateTempCartUI();
+            renderMenu();
+        }
+
+        function updateTempCartUI() {
+            const bar = document.getElementById('currentSelectionBar');
+            let totalCount = 0;
+            let totalPrice = 0;
+
+            for (let key in tempCart) {
+                totalCount += tempCart[key].count;
+                totalPrice += tempCart[key].count * tempCart[key].price;
+            }
+
+            if (totalCount > 0) {
+                bar.classList.remove('hidden');
+                bar.classList.add('flex');
+                document.getElementById('currentCount').innerText = totalCount;
+                document.getElementById('currentTotal').innerText = totalPrice;
+            } else {
+                bar.classList.add('hidden');
+                bar.classList.remove('flex');
+            }
+        }
+
+        window.submitOrder = async function() {
+            if (!isOnline || !currentUser) {
+                showToast("雲端連線中或已離線，請稍後", "error");
+                return;
+            }
+
+            const nameInput = document.getElementById('userName');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showToast('請輸入訂購人姓名！', 'error');
+                nameInput.focus();
+                nameInput.classList.add('ring-2', 'ring-red-400', 'border-red-400');
+                setTimeout(() => nameInput.classList.remove('ring-2', 'ring-red-400', 'border-red-400'), 2000);
+                return;
+            }
+
+            if (Object.keys(tempCart).length === 0) {
+                showToast('請先選擇餐點！', 'error');
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            let orderItems = [];
+            let orderTotal = 0;
+
+            for (let key in tempCart) {
+                orderItems.push({
+                    name: key,
+                    price: tempCart[key].price,
+                    count: tempCart[key].count
+                });
+                orderTotal += (tempCart[key].price * tempCart[key].count);
+            }
+
+            const orderId = Date.now();
+            const newOrder = {
+                id: orderId,
+                name: name,
+                items: orderItems,
+                total: orderTotal,
+                time: timeStr
+            };
+
+            try {
+                // 寫入 Firestore
+                await setDoc(doc(db, 'artifacts', firestorePathId, 'public', 'data', 'orders', orderId.toString()), newOrder);
+                
+                tempCart = {};
+                nameInput.value = ''; 
+                updateTempCartUI();
+                renderMenu(); 
+                showToast('訂單已送出並同步！');
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showToast("送出失敗，請檢查網路", "error");
+            }
+        }
+
+        // --- NEW: AI Chat Assistant Functions ---
+
+        window.toggleAiChat = function() {
+            const chat = document.getElementById('aiChatWindow');
+            if (chat.classList.contains('hidden')) {
+                chat.classList.remove('hidden');
+                // Add entry animation class
+                chat.classList.remove('chat-enter-active');
+                void chat.offsetWidth; // trigger reflow
+                chat.classList.add('chat-enter-active');
+                document.getElementById('chatInput').focus();
+            } else {
+                chat.classList.add('hidden');
+            }
+        }
+
+        async function callGeminiAPI(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                throw error;
+            }
+        }
+
+        window.sendAiMessage = async function() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // 1. Display User Message
+            addChatMessage(message, 'user');
+            input.value = '';
+
+            // 2. Show Thinking Indicator
+            const thinkingId = addChatMessage('思考中...', 'ai', true);
+
+            // 3. Construct Prompt with Menu Context
+            // Simplify menu data for token efficiency
+            const simpleMenu = menuData.map(cat => {
+                return `${cat.category}: ` + cat.items.map(i => `${i.name}($${i.price})`).join(', ');
+            }).join('\n');
+
+            const prompt = `你是一個活潑的午餐訂餐助手。這是完整的菜單資料：\n${simpleMenu}\n\n使用者的問題是：${message}\n\n請根據菜單回答使用者的問題。如果是推薦餐點，請務必提及價格。\n\n**重要排版要求**：\n1. 請務必善用 Emoji (如 🍱, ✨, 💰, 🔥) 來裝飾，增加視覺活潑感。\n2. 請使用「條列式」清單來呈現推薦餐點，每項餐點換一行。\n3. 請適當「換行」分段，讓文字不要擠在一起，閱讀起來更舒適。\n\n回答請用繁體中文，語氣親切幽默。不要使用 Markdown 語法(如 **粗體**)，直接用純文字排版即可。`;
+
+            try {
+                const responseText = await callGeminiAPI(prompt);
+                
+                // Remove thinking indicator
+                const thinkingEl = document.getElementById(thinkingId);
+                if(thinkingEl) thinkingEl.remove();
+
+                // 4. Display AI Response with Typewriter Effect
+                addChatMessage(responseText, 'ai');
+
+            } catch (error) {
+                const thinkingEl = document.getElementById(thinkingId);
+                if(thinkingEl) thinkingEl.innerText = "抱歉，AI 連線有點問題 😣";
+            }
+        }
+
+        function addChatMessage(text, sender, isThinking = false) {
+            const container = document.getElementById('chatMessages');
+            const id = 'msg-' + Date.now();
+            
+            const isUser = sender === 'user';
+            const alignClass = isUser ? 'justify-end' : 'justify-start';
+            const bgClass = isUser ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-gray-700 border border-gray-100 rounded-tl-none shadow-sm';
+            const icon = isUser ? '👤' : '🤖';
+            const iconBg = isUser ? 'bg-indigo-200' : 'bg-indigo-100';
+
+            let html = `
+                <div class="flex gap-2 items-start ${alignClass}" id="${id}-container">
+                    ${!isUser ? `<div class="w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0 text-sm border border-indigo-200">${icon}</div>` : ''}
+                    <div id="${id}" class="${bgClass} p-3 rounded-2xl text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${isThinking ? 'animate-pulse text-gray-400 italic' : ''}">
+                        ${isUser || isThinking ? text : ''} 
+                    </div>
+                    ${isUser ? `<div class="w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0 text-sm border border-indigo-200">${icon}</div>` : ''}
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', html);
+            container.scrollTop = container.scrollHeight;
+
+            if (!isUser && !isThinking) {
+                typewriterEffect(document.getElementById(id), text);
+            }
+
+            return id;
+        }
+
+        function typewriterEffect(element, text) {
+            element.classList.add('cursor');
+            element.innerHTML = ''; // 清空內容準備打字
+            let i = 0;
+            const speed = 20; // 打字速度
+
+            function type() {
+                if (i < text.length) {
+                    const char = text.charAt(i);
+                    
+                    // 處理換行，使用 DOM 操作比 innerHTML += 更穩定
+                    if (char === '\n') {
+                        element.appendChild(document.createElement('br'));
+                    } else {
+                        // 如果最後一個子節點是文字節點，則追加文字；否則建立新的文字節點
+                        if (element.lastChild && element.lastChild.nodeType === Node.TEXT_NODE) {
+                            element.lastChild.nodeValue += char;
+                        } else {
+                            element.appendChild(document.createTextNode(char));
+                        }
+                    }
+                    i++;
+                    
+                    // 自動捲動到底部
+                    const container = document.getElementById('chatMessages');
+                    if(container) container.scrollTop = container.scrollHeight;
+                    
+                    setTimeout(type, speed);
+                } else {
+                    element.classList.remove('cursor');
+                }
+            }
+            type();
+        }
+
+        // --- Other Functions ---
+
+        window.editOrder = function(id) {
+            const order = submittedOrders.find(o => o.id === id);
+            if(!order) return;
+
+            if (Object.keys(tempCart).length > 0) {
+                showConfirmModal(
+                    '覆蓋購物車？', 
+                    '購物車內已有商品，確定要覆蓋並修改此訂單嗎？\n(目前的選擇將被清空)', 
+                    () => executeEdit(order, id),
+                    '確定覆蓋'
+                );
+            } else {
+                executeEdit(order, id);
+            }
+        }
+
+        async function executeEdit(order, id) {
+             // Restore name
+            document.getElementById('userName').value = order.name;
+
+            // Restore cart
+            tempCart = {};
+            order.items.forEach(item => {
+                tempCart[item.name] = {
+                    price: item.price,
+                    count: item.count
+                };
+            });
+
+            // Delete old order from Firestore
+            try {
+                await deleteDoc(doc(db, 'artifacts', firestorePathId, 'public', 'data', 'orders', id.toString()));
+                updateTempCartUI();
+                renderMenu();
+                showToast('已載入訂單進行修改', 'info');
+            } catch (e) {
+                console.error("Error deleting for edit: ", e);
+                showToast("載入失敗", "error");
+            }
+        }
+
+        window.confirmClearAll = function() {
+            showConfirmModal(
+                '重置所有資料', 
+                '警告：這將會清空「所有」人的訂單資料。\n\n確定要結束今天訂購並重置嗎？', 
+                () => clearAllOrders(), 
+                '全部重置', 
+                true // 紅框警告
+            );
+        }
+
+        window.deleteOrder = async function(id) {
+            try {
+                await deleteDoc(doc(db, 'artifacts', firestorePathId, 'public', 'data', 'orders', id.toString()));
+                showToast('已刪除訂單', 'success');
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showToast("刪除失敗", "error");
+            }
+        }
+
+        window.clearAllOrders = async function() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'artifacts', firestorePathId, 'public', 'data', 'orders'));
+                const deletePromises = [];
+                querySnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                
+                tempCart = {};
+                const nameInput = document.getElementById('userName');
+                if(nameInput) nameInput.value = '';
+
+                renderMenu();
+                updateTempCartUI();
+                showToast('已重置所有資料');
+            } catch (e) {
+                console.error("Error clearing all: ", e);
+                showToast("重置失敗", "error");
+            }
+        }
+
+        window.copyAllOrders = function() {
+            if (submittedOrders.length === 0) {
+                showToast("目前沒有任何訂單可複製", 'error');
+                return;
+            }
+
+            let text = `【偶鵝嚐嚐 - 碧華國中教務處午餐團】\n`;
+            text += `日期: ${document.getElementById('currentDate').innerText}\n`;
+            text += `----------------------\n`;
+
+            submittedOrders.forEach((order, index) => {
+                let itemsStr = order.items.map(i => `${i.name}x${i.count}`).join(', ');
+                text += `${index + 1}. ${order.name}: ${itemsStr} ($${order.total})\n`;
+            });
+
+            const grandTotal = document.getElementById('grandTotal').innerText;
+            text += `----------------------\n`;
+            text += `總金額: $${grandTotal}\n`;
+            text += `統計時間: ${new Date().toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'})}\n`;
+            text += `By Arthur WU`;
+
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if(successful) {
+                    showToast("✅ 訂單內容已複製到剪貼簿！");
+                } else {
+                    throw new Error("Copy failed");
+                }
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+                showToast("複製失敗，請手動選取複製", 'error');
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        window.exportToExcel = function() {
+            if (submittedOrders.length === 0) {
+                showToast("目前沒有訂單可匯出", 'error');
+                return;
+            }
+
+            let csvContent = "\uFEFF"; 
+            csvContent += "訂購人,餐點內容,總金額,訂購時間\n";
+
+            submittedOrders.forEach(order => {
+                let itemsStr = order.items.map(i => `${i.name} x${i.count}`).join('; ');
+                csvContent += `"${order.name}","${itemsStr}",${order.total},"${order.time}"\n`;
+            });
+
+            const grandTotal = document.getElementById('grandTotal').innerText;
+            csvContent += `,,總計: $${grandTotal},\n`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            
+            const today = document.getElementById('currentDate').innerText.replace(/\//g, '-');
+            link.setAttribute("href", url);
+            link.setAttribute("download", `偶鵝嚐嚐_訂單_${today}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("已下載 CSV 檔案！");
+        }
+    </script>
+</body>
+</html>
