@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高田食堂點餐系統</title>
+    <!-- 引入 Font Awesome 用於圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #A93628; /* 日式紅 */
+            --secondary-color: #F4E9D6; /* 米色背景 */
+            --accent-color: #2C3E50;
+            --promo-color: #E67E22; /* 優惠橘 */
+            --text-color: #333;
+            --border-radius: 8px;
+            --edit-color: #3498db; /* 編輯藍 */
+            --ai-color: #6c5ce7; /* AI 紫色 */
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+            background-color: var(--secondary-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header Area */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border-top: 5px solid var(--primary-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-info h1 { margin: 0; font-size: 1.8rem; color: var(--primary-color); }
+        .header-info .sub-info { font-size: 0.95rem; color: #666; margin-top: 8px; line-height: 1.6; }
+        
+        /* Store Phone Style */
+        .store-phone {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-left: 5px;
+            background: #fff5f5;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #ffcccc;
+        }
+
+        .clock-area { text-align: right; display: flex; flex-direction: column; align-items: flex-end;}
+        .time-display { font-size: 1.5rem; font-weight: bold; font-family: monospace; color: var(--accent-color); transition: color 0.3s; }
+        .deadline-msg { font-size: 0.9rem; color: #e74c3c; font-weight: bold; transition: all 0.3s; margin-top: 5px;}
+        
+        /* Time Over Style */
+        .time-over .time-display { color: #c0392b; text-shadow: 0 0 5px rgba(192, 57, 43, 0.2); }
+        .time-over .deadline-msg { font-size: 1.3rem; color: #c0392b; animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* Connection Status */
+        .status-indicator {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: #eee;
+            color: #666;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .status-indicator.connected { background: #d4edda; color: #155724; }
+        .status-indicator.disconnected { background: #f8d7da; color: #721c24; }
+
+        /* Main Layout */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 1:1 等寬 */
+            gap: 20px;
+            flex: 1;
+        }
+
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; align-items: flex-start; }
+            .clock-area { text-align: left; align-items: flex-start; margin-top: 10px; }
+        }
+
+        /* Left Column */
+        .menu-section {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed #ddd;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        /* Categories - Modified for 2 Rows */
+        .category-tabs-row {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding-bottom: 5px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .category-tabs-row::-webkit-scrollbar { display: none; }
+        
+        /* Row 1 has a bit more margin */
+        #categoryTabs1 { margin-bottom: 8px; }
+        #categoryTabs2 { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+
+        .cat-btn {
+            background: #eee;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.3s;
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        .cat-btn:hover { background: #ddd; }
+        .cat-btn.active { background: var(--primary-color); color: white; transform: scale(1.05); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        .cat-btn.promo-btn {
+            background: linear-gradient(135deg, #f1c40f, #e67e22);
+            color: white;
+            border: 1px solid #d35400;
+        }
+        .cat-btn.promo-btn.active {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            transform: scale(1.1);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .menu-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .menu-item:hover { 
+            border-color: var(--primary-color); 
+            background: #fff5f5; 
+            transform: translateY(-3px); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .menu-item:active { transform: scale(0.98); }
+        
+        .item-name { font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; line-height: 1.3; }
+        .item-price { color: var(--primary-color); font-weight: bold; font-size: 1rem; }
+
+        .current-selection {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: var(--border-radius);
+            border: 1px solid #eee;
+        }
+        
+        .selection-list { 
+            margin: 10px 0; 
+            max-height: 150px; 
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .selection-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 0.9rem; 
+            padding: 5px 8px; 
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-submit:hover { background: #8f2d20; shadow: 0 4px 10px rgba(169, 54, 40, 0.3); }
+        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-submit.is-editing { background: var(--edit-color); }
+        .btn-submit.is-editing:hover { background: #2980b9; }
+
+        .btn-cancel-edit {
+            width: 100%;
+            background: #95a5a6;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            margin-top: 10px;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* Right Column: Order List */
+        .order-panel {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+            max-height: 85vh;
+            position: sticky;
+            top: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+        .panel-header span:first-child { font-weight: bold; font-size: 1.1rem; }
+
+        .order-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 5px;
+        }
+
+        .order-card {
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            padding: 16px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            position: relative;
+            transition: 0.2s;
+        }
+        .order-card:hover { border-color: #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .order-card.editing { border: 2px solid var(--edit-color); background: #ebf5fb; }
+        
+        .order-header { 
+            font-weight: bold; 
+            color: var(--accent-color); 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 8px; 
+            font-size: 1.1rem; 
+        }
+        .order-items { 
+            font-size: 1.05rem; 
+            color: #444; 
+            margin-top: 5px; 
+            line-height: 1.6; 
+            white-space: pre-wrap; 
+        }
+        .order-total { 
+            text-align: right; 
+            font-weight: bold; 
+            color: var(--primary-color); 
+            font-size: 1.1rem; 
+            margin-top: 8px; 
+            border-top: 1px dashed #eee; 
+            padding-top: 5px; 
+        }
+        
+        .card-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .btn-delete-single { color: #999; }
+        .btn-delete-single:hover { color: white; background: #e74c3c; border-color: #e74c3c; }
+        .btn-edit-single { color: var(--edit-color); }
+        .btn-edit-single:hover { color: white; background: var(--edit-color); border-color: var(--edit-color); }
+
+        .action-area { display: flex; flex-direction: column; gap: 10px; }
+
+        .btn-clear {
+            background: white; color: #e74c3c; padding: 10px; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-clear:hover { background: #ffeaea; }
+
+        .btn-copy {
+            background: #27ae60; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            display: flex; justify-content: center; align-items: center; gap: 5px;
+        }
+        .btn-copy:hover { background: #219150; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 15px;
+            background: rgba(255,255,255,0.5);
+            border-radius: var(--border-radius);
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 0.95rem;
+        }
+        #toast.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        /* --- 自訂 Modal (取代 confirm/alert) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        
+        .modal-msg { font-size: 1.05rem; margin-bottom: 20px; color: #333; font-weight: bold; line-height: 1.5; }
+        .modal-actions { display: flex; justify-content: center; gap: 10px; }
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+        }
+        .modal-btn-no { background: #eee; color: #555; }
+        .modal-btn-no:hover { background: #ddd; }
+        .modal-btn-yes { background: #e74c3c; color: white; }
+        .modal-btn-yes:hover { background: #c0392b; }
+
+        /* --- AI Assistant Styles --- */
+        .ai-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1500;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: float 3s ease-in-out infinite;
+        }
+        .ai-fab:hover { transform: scale(1.1); }
+        .ai-fab::after {
+            content: "AI助手";
+            position: absolute;
+            bottom: -25px;
+            font-size: 12px;
+            color: #6c5ce7;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        .ai-chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            z-index: 1499;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform-origin: bottom right;
+            transform: scale(0);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .ai-chat-window.open { transform: scale(1); opacity: 1; pointer-events: all; }
+
+        .ai-header {
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .ai-close { cursor: pointer; font-size: 1.2rem; }
+
+        .ai-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .msg-ai {
+            align-self: flex-start;
+            background: white;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+        .msg-user {
+            align-self: flex-end;
+            background: #6c5ce7;
+            color: white;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 2px 5px rgba(108, 92, 231, 0.2);
+        }
+
+        .ai-input-area {
+            padding: 10px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        .ai-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        .ai-send {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .ai-send:hover { background: #5649c0; }
+
+        /* Formatting for AI Response */
+        .ai-rec-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #ddd;
+            padding: 5px 0;
+            margin-bottom: 5px;
+        }
+        .ai-rec-total {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #d35400;
+            text-align: right;
+        }
+        .highlight-text { color: #6c5ce7; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+<header id="mainHeader">
+    <div class="header-info">
+        <h1>
+            <i class="fas fa-utensils"></i> 高田食堂 點餐系統 V2.5 
+            <span id="connStatus" class="status-indicator disconnected"><i class="fas fa-circle"></i> 連線中...</span>
+        </h1>
+        <div class="sub-info">
+            日期: <span id="currentDate"></span> | 地點: 
+            <select id="locationSelect" style="border:1px solid #ddd; padding: 4px; border-radius: 4px; font-size:0.95rem; color:#444; cursor:pointer;">
+                <option value="民族店" selected>新北市蘆洲區民族路174號 (民族店)</option>
+                <option value="長安店">新北市蘆洲區長安街223號 (長安店)</option>
+            </select>
+            <span id="storePhone" class="store-phone"></span>
+        </div>
+    </div>
+    <div class="clock-area" id="clockArea">
+        <div id="clock" class="time-display">00:00:00</div>
+        <div class="deadline-msg" id="deadlineMsg"><i class="far fa-clock"></i> 每日 10:00 截止</div>
+    </div>
+</header>
+
+<div class="container">
+    <div class="menu-section">
+        <div class="input-group">
+            <label style="font-weight: bold; margin-bottom: 5px; color: #555;">訂購人姓名：</label>
+            <input type="text" id="userName" class="form-control" placeholder="請輸入點餐者姓名 (必填)">
+        </div>
+
+        <!-- 修改：分為兩列顯示 -->
+        <div class="category-tabs-row" id="categoryTabs1"></div>
+        <div class="category-tabs-row" id="categoryTabs2"></div>
+
+        <div class="menu-grid" id="menuGrid"></div>
+
+        <div class="current-selection" id="cartPreview">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:5px;">
+                <strong><i class="fas fa-shopping-basket"></i> 目前選擇</strong>
+                <span style="font-size:0.9rem; color:#666;">共 <span id="cartCount">0</span> 項</span>
+            </div>
+            
+            <div class="selection-list" id="selectionList">
+                <div style="color:#999; text-align:center; padding: 20px 0; grid-column: 1 / -1;">尚未選擇餐點</div>
+            </div>
+            <div style="text-align: right; font-weight: bold; margin-top:10px; font-size: 1.1rem;">
+                小計: $<span id="cartTotal">0</span>
+            </div>
+        </div>
+
+        <button class="btn-submit" id="submitBtn" onclick="trySubmitOrder()">
+            <i class="fas fa-paper-plane"></i> 送出訂單
+        </button>
+        <button class="btn-cancel-edit" id="cancelEditBtn" onclick="cancelEditMode()">
+            取消修改
+        </button>
+    </div>
+
+    <div class="order-panel">
+        <div class="panel-header">
+            <span><i class="fas fa-clipboard-list"></i> 今日訂單列表</span>
+            <span style="font-size:0.9rem; background: var(--secondary-color); padding: 5px 10px; border-radius: 12px; color: var(--primary-color); font-weight: bold;">
+                Total: $<span id="globalTotal">0</span>
+            </span>
+        </div>
+        
+        <div class="order-list" id="orderListDisplay">
+            <div style="text-align:center; color:#ccc; margin-top:50px;">
+                <i class="fas fa-inbox" style="font-size:3rem; margin-bottom:10px;"></i><br>
+                正在連線到雲端資料庫...<br>
+                <span style="font-size:0.8rem; color:#666;">若長時間無反應，請檢查 Firebase Console 的匿名登入設定</span>
+            </div>
+        </div>
+
+        <div class="action-area">
+            <button class="btn-copy" onclick="copyOrders()"><i class="fas fa-copy"></i> 複製訂單內容</button>
+            <button class="btn-clear" onclick="clearAllOrders()"><i class="fas fa-trash-alt"></i> 結束今天訂購 (一鍵清空)</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    製作宣告 By Arthur WU | V2.5 (Dual Row Categories)
+</footer>
+
+<!-- AI 助手 FAB -->
+<div class="ai-fab" onclick="toggleAIChat()">
+    <i class="fas fa-robot"></i>
+</div>
+
+<!-- AI 聊天視窗 -->
+<div class="ai-chat-window" id="aiChatWindow">
+    <div class="ai-header">
+        <span><i class="fas fa-sparkles"></i> AI 點餐助手</span>
+        <span class="ai-close" onclick="toggleAIChat()">&times;</span>
+    </div>
+    <div class="ai-messages" id="aiMessages">
+        <div class="message msg-ai">
+            嗨！我是高田食堂的 AI 助手 ✨<br>
+            我可以幫您推薦餐點喔！<br>
+            例如：「我有 200 元想吃飽一點」、「想吃魚」、「推薦什麼定食？」
+        </div>
+    </div>
+    <div class="ai-input-area">
+        <input type="text" class="ai-input" id="aiInput" placeholder="輸入您的需求..." onkeypress="handleAIKeyPress(event)">
+        <button class="ai-send" onclick="sendAIMessage()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<div id="toast">訊息提示</div>
+
+<!-- 自訂確認視窗 -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+        <div class="modal-msg" id="confirmMessage">確定要執行此操作嗎？</div>
+        <div class="modal-actions">
+            <button class="modal-btn modal-btn-no" onclick="closeConfirm()">取消</button>
+            <button class="modal-btn modal-btn-yes" onclick="onConfirmYes()">確定</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- Firebase Configuration (User Provided) ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyANGawGf-vaA_COKkYbFJN0yGcBZmwOxpw",
+        authDomain: "takada-4bbc4.firebaseapp.com",
+        projectId: "takada-4bbc4",
+        storageBucket: "takada-4bbc4.firebasestorage.app",
+        messagingSenderId: "956659079766",
+        appId: "1:956659079766:web:4404833a013911a67d39f7",
+        measurementId: "G-BG5SZKZMC1"
+    };
+
+    // --- Firebase Init ---
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    const collectionName = 'takada_orders';
+
+    // --- UI Status ---
+    function setConnectionStatus(isConnected, msg = "") {
+        const el = document.getElementById("connStatus");
+        if (isConnected) {
+            el.className = "status-indicator connected";
+            el.innerHTML = '<i class="fas fa-circle"></i> 已連線';
+        } else {
+            el.className = "status-indicator disconnected";
+            el.innerHTML = `<i class="fas fa-times-circle"></i> 連線失敗 ${msg}`;
+        }
+    }
+
+    // --- 全域變數 ---
+    let currentCart = [];
+    let allOrders = [];
+    let editingOrderId = null; 
+    let editingDocId = null;
+
+    // --- 完整菜單資料 ---
+    const menuData = {
+        "加購優惠": [
+             {name: "★升級定食加價購", price: 135}, {name: "★黃金豬排加價購", price: 78},
+             {name: "★唐揚雞加價購", price: 78}, {name: "★唐揚豆腐加價購", price: 48},
+             {name: "★咖哩醬加價購", price: 10}, {name: "★麒麟一番榨", price: 110}
+        ],
+        "日式便當": [
+            {name: "九品御膳弁當", price: 168}, {name: "照燒雞腿便當", price: 138},
+            {name: "日式豬排便當", price: 128}, {name: "咖哩豬排便當", price: 128},
+            {name: "挪威薄鹽鯖魚便當", price: 138}, {name: "特製燒肉便當", price: 128},
+            {name: "北海道鮭魚便當", price: 138}, {name: "炸蝦便當", price: 170},
+            {name: "牛小排便當", price: 168}, {name: "浦燒鰻魚飯", price: 250},
+            {name: "醬燒中卷便當", price: 158}, {name: "唐揚炸雞便當", price: 148},
+            {name: "味噌魚便當", price: 138}, {name: "鹽燒旬香魚便當", price: 148},
+            {name: "香魚甘露煮便當", price: 163}, {name: "竹筴魚便當", price: 180},
+            {name: "赤宗魚便當", price: 138}, {name: "禪風素食便當", price: 120}
+        ],
+        "定食": [
+            {name: "日式黃金豬排定食", price: 238}, {name: "傳奇照燒雞腿定食", price: 258},
+            {name: "咖哩風味豬排定食", price: 248}, {name: "挪威薄鹽鯖魚定食", price: 248},
+            {name: "玫瑰鹽牛小排定食", price: 268}, {name: "炸蝦天婦羅定食", price: 268},
+            {name: "蒲燒鰻魚定食", price: 348}, {name: "北海道烤鮭魚定食", price: 248},
+            {name: "醬燒中卷定食", price: 248}, {name: "唐揚炸雞定食", price: 268},
+            {name: "自家漬味噌魚定食", price: 248}, {name: "鹽燒香魚定食", price: 248},
+            {name: "竹筴魚定食", price: 263}, {name: "香魚甘露煮定食", price: 288},
+            {name: "赤宗魚定食", price: 248}, {name: "三品生魚片定食", price: 278},
+            {name: "養生禪風定食", price: 238}
+        ],
+        "生丼飯": [
+            {name: "旗魚丼", price: 138}, {name: "三品生魚片丼", price: 165},
+            {name: "鮭魚親子丼", price: 220}, {name: "鮭魚肚丼", price: 235},
+            {name: "鮭魚海景丼", price: 250}, {name: "散壽司", price: 210},
+            {name: "蔥花鮪魚丼", price: 240}, {name: "星鰻海景丼", price: 250},
+            {name: "天使紅蝦海鮮丼", price: 280}, {name: "豪華盛合刺身丼", price: 380}
+        ],
+        "生魚片": [
+            {name: "加炙燒", price: 20}, {name: "旗魚生魚片", price: 170},
+            {name: "鮭魚生魚片", price: 210}, {name: "鮭魚肚", price: 230},
+            {name: "鮪魚生魚片", price: 240}, {name: "天使紅蝦刺身(三尾)", price: 200},
+            {name: "三品生魚片", price: 230}, {name: "五品生魚片", price: 285},
+            {name: "豪華盛合刺身", price: 395}
+        ],
+        "握壽司": [
+            {name: "加炙燒", price: 20}, {name: "綜合六貫握壽司", price: 190},
+            {name: "綜合三貫握壽司", price: 100}, {name: "炙燒鮭魚握壽司(三貫)", price: 115},
+            {name: "鮭魚握壽司(三貫)", price: 100}, {name: "鮪魚握壽司(三貫)", price: 115},
+            {name: "花枝握壽司(三貫)", price: 100}, {name: "鮮蝦握壽司(三貫)", price: 95},
+            {name: "蛋條握壽司(三貫)", price: 70}, {name: "蟹肉棒握壽司(三貫)", price: 70},
+            {name: "炙燒干貝握壽司(一貫)", price: 90}, {name: "炙燒天使紅蝦握壽司(二貫)", price: 85},
+            {name: "干貝握壽司(一貫)", price: 75}, {name: "星鰻握壽司(二貫)", price: 80}
+        ],
+        "手捲/捲壽司": [
+            {name: "鮮蝦蘆筍手捲", price: 60}, {name: "鮮蝦手捲", price: 55},
+            {name: "蘆筍手捲", price: 50}, {name: "鮭魚卵手捲", price: 100},
+            {name: "蝦卵手捲", price: 60}, {name: "蔥花鮪魚手捲", price: 75},
+            {name: "玉米沙拉手捲", price: 50}, {name: "蟹肉棒手捲", price: 55},
+            {name: "小黃瓜手捲", price: 50}, {name: "豆皮壽司(六個)", price: 70},
+            {name: "綜合豆皮壽司(六個)", price: 90}, {name: "豬排沙拉捲壽司(一條)", price: 110},
+            {name: "日式燒肉捲壽司(一條)", price: 110}
+        ],
+        "丼飯/麵/泡飯": [
+            {name: "黃金豬排丼", price: 120}, {name: "照燒雞腿丼", price: 125},
+            {name: "經典牛丼", price: 120}, {name: "親子丼", price: 115},
+            {name: "讚岐海陸湯烏龍", price: 135}, {name: "京都豆皮豬排湯烏龍", price: 105},
+            {name: "京都豆皮湯烏龍", price: 148}, {name: "鍋燒意麵", price: 85},
+            {name: "海陸泡飯", price: 90}
+        ],
+        "茶碗蒸/蛋包飯/湯": [
+            {name: "茶碗蒸", price: 50}, {name: "茄汁蛋包飯", price: 80},
+            {name: "茄汁蛋包飯+(炸物)", price: 152}, {name: "咖哩蛋包飯", price: 85},
+            {name: "咖哩蛋包飯+(炸物)", price: 158}, {name: "土瓶蒸", price: 60},
+            {name: "養生蒜味雞湯", price: 70}, {name: "味噌蛋包魚湯", price: 35},
+            {name: "味噌湯(小)", price: 10}, {name: "紫米紅豆湯", price: 35}
+        ],
+        "炒物": [
+            {name: "鮭魚炒飯", price: 110}, {name: "夏威夷炒飯", price: 110},
+            {name: "櫻花蝦炒飯", price: 95}, {name: "讚岐炒烏龍", price: 105},
+            {name: "清炒時蔬", price: 100}, {name: "炒意麵", price: 75},
+            {name: "櫻花蝦炒時蔬", price: 95}, {name: "溫野菜", price: 95},
+            {name: "白飯", price: 15}
+        ],
+        "炸物/沙拉": [
+            {name: "酥炸黃金豬排沙拉", price: 100}, {name: "日式炸蝦天", price: 150},
+            {name: "唐揚炸雞", price: 105}, {name: "唐揚豆腐", price: 65},
+            {name: "野菜唐揚", price: 100}, {name: "單點炸蝦", price: 55},
+            {name: "高田特製沙拉", price: 70}, {name: "鮮蝦沙拉", price: 120},
+            {name: "洋芋沙拉(二球)", price: 45}, {name: "龍蝦沙拉", price: 50},
+            {name: "明太子沙拉", price: 50}
+        ],
+        "燒烤/串燒/小菜": [
+            {name: "醬燒中卷", price: 125}, {name: "薄鹽鯖魚", price: 110},
+            {name: "醬燒牛小排", price: 148}, {name: "鹽燒旬香魚", price: 110},
+            {name: "香魚甘露煮", price: 125}, {name: "照燒黃金雞腿", price: 115},
+            {name: "北海道烤鮭魚", price: 100}, {name: "自家漬味噌魚", price: 100},
+            {name: "蒲燒鰻魚", price: 270}, {name: "醬燒梅花肉", price: 95},
+            {name: "一夜干竹筴魚", price: 150}, {name: "鹽燒赤宗魚", price: 110},
+            {name: "和風牛肉串", price: 55}, {name: "孜然羊肉串", price: 55},
+            {name: "雪花豬肉串", price: 55}, {name: "綜合肉串(豬/羊/牛)", price: 149},
+            {name: "天使紅蝦串", price: 85}, {name: "綠綠花椰串", price: 30},
+            {name: "醬烤香菇串", price: 40}, {name: "香甜櫛瓜串", price: 30},
+            {name: "綜合海鮮串", price: 89}, {name: "玉子燒", price: 75},
+            {name: "日本海帶芽", price: 45}, {name: "胡麻綠花椰", price: 45},
+            {name: "干貝唇", price: 55}, {name: "甘味黑豆", price: 55},
+            {name: "鮭魚卵", price: 165}, {name: "蝦卵", price: 55}
+        ],
+        "飲料": [
+            {name: "冰清酒", price: 110}, {name: "溫清酒", price: 110},
+            {name: "可爾必思", price: 30}, {name: "可樂(玻璃瓶)", price: 25},
+            {name: "柳橙汁(玻璃瓶)", price: 25}, {name: "雪碧(玻璃瓶)", price: 25}
+        ]
+    };
+
+    // --- 初始化: 認證 & 監聽 ---
+    const initAuth = async () => {
+        try {
+            await signInAnonymously(auth);
+        } catch (error) {
+            console.error("Auth Error:", error);
+            setConnectionStatus(false, "(Auth Failed)");
+            showToast("登入失敗，請檢查 Firebase Console 的匿名登入設定");
+        }
+    };
+    initAuth();
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log("Logged in:", user.uid);
+            setupRealtimeListener();
+        } else {
+            console.log("Logged out");
+            setConnectionStatus(false, "(Logged Out)");
+        }
+    });
+
+    function setupRealtimeListener() {
+        const q = collection(db, collectionName);
+        
+        onSnapshot(q, (snapshot) => {
+            setConnectionStatus(true); // 成功收到資料
+            const orders = [];
+            snapshot.forEach((doc) => {
+                orders.push({ ...doc.data(), docId: doc.id });
+            });
+            orders.sort((a, b) => b.id - a.id);
+            allOrders = orders;
+            renderOrderList();
+        }, (error) => {
+            console.error("Firestore Error:", error);
+            setConnectionStatus(false, "(Error)");
+            if (error.code === 'permission-denied') {
+                showToast("權限錯誤：請檢查 Firestore Rules");
+            } else {
+                showToast("連線中斷，請重新整理");
+            }
+        });
+    }
+
+    // --- Modal 邏輯 ---
+    let confirmCallback = null;
+
+    window.showConfirm = function(msg, callback) {
+        document.getElementById('confirmMessage').innerText = msg;
+        document.getElementById('confirmModal').style.display = 'flex';
+        confirmCallback = callback;
+    }
+
+    window.closeConfirm = function() {
+        document.getElementById('confirmModal').style.display = 'none';
+        confirmCallback = null;
+    }
+
+    window.onConfirmYes = function() {
+        if (confirmCallback) confirmCallback();
+        closeConfirm();
+    }
+
+    // --- 初始化 ---
+    window.onload = function() {
+        updateClock();
+        setInterval(updateClock, 1000);
+        document.getElementById("currentDate").innerText = new Date().toLocaleDateString();
+        renderCategories();
+        updateStoreInfo(); // 初始化電話
+        
+        // 設定地點變更事件
+        document.getElementById("locationSelect").addEventListener("change", updateStoreInfo);
+
+        let defaultCat = "日式便當";
+        if (!menuData[defaultCat]) defaultCat = Object.keys(menuData)[0];
+        
+        const btnToClick = Array.from(document.querySelectorAll('.cat-btn')).find(b => b.innerText === defaultCat);
+        if(btnToClick) btnToClick.click();
+        else renderMenu(Object.keys(menuData)[0]); 
+    };
+
+    function updateStoreInfo() {
+        const location = document.getElementById("locationSelect").value;
+        const phoneEl = document.getElementById("storePhone");
+        if (location === "長安店") {
+            phoneEl.innerText = "訂餐電話: (02) 2847-6794";
+        } else if (location === "民族店") {
+            phoneEl.innerText = "訂餐電話: (02) 8286-3916";
+        }
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const clockEl = document.getElementById("clock");
+        const deadlineEl = document.getElementById("deadlineMsg");
+        const clockArea = document.getElementById("clockArea");
+
+        clockEl.innerText = `${hours}:${minutes}:${seconds}`;
+
+        if (now.getHours() >= 10) { 
+             clockArea.classList.add("time-over");
+             deadlineEl.innerHTML = "<i class='fas fa-exclamation-triangle'></i> 已過 10:00 截止時間";
+        } else {
+             clockArea.classList.remove("time-over");
+             deadlineEl.innerHTML = "<i class='far fa-clock'></i> 每日 10:00 截止";
+        }
+    }
+
+    // --- 渲染 UI (分兩列) ---
+    function renderCategories() {
+        const container1 = document.getElementById("categoryTabs1");
+        const container2 = document.getElementById("categoryTabs2");
+        const categories = Object.keys(menuData);
+        
+        // 分類切分點: "丼飯/麵/泡飯"
+        const splitIndex = categories.findIndex(c => c === "丼飯/麵/泡飯");
+        
+        categories.forEach((cat, index) => {
+            const btn = document.createElement("button");
+            if (cat === "加購優惠") {
+                btn.className = `cat-btn promo-btn`;
+                btn.innerHTML = `<i class="fas fa-fire-alt"></i> ${cat}`;
+            } else {
+                btn.className = `cat-btn`;
+                btn.innerText = cat;
+            }
+            btn.onclick = () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderMenu(cat);
+            };
+
+            if (index < splitIndex && splitIndex !== -1) {
+                container1.appendChild(btn);
+            } else {
+                container2.appendChild(btn);
+            }
+        });
+    }
+
+    function renderMenu(category) {
+        const container = document.getElementById("menuGrid");
+        container.innerHTML = "";
+        if (!menuData[category]) return;
+        menuData[category].forEach(item => {
+            const div = document.createElement("div");
+            div.className = "menu-item";
+            div.innerHTML = `
+                <div class="item-name">${item.name}</div>
+                <div class="item-price">$${item.price}</div>
+            `;
+            div.onclick = () => addToCart(item);
+            container.appendChild(div);
+        });
+    }
+
+    // --- 購物車 ---
+    window.addToCart = function(item) {
+        currentCart.push(item);
+        updateCartDisplay();
+    }
+
+    window.updateCartDisplay = function() {
+        document.getElementById("cartCount").innerText = currentCart.length;
+        const list = document.getElementById("selectionList");
+        list.innerHTML = "";
+        if (currentCart.length === 0) {
+            list.innerHTML = '<div style="color:#999; text-align:center; padding: 20px 0; grid-column: 1 / -1;">尚未選擇餐點</div>';
+        }
+        let total = 0;
+        currentCart.forEach((item, index) => {
+            total += item.price;
+            const div = document.createElement("div");
+            div.className = "selection-item";
+            div.innerHTML = `
+                <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name}</div>
+                <div style="margin-left:5px; font-weight:bold; color:#A93628;">$${item.price}</div>
+                <div onclick="removeFromCart(${index})" style="cursor:pointer;color:#ccc; margin-left:8px; padding:0 5px;">
+                    <i class="fas fa-times"></i>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        document.getElementById("cartTotal").innerText = total;
+    }
+
+    window.removeFromCart = function(index) {
+        currentCart.splice(index, 1);
+        updateCartDisplay();
+    }
+
+    // --- 訂單處理 ---
+    window.trySubmitOrder = function() {
+        const now = new Date();
+        const name = document.getElementById("userName").value.trim();
+        
+        if (!name) { showToast("請輸入姓名！"); return; }
+        if (currentCart.length === 0) { showToast("請至少選擇一樣餐點！"); return; }
+
+        if (now.getHours() >= 10) {
+            showConfirm("已超過訂購時間，請與訂餐發起人再次確認，避免沒訂到餐點!!!", function() {
+                submitOrder();
+            });
+        } else {
+            submitOrder();
+        }
+    }
+
+    window.submitOrder = async function() {
+        const submitBtn = document.getElementById("submitBtn");
+        submitBtn.disabled = true;
+
+        const name = document.getElementById("userName").value.trim();
+        const location = document.getElementById("locationSelect").value;
+        
+        const orderDetails = currentCart.map(i => i.name).join(", ");
+        const orderPrice = currentCart.reduce((sum, i) => sum + i.price, 0);
+        const timestampId = editingOrderId || Date.now();
+
+        const newOrderData = {
+            id: timestampId,
+            name: name,
+            items: orderDetails,
+            rawItems: JSON.parse(JSON.stringify(currentCart)), 
+            price: orderPrice,
+            location: location,
+            timestamp: new Date().toLocaleString()
+        };
+
+        try {
+            if (editingDocId) {
+                await updateDoc(doc(db, collectionName, editingDocId), newOrderData);
+                showToast("訂單修改成功！");
+            } else {
+                await addDoc(collection(db, collectionName), newOrderData);
+                showToast("訂單已送出！");
+            }
+            cancelEditMode(); 
+            currentCart = [];
+            updateCartDisplay();
+            document.getElementById("userName").value = ""; 
+        } catch (e) {
+            console.error(e);
+            showToast("傳送失敗：" + e.message);
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+
+    // --- AI 助手 ---
+    window.toggleAIChat = function() {
+        const window = document.getElementById("aiChatWindow");
+        window.classList.toggle("open");
+        if (window.classList.contains("open")) {
+            setTimeout(() => document.getElementById("aiInput").focus(), 300);
+        }
+    }
+
+    window.handleAIKeyPress = function(e) {
+        if (e.key === 'Enter') sendAIMessage();
+    }
+
+    window.sendAIMessage = function() {
+        const input = document.getElementById("aiInput");
+        const msg = input.value.trim();
+        if (!msg) return;
+
+        addChatMessage(msg, 'user');
+        input.value = "";
+
+        const response = simulateAIResponse(msg);
+        setTimeout(() => {
+            const aiMsgDiv = addChatMessage("", 'ai');
+            typeWriter(aiMsgDiv, response, 0);
+        }, 500);
+    }
+
+    function addChatMessage(text, type) {
+        const container = document.getElementById("aiMessages");
+        const div = document.createElement("div");
+        div.className = `message msg-${type}`;
+        div.innerHTML = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        return div;
+    }
+
+    function typeWriter(element, html, index) {
+        element.innerHTML = html;
+        element.style.opacity = 0;
+        let op = 0.1;
+        let timer = setInterval(function () {
+            if (op >= 1){ clearInterval(timer); }
+            element.style.opacity = op;
+            element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+            op += op * 0.1;
+        }, 10);
+    }
+
+    function simulateAIResponse(query) {
+        let response = "";
+        let budget = query.match(/\d+/);
+        budget = budget ? parseInt(budget[0]) : null;
+
+        const keywords = ["魚", "豬排", "雞", "牛", "蝦", "定食", "便當", "丼", "麵", "辣", "炸"];
+        let allItems = [];
+        for (let cat in menuData) {
+            menuData[cat].forEach(item => allItems.push({...item, cat: cat}));
+        }
+
+        if (budget) {
+            let matchedItems = allItems.filter(i => i.price <= budget);
+            matchedItems.sort((a,b) => b.price - a.price);
+            
+            if (matchedItems.length > 0) {
+                 response += `收到！預算 <span class="highlight-text">$${budget}</span> 元，我有以下推薦：<br><br>`;
+                 let top3 = matchedItems.slice(0, 3);
+                 top3.forEach(item => {
+                     response += `<div class="ai-rec-item"><span>${item.name}</span> <span>$${item.price}</span></div>`;
+                 });
+                 // Combo logic...
+                 for (let i=0; i<matchedItems.length; i++) {
+                     let main = matchedItems[i];
+                     if (main.price < budget - 30) {
+                         let sideBudget = budget - main.price;
+                         let sides = allItems.filter(s => s.price <= sideBudget && (s.cat.includes("小菜") || s.cat.includes("湯") || s.cat.includes("炸物")));
+                         if (sides.length > 0) {
+                             let side = sides[Math.floor(Math.random() * sides.length)];
+                             response += `<br>✨ <strong>超值組合推薦：</strong><br>`;
+                             response += `<div class="ai-rec-item"><span>${main.name}</span> <span>$${main.price}</span></div>`;
+                             response += `<div class="ai-rec-item"><span>+ ${side.name}</span> <span>$${side.price}</span></div>`;
+                             response += `<div class="ai-rec-total">總計: $${main.price + side.price}</div>`;
+                             break;
+                         }
+                     }
+                 }
+                 return response;
+            } else {
+                return "這個預算可能有點緊繃...要不要再加一點點？最低的白飯是 15 元 😂";
+            }
+        } 
+        
+        let hit = false;
+        keywords.forEach(k => {
+            if (query.includes(k)) {
+                hit = true;
+                let filtered = allItems.filter(i => i.name.includes(k));
+                if(filtered.length > 0) {
+                    response += `提到「<span class="highlight-text">${k}</span>」，我們有這些好選擇：<br><br>`;
+                    filtered.sort(() => 0.5 - Math.random());
+                    filtered.slice(0, 3).forEach(item => {
+                        response += `<div class="ai-rec-item"><span>${item.name}</span> <span>$${item.price}</span></div>`;
+                    });
+                }
+            }
+        });
+
+        if (hit) return response;
+
+        const randomRecs = [
+            "不知道吃什麼嗎？<b>「日式黃金豬排定食」</b>是我們的人氣王喔！",
+            "想吃點清爽的嗎？<b>「挪威薄鹽鯖魚便當」</b>非常受歡迎！",
+            "今天犒賞自己一下，來份<b>「豪華盛合刺身丼」</b>如何？",
+            "如果趕時間，<b>「各種日式便當」</b>系列都是現做又快速的選擇！"
+        ];
+        return randomRecs[Math.floor(Math.random() * randomRecs.length)];
+    }
+
+    // --- 編輯 ---
+    window.editOrder = function(id) {
+        const order = allOrders.find(o => o.id === id);
+        if (!order) return;
+        
+        document.getElementById("userName").value = order.name;
+        document.getElementById("locationSelect").value = order.location;
+        if (order.rawItems && Array.isArray(order.rawItems)) {
+            currentCart = JSON.parse(JSON.stringify(order.rawItems));
+        } else {
+            currentCart = [];
+        }
+        updateCartDisplay();
+        
+        editingOrderId = id;        
+        editingDocId = order.docId; 
+        
+        const submitBtn = document.getElementById("submitBtn");
+        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> 確認修改';
+        submitBtn.classList.add("is-editing");
+        document.getElementById("cancelEditBtn").style.display = "block";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        renderOrderList();
+        showToast("已載入訂單，請修改後送出");
+    }
+
+    window.cancelEditMode = function() {
+        editingOrderId = null;
+        editingDocId = null;
+        document.getElementById("userName").value = "";
+        currentCart = [];
+        updateCartDisplay();
+        const submitBtn = document.getElementById("submitBtn");
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出訂單';
+        submitBtn.classList.remove("is-editing");
+        document.getElementById("cancelEditBtn").style.display = "none";
+        renderOrderList();
+    }
+
+    // --- 渲染列表 ---
+    window.renderOrderList = function() {
+        const container = document.getElementById("orderListDisplay");
+        container.innerHTML = "";
+        let globalSum = 0;
+
+        if (allOrders.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; color:#ccc; margin-top:50px;">
+                    <i class="fas fa-inbox" style="font-size:3rem; margin-bottom:10px;"></i><br>
+                    目前無訂單
+                </div>`;
+            document.getElementById("globalTotal").innerText = "0";
+            return;
+        }
+
+        allOrders.forEach((order) => {
+            globalSum += order.price;
+            const div = document.createElement("div");
+            div.className = `order-card ${editingOrderId === order.id ? 'editing' : ''}`;
+            
+            div.innerHTML = `
+                <div class="card-actions">
+                    <button class="btn-icon btn-edit-single" onclick="editOrder(${order.id})" title="修改訂單">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon btn-delete-single" onclick="deleteOrder(${order.id})" title="刪除此單">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="order-header">
+                    <span><i class="fas fa-user"></i> ${order.name} <span style="font-size:0.8em; color:#999; font-weight:normal;">(${order.location})</span></span>
+                </div>
+                <div class="order-items">${order.items}</div>
+                <div class="order-total">
+                    $${order.price}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+        document.getElementById("globalTotal").innerText = globalSum;
+    }
+
+    // --- 刪除與清空 ---
+    window.deleteOrder = function(id) {
+        if (editingOrderId === id) cancelEditMode();
+        showConfirm("確定刪除這筆訂單嗎？", async function() {
+            const order = allOrders.find(o => o.id === id);
+            if (order && order.docId) {
+                try {
+                    await deleteDoc(doc(db, collectionName, order.docId));
+                } catch (e) {
+                    showToast("刪除失敗");
+                }
+            }
+        });
+    };
+
+    window.clearAllOrders = function() {
+        if (allOrders.length === 0) return;
+        showConfirm("確定要「結束今天訂購」並清空所有資料嗎？", async function() {
+            try {
+                const promises = allOrders.map(o => deleteDoc(doc(db, collectionName, o.docId)));
+                await Promise.all(promises);
+                editingOrderId = null;
+                editingDocId = null;
+                cancelEditMode();
+                showToast("已清空所有訂單");
+            } catch (e) {
+                showToast("部分訂單刪除失敗");
+            }
+        });
+    }
+
+    window.copyOrders = function() {
+        if (allOrders.length === 0) { showToast("目前沒有訂單"); return; }
+        let text = `【高田食堂訂購單】\n日期：${new Date().toLocaleDateString()}\n------------------\n`;
+        let total = 0;
+        allOrders.forEach(o => {
+            text += `${o.name}：${o.items} ($${o.price})\n`;
+            total += o.price;
+        });
+        text += `------------------\n總金額：$${total}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => { showToast("訂單內容已複製！"); }).catch(err => { fallbackCopy(text); });
+        } else { fallbackCopy(text); }
+    }
+
+    window.fallbackCopy = function(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; textArea.style.opacity = "0";
+        document.body.appendChild(textArea); textArea.focus(); textArea.select();
+        try { document.execCommand('copy'); showToast("訂單內容已複製！"); } catch (err) { showToast("複製失敗"); }
+        document.body.removeChild(textArea);
+    }
+
+    window.showToast = function(msg) {
+        const x = document.getElementById("toast");
+        x.innerText = msg;
+        x.className = "show";
+        setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+    }
+</script>
+
+</body>
+</html>
