@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粥師傅點餐系統</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Font: Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fef9c3; /* 淺黃色背景 */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .animate-pulse-fast {
+            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxkmpfYav8al4BFVYH-0F4fa0s_qcWHGk",
+            authDomain: "porridge-ba389.firebaseapp.com",
+            projectId: "porridge-ba389",
+            storageBucket: "porridge-ba389.firebasestorage.app",
+            messagingSenderId: "565757300424",
+            appId: "1:565757300424:web:3b5c08c1129a50e4011ffd",
+            measurementId: "G-P7D2MZPESE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Expose to window for React component
+        window.db = db;
+        window.auth = auth;
+        window.signInAnonymously = signInAnonymously;
+        window.signInWithCustomToken = signInWithCustomToken;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.onSnapshot = onSnapshot;
+        window.doc = doc;
+        window.deleteDoc = deleteDoc;
+        window.updateDoc = updateDoc;
+        window.writeBatch = writeBatch;
+        window.getDocs = getDocs;
+        
+        // Get App ID from environment or default
+        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'porridge-master-app';
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Data: Menu ---
+        const NOODLE_TYPES = [
+            "意麵",
+            "雞絲麵",
+            "王子麵",
+            "冬粉",
+            "米粉",
+            "手工麵疙瘩",
+            "韓國辛拉麵",
+            "讚岐烏龍麵",
+            "讚岐日式油麵"
+        ];
+
+        const MENU_CATEGORIES = [
+            {
+                id: 'congee',
+                title: '廣東粥品系列',
+                color: 'bg-yellow-100 border-yellow-300',
+                items: [
+                    { name: '蛋粥', price: 60, category: 'congee' },
+                    { name: '玉米瘦肉粥', price: 80, category: 'congee' },
+                    { name: '田園蔬菜粥', price: 80, category: 'congee' },
+                    { name: '香菇蔬菜粥', price: 90, category: 'congee' },
+                    { name: '皮蛋瘦肉粥', price: 80, category: 'congee' },
+                    { name: '吻仔魚蔬菜粥', price: 90, category: 'congee' },
+                    { name: '海鮮粥', price: 90, category: 'congee' },
+                    { name: '廣東皮蛋粥', price: 90, category: 'congee' },
+                    { name: '粥王', price: 100, category: 'congee' },
+                    { name: '魚片蔬菜粥', price: 110, category: 'congee' },
+                    { name: '鮑魚蔬菜粥', price: 110, category: 'congee' },
+                    { name: '海蟹蝦仁粥', price: 110, category: 'congee' },
+                    { name: '干貝蝦仁粥', price: 110, category: 'congee' },
+                    { name: '御膳粥', price: 140, category: 'congee' },
+                ]
+            },
+            {
+                id: 'noodles',
+                title: '麵品、湯品系列',
+                color: 'bg-red-100 border-red-300',
+                items: [
+                    { name: '沙茶海鮮鍋燒麵', price: 120, category: 'noodles' },
+                    { name: '韓式泡菜海鮮鍋燒麵', price: 130, category: 'noodles' },
+                    { name: '南洋叻沙海鮮鍋燒麵', price: 130, category: 'noodles' },
+                    { name: '四川麻辣海鮮鍋燒麵', price: 130, category: 'noodles' },
+                    { name: '韓式泡菜起士部隊鍋', price: 150, category: 'noodles' },
+                    { name: '台式薑絲蛤仔蔬菜湯', price: 100, category: 'noodles' }, 
+                ]
+            }
+        ];
+
+        const ADD_ONS = [
+            { name: '加粥', price: 10 },
+            { name: '加麵', price: 20 },
+            { name: '加麵(意/雞/烏/油)', price: 30, note: true },
+            { name: '叻沙/麻辣醬', price: 15 },
+            { name: '魚酥', price: 5 },
+            { name: '肉鬆', price: 10 },
+            { name: '玉米', price: 10 },
+            { name: '雞蛋', price: 10 },
+            { name: '起士片', price: 10 },
+            { name: '豬絞肉', price: 15 },
+            { name: '皮蛋', price: 15 },
+            { name: '青菜', price: 15 },
+            { name: '韓式泡菜', price: 15 },
+            { name: '香菇', price: 20 },
+            { name: '吻仔魚', price: 20 },
+            { name: '火鍋料', price: 20 },
+            { name: '大蝦(隻)', price: 25 },
+            { name: '大蛤蜊', price: 25 },
+            { name: '蝦仁', price: 30 },
+            { name: '魷魚', price: 30 },
+            { name: '魚片', price: 30 },
+            { name: '海瓜子', price: 30 },
+            { name: '豬肉片', price: 30 },
+            { name: '蟹腳肉', price: 40 },
+            { name: '干貝', price: 40 },
+            { name: '鮑魚', price: 40 },
+            { name: '蚵仔', price: 40 },
+            { name: '小卷', price: 40 },
+        ];
+
+        // --- Custom Modal Component (Replaces alert/confirm) ---
+        const Modal = ({ isOpen, type, message, onConfirm, onCancel }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 animate-fade-in">
+                    <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 transform scale-100 transition-transform">
+                        <div className={`text-xl font-bold mb-4 flex items-center gap-2 ${type === 'error' ? 'text-red-600' : 'text-gray-800'}`}>
+                            {type === 'error' && '⚠️ 錯誤'}
+                            {type === 'confirm' && '🤔 確認'}
+                            {type === 'info' && 'ℹ️ 提示'}
+                        </div>
+                        <p className="text-gray-600 mb-6 whitespace-pre-wrap">{message}</p>
+                        <div className="flex justify-end gap-3">
+                            {type === 'confirm' && (
+                                <button 
+                                    onClick={onCancel}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors font-medium"
+                                >
+                                    取消
+                                </button>
+                            )}
+                            <button 
+                                onClick={onConfirm}
+                                className={`px-4 py-2 text-white rounded shadow-md transition-colors font-bold
+                                    ${type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                            >
+                                {type === 'confirm' ? '確定' : '我知道了'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            // --- State ---
+            const [user, setUser] = useState(null);
+            const [currentTime, setCurrentTime] = useState(new Date());
+            const [orders, setOrders] = useState([]);
+            
+            // Input Form State
+            const [userName, setUserName] = useState('');
+            const [editingOrderId, setEditingOrderId] = useState(null);
+            
+            // Item Builder State (Temporary state before adding to cart)
+            const [selectedMain, setSelectedMain] = useState(null);
+            const [selectedNoodleType, setSelectedNoodleType] = useState(null); 
+            const [selectedAddOns, setSelectedAddOns] = useState([]);
+            const [itemNote, setItemNote] = useState('');
+
+            // Cart State (Array of items to be submitted)
+            const [cart, setCart] = useState([]);
+
+            // Modal State
+            const [modalConfig, setModalConfig] = useState({ isOpen: false, type: 'info', message: '', onConfirm: () => {}, onCancel: () => {} });
+
+            // --- Constants ---
+            const DEADLINE_HOUR = 10;
+            const RESTAURANT_ADDRESS = "新北市三重區碧華街376號";
+            const MAP_URL = "https://www.google.com/maps/search/?api=1&query=新北市三重區碧華街376號";
+            const COLLECTION_NAME = "porridge_orders_v2"; // Updated version for new data structure
+
+            // --- Derived State ---
+            const isOverTime = currentTime.getHours() >= DEADLINE_HOUR;
+            const formattedDate = currentTime.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            const formattedTime = currentTime.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            // Calculate total for the item currently being built
+            const currentItemTotal = useMemo(() => {
+                let total = selectedMain ? selectedMain.price : 0;
+                selectedAddOns.forEach(addon => total += addon.price);
+                return total;
+            }, [selectedMain, selectedAddOns]);
+
+            // Calculate total for the whole cart
+            const cartTotal = useMemo(() => {
+                return cart.reduce((sum, item) => sum + item.subtotal, 0);
+            }, [cart]);
+
+            // Calculate Grand Total of all orders
+            const grandTotal = useMemo(() => orders.reduce((sum, order) => sum + order.total, 0), [orders]);
+
+            const needsNoodleSelection = useMemo(() => {
+                if (!selectedMain) return false;
+                return selectedMain.category === 'noodles';
+            }, [selectedMain]);
+
+            // --- Helper Functions ---
+            const showAlert = (message, type = 'info') => {
+                setModalConfig({
+                    isOpen: true,
+                    type,
+                    message,
+                    onConfirm: () => setModalConfig(prev => ({ ...prev, isOpen: false })),
+                    onCancel: () => setModalConfig(prev => ({ ...prev, isOpen: false }))
+                });
+            };
+
+            const showConfirm = (message, onConfirmAction) => {
+                setModalConfig({
+                    isOpen: true,
+                    type: 'confirm',
+                    message,
+                    onConfirm: () => {
+                        onConfirmAction();
+                        setModalConfig(prev => ({ ...prev, isOpen: false }));
+                    },
+                    onCancel: () => setModalConfig(prev => ({ ...prev, isOpen: false }))
+                });
+            };
+
+            // --- Effects ---
+            
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    if (!window.auth) return;
+                    let signedIn = false;
+                    
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await window.signInWithCustomToken(window.auth, __initial_auth_token);
+                            signedIn = true;
+                        } catch (e) {
+                            console.warn("Custom token auth failed:", e);
+                        }
+                    }
+                    
+                    if (!signedIn) {
+                        try {
+                            await window.signInAnonymously(window.auth);
+                        } catch (e) {
+                            console.error("Anonymous auth failed:", e);
+                        }
+                    }
+                };
+                initAuth();
+
+                const unsubscribeAuth = window.onAuthStateChanged(window.auth, (u) => {
+                    if (u) {
+                        setUser(u);
+                        const q = window.collection(window.db, 'artifacts', window.appId, 'public', 'data', COLLECTION_NAME);
+                        
+                        const unsubscribeSnapshot = window.onSnapshot(q, (snapshot) => {
+                            const loadedOrders = snapshot.docs.map(doc => ({
+                                id: doc.id,
+                                ...doc.data()
+                            }));
+                            loadedOrders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                            setOrders(loadedOrders);
+                        }, (error) => {
+                            console.error("Snapshot Error:", error);
+                            if (error.code === 'permission-denied') {
+                                showAlert("⚠️ 資料庫權限不足！無法讀取訂單。\n請確認 Firebase Console Rules 設定。", 'error');
+                            }
+                        });
+                        return () => unsubscribeSnapshot();
+                    }
+                });
+
+                return () => unsubscribeAuth();
+            }, []);
+
+            // --- Handlers ---
+
+            const handleMainSelect = (item) => {
+                setSelectedMain(item);
+                setSelectedNoodleType(null);
+                // Don't reset add-ons, maybe user wants to keep them? Actually better to reset to avoid confusion
+                // But let's keep addons for convenience if switching between similar items
+                // Let's reset note
+                // setItemNote(''); 
+            };
+
+            const handleAddAddOn = (addon) => {
+                setSelectedAddOns([...selectedAddOns, { ...addon, id: Date.now() + Math.random() }]);
+            };
+
+            const handleRemoveAddOn = (index) => {
+                const newAddOns = [...selectedAddOns];
+                newAddOns.splice(index, 1);
+                setSelectedAddOns(newAddOns);
+            };
+
+            // Add current item builder content to Cart
+            const handleAddToCart = () => {
+                if (!selectedMain) {
+                    showAlert("請先選擇一份主餐！", 'error');
+                    return;
+                }
+                if (needsNoodleSelection && !selectedNoodleType) {
+                    showAlert("⚠️ 請選擇麵體種類！\n(意麵、雞絲麵、王子麵...)", 'error');
+                    return;
+                }
+
+                const newItem = {
+                    id: Date.now() + Math.random(), // Frontend unique ID
+                    main: selectedMain,
+                    noodle: selectedNoodleType,
+                    addOns: selectedAddOns,
+                    note: itemNote,
+                    subtotal: currentItemTotal
+                };
+
+                setCart([...cart, newItem]);
+                
+                // Reset Item Builder
+                setSelectedMain(null);
+                setSelectedNoodleType(null);
+                setSelectedAddOns([]);
+                setItemNote('');
+            };
+
+            const handleRemoveFromCart = (itemId) => {
+                setCart(cart.filter(item => item.id !== itemId));
+            };
+
+            // Final Submit
+            const handleSubmitOrder = async () => {
+                if (!userName.trim()) {
+                    showAlert("請輸入點餐者姓名！", 'error');
+                    return;
+                }
+                if (cart.length === 0) {
+                    showAlert("購物車是空的！請先選擇餐點並「加入清單」。", 'error');
+                    return;
+                }
+
+                const processSubmit = async () => {
+                    const orderData = {
+                        userName: userName.trim(),
+                        items: cart, // Array of items
+                        total: cartTotal,
+                        createdAt: Date.now(),
+                        dateStr: formattedDate
+                    };
+
+                    try {
+                        if (editingOrderId) {
+                            const orderRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', COLLECTION_NAME, editingOrderId);
+                            await window.updateDoc(orderRef, orderData);
+                            setEditingOrderId(null);
+                            showAlert("訂單已更新！", 'info');
+                        } else {
+                            await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', COLLECTION_NAME), orderData);
+                        }
+
+                        // Fully Reset
+                        setUserName('');
+                        setCart([]);
+                        setSelectedMain(null);
+                        setSelectedNoodleType(null);
+                        setSelectedAddOns([]);
+                        setItemNote('');
+                    } catch (e) {
+                        console.error("Error saving order:", e);
+                        showAlert("傳送失敗：" + e.message, 'error');
+                    }
+                };
+
+                if (isOverTime) {
+                    showConfirm("已超過訂購時間！\n\n請務必與發起人確認，避免沒訂到餐。\n確定要送出嗎？", processSubmit);
+                } else {
+                    processSubmit();
+                }
+            };
+
+            const handleEdit = (order) => {
+                setEditingOrderId(order.id);
+                setUserName(order.userName);
+                
+                // Handle legacy data structure support
+                if (order.items) {
+                    setCart(order.items);
+                } else {
+                    // Convert old single-item format to array format
+                    setCart([{
+                        id: Date.now(),
+                        main: order.mainItem,
+                        noodle: order.noodleType,
+                        addOns: order.addOns || [],
+                        note: order.notes,
+                        subtotal: order.total
+                    }]);
+                }
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const handleDelete = (orderId) => {
+                showConfirm("確定要刪除這筆訂單嗎？", async () => {
+                    try {
+                        await window.deleteDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', COLLECTION_NAME, orderId));
+                    } catch(e) {
+                        console.error("Delete error:", e);
+                        showAlert("刪除失敗，請檢查網路。\n" + e.message, 'error');
+                    }
+                });
+            };
+
+            const handleClearAll = () => {
+                showConfirm("確定要「結束今天訂購」並清空所有訂單嗎？\n此動作無法復原！", async () => {
+                    try {
+                        const batch = window.writeBatch(window.db);
+                        const snapshot = await window.getDocs(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', COLLECTION_NAME));
+                        
+                        if (snapshot.empty) {
+                            showAlert("目前沒有訂單可清空。", 'info');
+                            return;
+                        }
+
+                        snapshot.docs.forEach((doc) => {
+                            batch.delete(doc.ref);
+                        });
+                        await batch.commit();
+                        showAlert("所有訂單已清空！", 'info');
+                    } catch(e) {
+                        console.error("Batch delete error:", e);
+                        showAlert("清空失敗：" + e.message, 'error');
+                    }
+                });
+            };
+
+            const handleCopyOrders = () => {
+                if (orders.length === 0) {
+                    showAlert("目前沒有訂單可以複製", 'info');
+                    return;
+                }
+
+                let text = `📅 日期：${formattedDate}\n====================\n`;
+                orders.forEach((order, index) => {
+                    text += `${index + 1}. ${order.userName} $${order.total}\n`;
+                    
+                    // Handle both new array format and old single format
+                    const items = order.items || [{
+                        main: order.mainItem,
+                        noodle: order.noodleType,
+                        addOns: order.addOns,
+                        note: order.notes
+                    }];
+
+                    items.forEach(item => {
+                         const noodleText = item.noodle ? `[${item.noodle}]` : '';
+                         const addOnsText = item.addOns && item.addOns.length > 0 
+                             ? ` + ${item.addOns.map(a => a.name).join('/')}` 
+                             : '';
+                         const noteText = item.note ? ` (${item.note})` : '';
+                         text += `   - ${item.main.name} ${noodleText}${addOnsText}${noteText}\n`;
+                    });
+                });
+                text += `====================\n💰 總金額：$${grandTotal}`;
+
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                   document.execCommand('copy');
+                   showAlert("訂單內容已複製到剪貼簿！", 'info');
+                } catch (err) {
+                   console.error('Unable to copy', err);
+                   showAlert("複製失敗，請手動複製", 'error');
+                }
+                document.body.removeChild(textArea);
+            };
+
+            const handleCancelEdit = () => {
+                setEditingOrderId(null);
+                setUserName('');
+                setCart([]);
+                setSelectedMain(null);
+                setSelectedNoodleType(null);
+                setSelectedAddOns([]);
+                setItemNote('');
+            };
+
+            // --- Render ---
+            return (
+                <div className="min-h-screen pb-12">
+                    {/* Modal Overlay */}
+                    <Modal 
+                        isOpen={modalConfig.isOpen} 
+                        type={modalConfig.type} 
+                        message={modalConfig.message} 
+                        onConfirm={modalConfig.onConfirm} 
+                        onCancel={modalConfig.onCancel}
+                    />
+
+                    {/* Header */}
+                    <header className="bg-emerald-700 text-white p-4 shadow-lg sticky top-0 z-40">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h1 className="text-3xl font-bold tracking-wider flex items-center gap-2">
+                                    <span className="bg-white text-emerald-700 rounded-full w-10 h-10 flex items-center justify-center text-xl border-2 border-emerald-900">粥</span>
+                                    粥師傅 <span className="text-lg font-normal opacity-90">五華店</span>
+                                </h1>
+                                <a href={MAP_URL} target="_blank" rel="noreferrer" className="text-emerald-100 hover:text-white text-sm mt-1 flex items-center gap-1 hover:underline">
+                                    📍 {RESTAURANT_ADDRESS}
+                                </a>
+                            </div>
+                            <div className="flex flex-col items-center md:items-end">
+                                <div className="text-sm opacity-80">{formattedDate}</div>
+                                <div className={`font-mono font-bold transition-all duration-300 ${isOverTime ? 'text-4xl text-red-300 animate-pulse-fast' : 'text-3xl'}`}>
+                                    {formattedTime}
+                                </div>
+                                {isOverTime && <div className="text-red-300 text-xs font-bold">已過截止時間 10:00</div>}
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
+                        
+                        {/* LEFT COLUMN: Menu (Larger) */}
+                        <div className="lg:col-span-5 space-y-6">
+                             {/* Menu Sections */}
+                             <div className="bg-white rounded-xl shadow-md p-4 sticky top-24">
+                                <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">🍽️ 菜單選擇</h2>
+                                <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+                                    {MENU_CATEGORIES.map(category => (
+                                        <div key={category.id} className="bg-gray-50 rounded-lg overflow-hidden">
+                                            <div className={`${category.color} p-2 font-bold text-gray-800`}>
+                                                {category.title}
+                                            </div>
+                                            <div className="p-2 grid grid-cols-2 gap-2">
+                                                {category.items.map((item, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => handleMainSelect(item)}
+                                                        className={`p-2 rounded-lg border text-left transition-all relative overflow-hidden text-sm
+                                                            ${selectedMain?.name === item.name 
+                                                                ? 'border-emerald-500 ring-2 ring-emerald-200 bg-emerald-100' 
+                                                                : 'border-gray-200 hover:border-emerald-300 hover:bg-white bg-white'}`}
+                                                    >
+                                                        <div className="font-bold text-gray-800">{item.name}</div>
+                                                        <div className="text-emerald-600 font-medium">${item.price}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Add-ons */}
+                                    <div className="bg-orange-50 rounded-lg overflow-hidden">
+                                        <div className="bg-orange-100 p-2 font-bold text-gray-800">
+                                            加料區
+                                        </div>
+                                        <div className="p-2 grid grid-cols-3 gap-2">
+                                            {ADD_ONS.map((addon, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => handleAddAddOn(addon)}
+                                                    className="p-1.5 rounded bg-white border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-center text-xs transition-all"
+                                                >
+                                                    <div className="text-gray-700">{addon.name}</div>
+                                                    <div className="text-orange-600 font-bold">+${addon.price}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* MIDDLE COLUMN: Input & Cart & Builder */}
+                        <div className="lg:col-span-4 space-y-4">
+                            <div className={`bg-white rounded-xl shadow-md p-5 border-t-8 ${editingOrderId ? 'border-orange-500' : 'border-emerald-600'} sticky top-24`}>
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-800">
+                                    {editingOrderId ? '✏️ 修改訂單' : '📝 點餐區'}
+                                </h2>
+                                
+                                {/* Name Input */}
+                                <div className="mb-4">
+                                    <label className="block text-gray-700 font-medium mb-1 text-sm">點餐者姓名 <span className="text-red-500">*</span></label>
+                                    <input 
+                                        type="text" 
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        placeholder="請輸入您的大名"
+                                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {/* Item Builder */}
+                                <div className="bg-gray-100 p-3 rounded-lg border border-gray-200 mb-4">
+                                    <h3 className="text-sm font-bold text-gray-600 mb-2 border-b border-gray-300 pb-1">步驟 1: 組合餐點</h3>
+                                    
+                                    {selectedMain ? (
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-start">
+                                                <div className="font-bold text-lg text-emerald-800">{selectedMain.name} ${selectedMain.price}</div>
+                                                <button onClick={() => {setSelectedMain(null); setSelectedNoodleType(null);}} className="text-red-400 hover:text-red-600 text-xs">重新選擇</button>
+                                            </div>
+
+                                            {needsNoodleSelection && (
+                                                <div className="bg-white p-2 rounded border border-red-200">
+                                                    <div className="text-red-600 text-xs font-bold mb-1">必選麵體：</div>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {NOODLE_TYPES.map(type => (
+                                                            <button
+                                                                key={type}
+                                                                onClick={() => setSelectedNoodleType(type)}
+                                                                className={`px-2 py-1 rounded text-xs border
+                                                                    ${selectedNoodleType === type 
+                                                                        ? 'bg-red-500 text-white border-red-600' 
+                                                                        : 'bg-white text-gray-600 border-gray-300'}`}
+                                                            >
+                                                                {type}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedAddOns.length > 0 && (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {selectedAddOns.map((addon, idx) => (
+                                                        <span key={addon.id} className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs border border-orange-200 flex items-center gap-1">
+                                                            {addon.name}
+                                                            <button onClick={() => handleRemoveAddOn(idx)} className="text-orange-900 font-bold hover:text-red-600">×</button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <input 
+                                                type="text" 
+                                                value={itemNote}
+                                                onChange={(e) => setItemNote(e.target.value)}
+                                                placeholder="此餐點備註 (例: 不蔥/大辣)"
+                                                className="w-full text-sm border border-gray-300 rounded p-1.5"
+                                            />
+
+                                            <button 
+                                                onClick={handleAddToCart}
+                                                className="w-full py-2 bg-gray-800 text-white rounded hover:bg-black transition-colors text-sm font-bold flex items-center justify-center gap-2"
+                                            >
+                                                <span>⬇️ 加入清單</span>
+                                                <span>(${currentItemTotal})</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-4 text-gray-400 text-sm">
+                                            👈 請先從左側菜單選擇主餐
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Cart List */}
+                                <div className="mb-4">
+                                    <h3 className="text-sm font-bold text-gray-600 mb-2 flex justify-between items-center">
+                                        <span>步驟 2: 確認清單</span>
+                                        <span className="text-emerald-600 text-lg">${cartTotal}</span>
+                                    </h3>
+                                    <div className="bg-emerald-50 rounded-lg p-2 min-h-[100px] max-h-[300px] overflow-y-auto space-y-2 border border-emerald-100">
+                                        {cart.length === 0 ? (
+                                            <div className="text-center text-gray-400 py-8 text-sm">
+                                                清單是空的<br/>請組合餐點後加入
+                                            </div>
+                                        ) : (
+                                            cart.map((item, idx) => (
+                                                <div key={item.id} className="bg-white p-2 rounded shadow-sm flex justify-between items-start text-sm animate-fade-in-up">
+                                                    <div className="flex-1">
+                                                        <div className="font-bold text-gray-800">
+                                                            {idx + 1}. {item.main.name} 
+                                                            {item.noodle && <span className="text-red-500 ml-1">[{item.noodle}]</span>}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {item.addOns.map(a => `+${a.name}`).join(' ')}
+                                                        </div>
+                                                        {item.note && <div className="text-xs text-blue-500">註: {item.note}</div>}
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className="font-bold text-emerald-700">${item.subtotal}</span>
+                                                        <button 
+                                                            onClick={() => handleRemoveFromCart(item.id)}
+                                                            className="text-red-400 hover:text-red-600 text-xs border border-red-200 px-1 rounded"
+                                                        >
+                                                            刪除
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={handleSubmitOrder}
+                                        className={`flex-1 py-3 rounded-lg font-bold text-white shadow-md transition-colors 
+                                            ${editingOrderId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                                    >
+                                        {editingOrderId ? '💾 更新整筆訂單' : '🚀 送出訂單'}
+                                    </button>
+                                    {editingOrderId && (
+                                        <button 
+                                            onClick={handleCancelEdit}
+                                            className="px-4 py-3 rounded-lg font-bold bg-gray-400 text-white hover:bg-gray-500"
+                                        >
+                                            取消
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* RIGHT COLUMN: Order List */}
+                        <div className="lg:col-span-3">
+                            <div className="bg-white rounded-xl shadow-xl sticky top-24 overflow-hidden border border-gray-200 flex flex-col h-[calc(100vh-100px)]">
+                                {/* Actions Header */}
+                                <div className="bg-gray-800 text-white p-4 shrink-0">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h3 className="font-bold text-lg">📋 今日訂單 ({orders.length})</h3>
+                                        <button 
+                                            onClick={handleClearAll}
+                                            className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded transition-colors"
+                                        >
+                                            ⚠️ 清空
+                                        </button>
+                                    </div>
+                                    <div className="text-3xl font-bold text-yellow-400 text-right">
+                                        ${grandTotal}
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    onClick={handleCopyOrders}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 font-bold text-sm shrink-0 border-b border-blue-800"
+                                >
+                                    📋 複製訂單內容
+                                </button>
+
+                                {/* List */}
+                                <div className="overflow-y-auto flex-1 bg-gray-50 p-2 space-y-2 scrollbar-hide">
+                                    {orders.length === 0 ? (
+                                        <div className="text-center py-10 text-gray-400 text-sm">
+                                            還沒有人點餐喔
+                                        </div>
+                                    ) : (
+                                        orders.map((order, index) => (
+                                            <div key={order.id} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                                <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100">
+                                                    <div className="font-bold text-gray-800 flex items-center gap-2">
+                                                        <span className="bg-gray-200 text-gray-600 w-5 h-5 rounded-full flex items-center justify-center text-xs">{index + 1}</span>
+                                                        {order.userName}
+                                                    </div>
+                                                    <div className="font-bold text-emerald-700">${order.total}</div>
+                                                </div>
+                                                
+                                                <div className="space-y-2 mb-2">
+                                                    {(order.items || [{
+                                                        main: order.mainItem, 
+                                                        noodle: order.noodleType, 
+                                                        addOns: order.addOns, 
+                                                        note: order.notes,
+                                                        subtotal: order.total
+                                                    }]).map((item, i) => (
+                                                        <div key={i} className="text-sm text-gray-700 pl-2 border-l-2 border-gray-200">
+                                                            <div className="font-medium">
+                                                                {item.main?.name || '未知品項'}
+                                                                {item.noodle && <span className="text-red-500 ml-1 text-xs">[{item.noodle}]</span>}
+                                                            </div>
+                                                            {(item.addOns || []).length > 0 && (
+                                                                <div className="text-orange-600 text-xs">
+                                                                    + {(item.addOns || []).map(a => a.name).join(' ')}
+                                                                </div>
+                                                            )}
+                                                            {item.note && <div className="text-gray-400 italic text-xs">備註: {item.note}</div>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex justify-end gap-2 pt-1">
+                                                    <button 
+                                                        onClick={() => handleEdit(order)}
+                                                        className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded border border-blue-200 hover:bg-blue-100"
+                                                    >
+                                                        修改
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDelete(order.id)}
+                                                        className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-200 hover:bg-red-100"
+                                                    >
+                                                        刪除
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    <footer className="text-center py-6 text-gray-500 text-sm mt-8">
+                        <div className="bg-white/50 inline-block px-4 py-2 rounded-full shadow-sm">
+                            By Arthur WU
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
