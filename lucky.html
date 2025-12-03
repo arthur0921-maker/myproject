@@ -1,757 +1,539 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, Edit2, Copy, MapPin, Phone, Clock, Utensils, AlertTriangle, X, Plus, Minus, ShoppingCart, MessageSquare } from 'lucide-react';
-import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, getDocs, writeBatch } from "firebase/firestore";
-
-// --- Firebase Configuration ---
-const firebaseConfig = {
-  apiKey: "AIzaSyA0sT_CeKTUHlilGSencC_pQKtVOMFu3Cc",
-  authDomain: "lucky-63840.firebaseapp.com",
-  projectId: "lucky-63840",
-  storageBucket: "lucky-63840.firebasestorage.app",
-  messagingSenderId: "642718455978",
-  appId: "1:642718455978:web:f4cbf05e00cb8f22b698d3",
-  measurementId: "G-PTXHXPGCMV"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'fuxiang-lunch-app';
-const COLLECTION_NAME = 'daily_orders_v2'; 
-
-// --- Menu Data ---
-const MENU_ITEMS = [
-  { id: 1, name: "酥炸雞腿飯", price: 105 },
-  { id: 2, name: "滷雞腿飯", price: 105 },
-  { id: 3, name: "蜜汁雞腿飯", price: 105 },
-  { id: 4, name: "水晶魚飯", price: 95 },
-  { id: 5, name: "現煎鮮魚飯", price: 95 },
-  { id: 6, name: "浦燒鯛魚飯", price: 95 },
-  { id: 7, name: "焢肉飯", price: 90 },
-  { id: 8, name: "排骨飯", price: 90 },
-  { id: 9, name: "滑蛋蝦仁飯", price: 85 },
-  { id: 10, name: "三杯腿肉飯", price: 85 },
-  { id: 11, name: "宮保雞丁飯", price: 85 },
-  { id: 12, name: "糖醋排骨飯", price: 85 },
-  { id: 13, name: "黑椒豬柳飯", price: 85 },
-  { id: 14, name: "無骨雞排飯", price: 85 },
-  { id: 15, name: "鯖魚飯", price: 85 },
-  { id: 16, name: "紅燒肉飯", price: 85 },
-  { id: 17, name: "香煎腿排飯", price: 80 },
-  { id: 18, name: "香腸飯", price: 75 },
-  { id: 19, name: "菜飯 (四樣)", price: 70 },
-];
-
-const RICE_OPTIONS = ["正常", "少飯", "加飯"];
-
-// --- Custom Modal Component ---
-const Modal = ({ isOpen, onClose, title, children, confirmText, onConfirm, type = "normal" }) => {
-  if (!isOpen) return null;
-
-  const isDanger = type === "danger";
-  
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
-        <div className={`p-4 ${isDanger ? 'bg-red-50 border-b border-red-100' : 'bg-gray-50 border-b border-gray-100'} flex justify-between items-center`}>
-          <h3 className={`text-lg font-bold ${isDanger ? 'text-red-600' : 'text-gray-800'}`}>{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="p-6">
-          {children}
-        </div>
-        <div className="p-4 bg-gray-50 flex justify-end space-x-3">
-          <button 
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium transition-colors"
-          >
-            取消
-          </button>
-          <button 
-            onClick={() => { onConfirm(); onClose(); }}
-            className={`px-4 py-2 rounded-lg text-white font-medium shadow-sm transition-colors ${
-              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {confirmText || "確定"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default function LunchOrderApp() {
-  const [user, setUser] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Form State
-  const [name, setName] = useState("");
-  const [selectedDishId, setSelectedDishId] = useState(null);
-  const [quantity, setQuantity] = useState(1);
-  const [riceAmount, setRiceAmount] = useState("正常");
-  const [note, setNote] = useState("");
-  
-  // Cart State (for multiple items)
-  const [cart, setCart] = useState([]);
-  
-  // Edit State
-  const [editingId, setEditingId] = useState(null);
-
-  // Time State
-  const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // Modal State
-  const [modalConfig, setModalConfig] = useState({
-    isOpen: false,
-    title: "",
-    content: null,
-    onConfirm: () => {},
-    confirmText: "",
-    type: "normal"
-  });
-
-  // --- Auth & Data Sync ---
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await signInAnonymously(auth);
-      } catch (error) {
-        console.error("Authentication failed:", error);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ordersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      ordersData.sort((a, b) => b.timestamp - a.timestamp);
-      setOrders(ordersData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching orders:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [user]);
-
-  // --- Timer Logic ---
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const isPastDeadline = useMemo(() => {
-    const hour = currentTime.getHours();
-    return hour >= 10;
-  }, [currentTime]);
-
-  // --- Helper Functions ---
-  const resetForm = (clearName = false) => {
-    if (clearName) setName("");
-    setSelectedDishId(null);
-    setQuantity(1);
-    setRiceAmount("正常");
-    setNote("");
-  };
-
-  // --- Cart Actions ---
-  const handleAddToCart = () => {
-    if (!name.trim()) {
-      showModal("資料不完整", "請輸入點餐者姓名。", () => {}, "確定");
-      return;
-    }
-    if (!selectedDishId) {
-      showModal("資料不完整", "請選擇一份餐點。", () => {}, "確定");
-      return;
-    }
-
-    const dish = MENU_ITEMS.find(item => item.id === selectedDishId);
-    if (!dish) return;
-
-    const newItem = {
-      tempId: Date.now() + Math.random(), // local ID
-      name: name.trim(),
-      dishName: dish.name,
-      price: dish.price,
-      quantity: parseInt(quantity),
-      riceAmount,
-      note: note.trim(),
-      total: dish.price * parseInt(quantity)
-    };
-
-    setCart([...cart, newItem]);
-    resetForm(false); // Keep name for next item
-  };
-
-  const handleRemoveFromCart = (tempId) => {
-    setCart(cart.filter(item => item.tempId !== tempId));
-  };
-
-  // --- Database Actions ---
-  const submitToFirebase = async (itemsToSubmit) => {
-    try {
-      const batch = writeBatch(db);
-      const collRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
-
-      itemsToSubmit.forEach(item => {
-        const docRef = doc(collRef); // Auto-generated ID
-        batch.set(docRef, {
-          name: item.name,
-          dishName: item.dishName,
-          price: item.price,
-          quantity: item.quantity,
-          riceAmount: item.riceAmount,
-          note: item.note,
-          total: item.total,
-          timestamp: Date.now(),
-          userId: user.uid
-        });
-      });
-
-      await batch.commit();
-      
-      // Success Cleanup
-      setCart([]);
-      if (!editingId) resetForm(true); // Clear name only after full submit
-      if (editingId) {
-        setEditingId(null);
-        resetForm(true);
-      }
-
-    } catch (error) {
-      console.error("Error saving order:", error);
-      showModal("錯誤", "訂單送出失敗，請檢查網路連線或稍後再試。", () => {}, "關閉", "danger");
-    }
-  };
-
-  const handleFinalSubmit = async () => {
-    if (cart.length === 0) return;
-
-    if (isPastDeadline) {
-      showModal(
-        "逾時提醒", 
-        <div className="flex flex-col items-center text-center">
-          <AlertTriangle className="w-12 h-12 text-yellow-500 mb-2" />
-          <p className="font-bold text-lg mb-1">已超過訂購時間！</p>
-          <p className="text-gray-600">請與訂餐發起人再次確認，避免沒訂到餐點!!!</p>
-        </div>,
-        () => submitToFirebase(cart),
-        "仍然送出",
-        "danger"
-      );
-    } else {
-      await submitToFirebase(cart);
-    }
-  };
-
-  // Direct Update for Edit Mode
-  const handleUpdateOrder = async () => {
-    if (!selectedDishId || !name) return;
-    const dish = MENU_ITEMS.find(item => item.id === selectedDishId);
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>福餉飯包點餐系統</title>
     
-    const orderData = {
-      name: name.trim(),
-      dishName: dish.name,
-      price: dish.price,
-      quantity: parseInt(quantity),
-      riceAmount,
-      note: note.trim(),
-      total: dish.price * parseInt(quantity),
-      timestamp: Date.now(), // update timestamp? maybe keep original
-      userId: user.uid
-    };
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    // Check deadline if needed, but edits usually allowed? Let's keep logic same.
-    // Simplifying for update:
-    try {
-       const orderRef = doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, editingId);
-       await updateDoc(orderRef, orderData);
-       setEditingId(null);
-       resetForm(true);
-    } catch (error) {
-       console.error(error);
-       showModal("錯誤", "更新失敗", () => {}, "關閉");
-    }
-  };
-
-  const handleEdit = (order) => {
-    // Clear cart if any to avoid confusion
-    if (cart.length > 0) {
-      if(!window.confirm("進入修改模式將會清空目前暫存清單，確定嗎？")) return;
-      setCart([]);
-    }
-
-    setName(order.name);
-    const dish = MENU_ITEMS.find(item => item.name === order.dishName);
-    if (dish) setSelectedDishId(dish.id);
-    setQuantity(order.quantity);
-    setRiceAmount(order.riceAmount || "正常");
-    setNote(order.note || "");
-    setEditingId(order.id);
+    <!-- Babel for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleDelete = (id) => {
-    showModal(
-      "刪除訂單",
-      "確定要刪除這筆訂單嗎？",
-      async () => {
-        try {
-          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, id));
-          if (editingId === id) {
-             setEditingId(null);
-             resetForm(true);
-          }
-        } catch (e) {
-          console.error(e);
+    <!-- React & ReactDOM (ES Modules) -->
+    <!-- We will import these inside the module script below -->
+    
+    <style>
+        /* Custom scrollbar style */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-      },
-      "刪除",
-      "danger"
-    );
-  };
-
-  const handleClearAll = () => {
-    showModal(
-      "結束今天訂購",
-      <div className="text-center">
-        <p className="font-bold text-red-600 text-lg">確定要清空所有訂單嗎？</p>
-        <p className="text-sm text-gray-500 mt-1">此動作無法復原。</p>
-      </div>,
-      async () => {
-        try {
-          const collRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
-          const snapshot = await getDocs(collRef);
-          const batch = writeBatch(db);
-          snapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-          });
-          await batch.commit();
-        } catch (e) {
-          console.error("Error clearing all:", e);
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
         }
-      },
-      "確認清空",
-      "danger"
-    );
-  };
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
 
-  const handleCopy = () => {
-    if (orders.length === 0) return;
-
-    const dateStr = new Date().toLocaleDateString();
-    let text = `📅 ${dateStr} 福餉飯包訂購單\n------------------\n`;
-    
-    orders.forEach((order, index) => {
-      text += `${index + 1}. ${order.name}: ${order.dishName}`;
-      if (order.quantity > 1) text += ` x${order.quantity}`;
-      if (order.riceAmount && order.riceAmount !== "正常") text += ` (${order.riceAmount})`;
-      if (order.note) text += ` [備註: ${order.note}]`;
-      text += ` ($${order.total})\n`;
-    });
-
-    const totalAmount = orders.reduce((sum, o) => sum + o.total, 0);
-    text += `------------------\n💰 總金額: $${totalAmount}\n`;
-
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      const btn = document.getElementById('copy-btn');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `<span class="flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polyline points="20 6 9 17 4 12"></polyline></svg> 已複製</span>`;
-      setTimeout(() => {
-         if(btn) btn.innerHTML = originalText;
-      }, 2000);
-    } catch (err) {
-      console.error('Copy failed', err);
-    }
-    document.body.removeChild(textArea);
-  };
-
-  const showModal = (title, content, onConfirm, confirmText, type = "normal") => {
-    setModalConfig({
-      isOpen: true,
-      title,
-      content,
-      onConfirm,
-      confirmText,
-      type
-    });
-  };
-
-  const selectedDishPrice = selectedDishId ? MENU_ITEMS.find(i => i.id === selectedDishId)?.price : 0;
-  const currentTotal = selectedDishPrice * quantity;
-  const grandTotal = orders.reduce((acc, curr) => acc + curr.total, 0);
-
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
-      {/* Modal */}
-      <Modal 
-        isOpen={modalConfig.isOpen}
-        onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
-        title={modalConfig.title}
-        confirmText={modalConfig.confirmText}
-        onConfirm={modalConfig.onConfirm}
-        type={modalConfig.type}
-      >
-        {modalConfig.content}
-      </Modal>
-
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center space-x-3">
-               <div className="bg-orange-500 p-2 rounded-lg">
-                 <Utensils className="text-white w-6 h-6" />
-               </div>
-               <div>
-                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">福餉飯包點餐</h1>
-                 <p className="text-sm text-slate-500">
-                    {new Date().toLocaleDateString()}
-                    <span className="mx-2">|</span>
-                    <a href="tel:0222828030" className="hover:text-orange-600 transition-colors inline-flex items-center gap-1">
-                       <Phone size={14}/> (02) 2282-8030
-                    </a>
-                 </p>
-               </div>
-            </div>
-
-            <div className="flex flex-col items-end">
-              <div className={`flex items-center gap-2 font-mono font-bold transition-all duration-300 ${isPastDeadline ? 'text-red-600 text-3xl md:text-4xl animate-pulse' : 'text-slate-700 text-2xl'}`}>
-                <Clock size={isPastDeadline ? 32 : 24} />
-                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </div>
-              <div className="text-xs text-slate-500 mt-1">
-                每日 10:00 截止收單
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-md border border-slate-200">
-             <MapPin size={16} className="text-orange-500 mr-2 flex-shrink-0" />
-             <span className="mr-2">新北市蘆洲區民族路297號</span>
-             <a 
-               href="https://www.google.com/maps/search/?api=1&query=新北市蘆洲區民族路297號" 
-               target="_blank" 
-               rel="noreferrer"
-               className="text-blue-600 hover:text-blue-800 underline font-medium"
-             >
-               打開地圖
-             </a>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         
-        {/* Left Column: Menu & Input */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className={`p-6 ${editingId ? 'bg-blue-600' : 'bg-slate-800'} text-white`}>
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Edit2 size={20} />
-                {editingId ? "修改單筆訂單" : "點餐區"}
-              </h2>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Name Input */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">點餐者姓名</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="請輸入您的名字 (例如: 小明)"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-lg"
-                />
-              </div>
+        // Firebase Imports (ES Modules)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-              {/* Menu Grid */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">選擇餐點</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300">
-                  {MENU_ITEMS.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setSelectedDishId(item.id)}
-                      className={`relative p-3 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-md ${
-                        selectedDishId === item.id
-                          ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500'
-                          : 'border-slate-100 bg-white hover:border-orange-200'
-                      }`}
-                    >
-                      <div className="font-bold text-slate-800 text-sm mb-1">{item.name}</div>
-                      <div className="text-orange-600 font-bold">${item.price}</div>
-                      {selectedDishId === item.id && (
-                        <div className="absolute top-2 right-2 w-3 h-3 bg-orange-500 rounded-full"></div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0sT_CeKTUHlilGSencC_pQKtVOMFu3Cc",
+            authDomain: "lucky-63840.firebaseapp.com",
+            projectId: "lucky-63840",
+            storageBucket: "lucky-63840.firebasestorage.app",
+            messagingSenderId: "642718455978",
+            appId: "1:642718455978:web:f4cbf05e00cb8f22b698d3",
+            measurementId: "G-PTXHXPGCMV"
+        };
 
-              {/* Rice Options & Note */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="bg-slate-50 p-4 rounded-xl">
-                   <label className="block text-sm font-medium text-slate-700 mb-2">飯量選擇</label>
-                   <div className="flex gap-2">
-                     {RICE_OPTIONS.map(opt => (
-                       <button
-                         key={opt}
-                         onClick={() => setRiceAmount(opt)}
-                         className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors border ${
-                           riceAmount === opt 
-                             ? 'bg-orange-500 text-white border-orange-500' 
-                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                         }`}
-                       >
-                         {opt}
-                       </button>
-                     ))}
-                   </div>
-                 </div>
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-                 <div className="bg-slate-50 p-4 rounded-xl">
-                    <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                      <MessageSquare size={16} /> 備註
-                    </label>
-                    <input
-                      type="text"
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="例: 不加蔥、切塊"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-orange-500"
-                    />
-                 </div>
-              </div>
+        // Constants
+        const appId = 'fuxiang-lunch-app';
+        const COLLECTION_NAME = 'daily_orders_v2'; 
 
-              {/* Quantity & Summary */}
-              <div className="flex flex-col sm:flex-row gap-4 items-end justify-between bg-slate-50 p-4 rounded-xl">
-                 <div className="w-full sm:w-auto">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">數量</label>
-                    <div className="flex items-center space-x-3">
-                      <button 
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 rounded-full bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-lg font-bold"
-                      ><Minus size={16}/></button>
-                      <span className="text-xl font-bold w-8 text-center">{quantity}</span>
-                      <button 
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="w-10 h-10 rounded-full bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-lg font-bold"
-                      ><Plus size={16}/></button>
-                    </div>
-                 </div>
+        // --- Menu Data ---
+        const MENU_ITEMS = [
+            { id: 1, name: "酥炸雞腿飯", price: 105 },
+            { id: 2, name: "滷雞腿飯", price: 105 },
+            { id: 3, name: "蜜汁雞腿飯", price: 105 },
+            { id: 4, name: "水晶魚飯", price: 95 },
+            { id: 5, name: "現煎鮮魚飯", price: 95 },
+            { id: 6, name: "浦燒鯛魚飯", price: 95 },
+            { id: 7, name: "焢肉飯", price: 90 },
+            { id: 8, name: "排骨飯", price: 90 },
+            { id: 9, name: "滑蛋蝦仁飯", price: 85 },
+            { id: 10, name: "三杯腿肉飯", price: 85 },
+            { id: 11, name: "宮保雞丁飯", price: 85 },
+            { id: 12, name: "糖醋排骨飯", price: 85 },
+            { id: 13, name: "黑椒豬柳飯", price: 85 },
+            { id: 14, name: "無骨雞排飯", price: 85 },
+            { id: 15, name: "鯖魚飯", price: 85 },
+            { id: 16, name: "紅燒肉飯", price: 85 },
+            { id: 17, name: "香煎腿排飯", price: 80 },
+            { id: 18, name: "香腸飯", price: 75 },
+            { id: 19, name: "菜飯 (四樣)", price: 70 },
+        ];
 
-                 <div className="text-right w-full sm:w-auto">
-                    <div className="text-sm text-slate-500 mb-1">本項金額</div>
-                    <div className="text-3xl font-bold text-orange-600">${currentTotal}</div>
-                 </div>
-              </div>
+        const RICE_OPTIONS = ["正常", "少飯", "加飯"];
 
-              {/* Action Button */}
-              {editingId ? (
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleUpdateOrder}
-                    className="flex-1 py-4 rounded-xl bg-blue-600 text-white text-lg font-bold shadow-lg hover:bg-blue-700 flex items-center justify-center gap-2"
-                  >
-                    確認修改 <Edit2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingId(null);
-                      resetForm(true);
-                      setCart([]);
-                    }}
-                    className="px-6 py-4 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300"
-                  >
-                    取消
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleAddToCart}
-                  className="w-full py-4 rounded-xl bg-slate-800 text-white text-lg font-bold shadow-lg transform active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-slate-900"
-                >
-                  <Plus size={18} /> 加入清單 (可多選)
-                </button>
-              )}
-            </div>
+        // --- Icons Components (Replacing Lucide React) ---
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
 
-            {/* Cart Preview Section (Only show if not editing and items in cart) */}
-            {!editingId && cart.length > 0 && (
-              <div className="border-t border-slate-200 bg-orange-50 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <ShoppingCart size={20} className="text-orange-600" />
-                  準備送出的餐點 ({cart.length})
-                </h3>
-                <div className="space-y-3 mb-4">
-                  {cart.map((item) => (
-                    <div key={item.tempId} className="bg-white p-3 rounded-lg border border-orange-200 flex justify-between items-center shadow-sm">
-                      <div>
-                        <div className="font-bold text-slate-800">{item.dishName} x{item.quantity}</div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          {item.riceAmount} 
-                          {item.note && <span className="ml-2 text-orange-600 bg-orange-100 px-1 rounded">備: {item.note}</span>}
+        const Trash2 = (props) => <IconBase {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconBase>;
+        const Edit2 = (props) => <IconBase {...props}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></IconBase>;
+        const Copy = (props) => <IconBase {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></IconBase>;
+        const MapPin = (props) => <IconBase {...props}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></IconBase>;
+        const Phone = (props) => <IconBase {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconBase>;
+        const Clock = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
+        const Utensils = (props) => <IconBase {...props}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></IconBase>;
+        const AlertTriangle = (props) => <IconBase {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
+        const X = (props) => <IconBase {...props}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></IconBase>;
+        const Plus = (props) => <IconBase {...props}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></IconBase>;
+        const Minus = (props) => <IconBase {...props}><line x1="5" y1="12" x2="19" y2="12"/></IconBase>;
+        const ShoppingCart = (props) => <IconBase {...props}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></IconBase>;
+        const MessageSquare = (props) => <IconBase {...props}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></IconBase>;
+
+        // --- Custom Modal Component ---
+        const Modal = ({ isOpen, onClose, title, children, confirmText, onConfirm, type = "normal" }) => {
+            if (!isOpen) return null;
+            const isDanger = type === "danger";
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
+                        <div className={`p-4 ${isDanger ? 'bg-red-50 border-b border-red-100' : 'bg-gray-50 border-b border-gray-100'} flex justify-between items-center`}>
+                            <h3 className={`text-lg font-bold ${isDanger ? 'text-red-600' : 'text-gray-800'}`}>{title}</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                <X size={20} />
+                            </button>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="font-bold text-slate-700">${item.total}</div>
-                        <button onClick={() => handleRemoveFromCart(item.tempId)} className="text-red-500 hover:text-red-700 p-1">
-                          <X size={18} />
-                        </button>
-                      </div>
+                        <div className="p-6">{children}</div>
+                        <div className="p-4 bg-gray-50 flex justify-end space-x-3">
+                            <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium transition-colors">取消</button>
+                            <button onClick={() => { onConfirm(); onClose(); }} className={`px-4 py-2 rounded-lg text-white font-medium shadow-sm transition-colors ${isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{confirmText || "確定"}</button>
+                        </div>
                     </div>
-                  ))}
-                  <div className="text-right text-lg font-bold text-slate-800 pt-2 border-t border-orange-200">
-                    小計: <span className="text-orange-600">${cart.reduce((sum, item) => sum + item.total, 0)}</span>
-                  </div>
                 </div>
-                <button
-                  onClick={handleFinalSubmit}
-                  className="w-full py-3 rounded-xl bg-orange-500 text-white text-lg font-bold shadow-md hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Utensils size={20} /> 確認送出所有餐點
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+            );
+        };
 
-        {/* Right Column: Order List */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full max-h-[calc(100vh-140px)] sticky top-24">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-              <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                今日訂單列表 
-                <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full">{orders.length}</span>
-              </h2>
-              <div className="text-xl font-bold text-slate-800">
-                總計: <span className="text-orange-600">${grandTotal}</span>
-              </div>
-            </div>
+        // --- Main App Component ---
+        function LunchOrderApp() {
+            const [user, setUser] = useState(null);
+            const [orders, setOrders] = useState([]);
+            const [loading, setLoading] = useState(true);
+            
+            // Form State
+            const [name, setName] = useState("");
+            const [selectedDishId, setSelectedDishId] = useState(null);
+            const [quantity, setQuantity] = useState(1);
+            const [riceAmount, setRiceAmount] = useState("正常");
+            const [note, setNote] = useState("");
+            
+            // Cart State
+            const [cart, setCart] = useState([]);
+            
+            // Edit State
+            const [editingId, setEditingId] = useState(null);
 
-            {/* Scrollable List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-200">
-              {loading ? (
-                <div className="text-center py-10 text-slate-400">載入中...</div>
-              ) : orders.length === 0 ? (
-                <div className="text-center py-12 flex flex-col items-center text-slate-400">
-                  <div className="bg-slate-100 p-4 rounded-full mb-3">
-                    <Utensils size={32} className="opacity-50" />
-                  </div>
-                  <p>尚無訂單，快來點餐吧！</p>
+            // Time State
+            const [currentTime, setCurrentTime] = useState(new Date());
+            
+            // Modal State
+            const [modalConfig, setModalConfig] = useState({
+                isOpen: false, title: "", content: null, onConfirm: () => {}, confirmText: "", type: "normal"
+            });
+
+            // --- Auth & Data Sync ---
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Authentication failed:", error);
+                    }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (!user) return;
+                const q = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    ordersData.sort((a, b) => b.timestamp - a.timestamp);
+                    setOrders(ordersData);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching orders:", error);
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const isPastDeadline = useMemo(() => currentTime.getHours() >= 10, [currentTime]);
+
+            const resetForm = (clearName = false) => {
+                if (clearName) setName("");
+                setSelectedDishId(null);
+                setQuantity(1);
+                setRiceAmount("正常");
+                setNote("");
+            };
+
+            const showModal = (title, content, onConfirm, confirmText, type = "normal") => {
+                setModalConfig({ isOpen: true, title, content, onConfirm, confirmText, type });
+            };
+
+            const handleAddToCart = () => {
+                if (!name.trim()) { showModal("資料不完整", "請輸入點餐者姓名。", () => {}, "確定"); return; }
+                if (!selectedDishId) { showModal("資料不完整", "請選擇一份餐點。", () => {}, "確定"); return; }
+                const dish = MENU_ITEMS.find(item => item.id === selectedDishId);
+                if (!dish) return;
+
+                const newItem = {
+                    tempId: Date.now() + Math.random(),
+                    name: name.trim(),
+                    dishName: dish.name,
+                    price: dish.price,
+                    quantity: parseInt(quantity),
+                    riceAmount,
+                    note: note.trim(),
+                    total: dish.price * parseInt(quantity)
+                };
+                setCart([...cart, newItem]);
+                resetForm(false);
+            };
+
+            const handleRemoveFromCart = (tempId) => {
+                setCart(cart.filter(item => item.tempId !== tempId));
+            };
+
+            const submitToFirebase = async (itemsToSubmit) => {
+                try {
+                    const batch = writeBatch(db);
+                    const collRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                    itemsToSubmit.forEach(item => {
+                        const docRef = doc(collRef);
+                        batch.set(docRef, {
+                            name: item.name, dishName: item.dishName, price: item.price,
+                            quantity: item.quantity, riceAmount: item.riceAmount, note: item.note,
+                            total: item.total, timestamp: Date.now(), userId: user.uid
+                        });
+                    });
+                    await batch.commit();
+                    setCart([]);
+                    if (!editingId) resetForm(true);
+                    if (editingId) { setEditingId(null); resetForm(true); }
+                } catch (error) {
+                    console.error("Error saving order:", error);
+                    showModal("錯誤", "訂單送出失敗，請檢查網路連線或稍後再試。", () => {}, "關閉", "danger");
+                }
+            };
+
+            const handleFinalSubmit = async () => {
+                if (cart.length === 0) return;
+                if (isPastDeadline) {
+                    showModal("逾時提醒", 
+                        <div className="flex flex-col items-center text-center">
+                            <AlertTriangle className="w-12 h-12 text-yellow-500 mb-2" />
+                            <p className="font-bold text-lg mb-1">已超過訂購時間！</p>
+                            <p className="text-gray-600">請與訂餐發起人再次確認，避免沒訂到餐點!!!</p>
+                        </div>,
+                        () => submitToFirebase(cart), "仍然送出", "danger"
+                    );
+                } else {
+                    await submitToFirebase(cart);
+                }
+            };
+
+            const handleUpdateOrder = async () => {
+                if (!selectedDishId || !name) return;
+                const dish = MENU_ITEMS.find(item => item.id === selectedDishId);
+                const orderData = {
+                    name: name.trim(), dishName: dish.name, price: dish.price,
+                    quantity: parseInt(quantity), riceAmount, note: note.trim(),
+                    total: dish.price * parseInt(quantity), timestamp: Date.now(), userId: user.uid
+                };
+                try {
+                    const orderRef = doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, editingId);
+                    await updateDoc(orderRef, orderData);
+                    setEditingId(null);
+                    resetForm(true);
+                } catch (error) {
+                    console.error(error);
+                    showModal("錯誤", "更新失敗", () => {}, "關閉");
+                }
+            };
+
+            const handleEdit = (order) => {
+                if (cart.length > 0) {
+                    if(!window.confirm("進入修改模式將會清空目前暫存清單，確定嗎？")) return;
+                    setCart([]);
+                }
+                setName(order.name);
+                const dish = MENU_ITEMS.find(item => item.name === order.dishName);
+                if (dish) setSelectedDishId(dish.id);
+                setQuantity(order.quantity);
+                setRiceAmount(order.riceAmount || "正常");
+                setNote(order.note || "");
+                setEditingId(order.id);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const handleDelete = (id) => {
+                showModal("刪除訂單", "確定要刪除這筆訂單嗎？", async () => {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, id));
+                        if (editingId === id) { setEditingId(null); resetForm(true); }
+                    } catch (e) { console.error(e); }
+                }, "刪除", "danger");
+            };
+
+            const handleClearAll = () => {
+                showModal("結束今天訂購", 
+                    <div className="text-center">
+                        <p className="font-bold text-red-600 text-lg">確定要清空所有訂單嗎？</p>
+                        <p className="text-sm text-gray-500 mt-1">此動作無法復原。</p>
+                    </div>,
+                    async () => {
+                        try {
+                            const collRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                            const snapshot = await getDocs(collRef);
+                            const batch = writeBatch(db);
+                            snapshot.docs.forEach((doc) => { batch.delete(doc.ref); });
+                            await batch.commit();
+                        } catch (e) { console.error("Error clearing all:", e); }
+                    }, "確認清空", "danger"
+                );
+            };
+
+            const handleCopy = () => {
+                if (orders.length === 0) return;
+                const dateStr = new Date().toLocaleDateString();
+                let text = `📅 ${dateStr} 福餉飯包訂購單\n------------------\n`;
+                orders.forEach((order, index) => {
+                    text += `${index + 1}. ${order.name}: ${order.dishName}`;
+                    if (order.quantity > 1) text += ` x${order.quantity}`;
+                    if (order.riceAmount && order.riceAmount !== "正常") text += ` (${order.riceAmount})`;
+                    if (order.note) text += ` [備註: ${order.note}]`;
+                    text += ` ($${order.total})\n`;
+                });
+                const totalAmount = orders.reduce((sum, o) => sum + o.total, 0);
+                text += `------------------\n💰 總金額: $${totalAmount}\n`;
+
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const btn = document.getElementById('copy-btn');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = `<span class="flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polyline points="20 6 9 17 4 12"></polyline></svg> 已複製</span>`;
+                    setTimeout(() => { if(btn) btn.innerHTML = originalText; }, 2000);
+                } catch (err) { console.error('Copy failed', err); }
+                document.body.removeChild(textArea);
+            };
+
+            const selectedDishPrice = selectedDishId ? MENU_ITEMS.find(i => i.id === selectedDishId)?.price : 0;
+            const currentTotal = selectedDishPrice * quantity;
+            const grandTotal = orders.reduce((acc, curr) => acc + curr.total, 0);
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
+                    <Modal isOpen={modalConfig.isOpen} onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))} title={modalConfig.title} confirmText={modalConfig.confirmText} onConfirm={modalConfig.onConfirm} type={modalConfig.type}>{modalConfig.content}</Modal>
+
+                    <header className="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200">
+                        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="bg-orange-500 p-2 rounded-lg"><Utensils className="text-white w-6 h-6" /></div>
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">福餉飯包點餐</h1>
+                                        <p className="text-sm text-slate-500">
+                                            {new Date().toLocaleDateString()}
+                                            <span className="mx-2">|</span>
+                                            <a href="tel:0222828030" className="hover:text-orange-600 transition-colors inline-flex items-center gap-1"><Phone size={14}/> (02) 2282-8030</a>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <div className={`flex items-center gap-2 font-mono font-bold transition-all duration-300 ${isPastDeadline ? 'text-red-600 text-3xl md:text-4xl animate-pulse' : 'text-slate-700 text-2xl'}`}>
+                                        <Clock size={isPastDeadline ? 32 : 24} />
+                                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-1">每日 10:00 截止收單</div>
+                                </div>
+                            </div>
+                            <div className="mt-4 flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-md border border-slate-200">
+                                <MapPin size={16} className="text-orange-500 mr-2 flex-shrink-0" />
+                                <span className="mr-2">新北市蘆洲區民族路297號</span>
+                                <a href="https://www.google.com/maps/search/?api=1&query=新北市蘆洲區民族路297號" target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 underline font-medium">打開地圖</a>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="lg:col-span-7 space-y-6">
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div className={`p-6 ${editingId ? 'bg-blue-600' : 'bg-slate-800'} text-white`}>
+                                    <h2 className="text-xl font-bold flex items-center gap-2"><Edit2 size={20} />{editingId ? "修改單筆訂單" : "點餐區"}</h2>
+                                </div>
+                                <div className="p-6 space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">點餐者姓名</label>
+                                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="請輸入您的名字 (例如: 小明)" className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-lg" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-3">選擇餐點</label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300">
+                                            {MENU_ITEMS.map((item) => (
+                                                <button key={item.id} onClick={() => setSelectedDishId(item.id)} className={`relative p-3 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-md ${selectedDishId === item.id ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500' : 'border-slate-100 bg-white hover:border-orange-200'}`}>
+                                                    <div className="font-bold text-slate-800 text-sm mb-1">{item.name}</div>
+                                                    <div className="text-orange-600 font-bold">${item.price}</div>
+                                                    {selectedDishId === item.id && <div className="absolute top-2 right-2 w-3 h-3 bg-orange-500 rounded-full"></div>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 p-4 rounded-xl">
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">飯量選擇</label>
+                                            <div className="flex gap-2">
+                                                {RICE_OPTIONS.map(opt => (
+                                                    <button key={opt} onClick={() => setRiceAmount(opt)} className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors border ${riceAmount === opt ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}>{opt}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-xl">
+                                            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2"><MessageSquare size={16} /> 備註</label>
+                                            <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="例: 不加蔥、切塊" className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-orange-500" />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-4 items-end justify-between bg-slate-50 p-4 rounded-xl">
+                                        <div className="w-full sm:w-auto">
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">數量</label>
+                                            <div className="flex items-center space-x-3">
+                                                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-full bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-lg font-bold"><Minus size={16}/></button>
+                                                <span className="text-xl font-bold w-8 text-center">{quantity}</span>
+                                                <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-full bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-lg font-bold"><Plus size={16}/></button>
+                                            </div>
+                                        </div>
+                                        <div className="text-right w-full sm:w-auto">
+                                            <div className="text-sm text-slate-500 mb-1">本項金額</div>
+                                            <div className="text-3xl font-bold text-orange-600">${currentTotal}</div>
+                                        </div>
+                                    </div>
+                                    {editingId ? (
+                                        <div className="flex gap-3">
+                                            <button onClick={handleUpdateOrder} className="flex-1 py-4 rounded-xl bg-blue-600 text-white text-lg font-bold shadow-lg hover:bg-blue-700 flex items-center justify-center gap-2">確認修改 <Edit2 size={18} /></button>
+                                            <button onClick={() => { setEditingId(null); resetForm(true); setCart([]); }} className="px-6 py-4 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">取消</button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={handleAddToCart} className="w-full py-4 rounded-xl bg-slate-800 text-white text-lg font-bold shadow-lg transform active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-slate-900"><Plus size={18} /> 加入清單 (可多選)</button>
+                                    )}
+                                </div>
+                                {!editingId && cart.length > 0 && (
+                                    <div className="border-t border-slate-200 bg-orange-50 p-6">
+                                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-orange-600" />準備送出的餐點 ({cart.length})</h3>
+                                        <div className="space-y-3 mb-4">
+                                            {cart.map((item) => (
+                                                <div key={item.tempId} className="bg-white p-3 rounded-lg border border-orange-200 flex justify-between items-center shadow-sm">
+                                                    <div>
+                                                        <div className="font-bold text-slate-800">{item.dishName} x{item.quantity}</div>
+                                                        <div className="text-xs text-slate-500 mt-1">{item.riceAmount} {item.note && <span className="ml-2 text-orange-600 bg-orange-100 px-1 rounded">備: {item.note}</span>}</div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="font-bold text-slate-700">${item.total}</div>
+                                                        <button onClick={() => handleRemoveFromCart(item.tempId)} className="text-red-500 hover:text-red-700 p-1"><X size={18} /></button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <div className="text-right text-lg font-bold text-slate-800 pt-2 border-t border-orange-200">小計: <span className="text-orange-600">${cart.reduce((sum, item) => sum + item.total, 0)}</span></div>
+                                        </div>
+                                        <button onClick={handleFinalSubmit} className="w-full py-3 rounded-xl bg-orange-500 text-white text-lg font-bold shadow-md hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"><Utensils size={20} /> 確認送出所有餐點</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-5 space-y-6">
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full max-h-[calc(100vh-140px)] sticky top-24">
+                                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                                    <h2 className="font-bold text-slate-800 flex items-center gap-2">今日訂單列表 <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full">{orders.length}</span></h2>
+                                    <div className="text-xl font-bold text-slate-800">總計: <span className="text-orange-600">${grandTotal}</span></div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-200">
+                                    {loading ? (
+                                        <div className="text-center py-10 text-slate-400">載入中...</div>
+                                    ) : orders.length === 0 ? (
+                                        <div className="text-center py-12 flex flex-col items-center text-slate-400">
+                                            <div className="bg-slate-100 p-4 rounded-full mb-3"><Utensils size={32} className="opacity-50" /></div>
+                                            <p>尚無訂單，快來點餐吧！</p>
+                                        </div>
+                                    ) : (
+                                        orders.map((order) => (
+                                            <div key={order.id} className={`group p-4 rounded-xl border transition-all hover:shadow-md flex justify-between items-start ${editingId === order.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100'}`}>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-slate-800 text-lg">{order.name}</span>
+                                                        <span className="text-xs text-slate-400 font-mono">{new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                                    </div>
+                                                    <div className="text-slate-600 font-medium">{order.dishName} {order.quantity > 1 && <span className="text-orange-600 font-bold ml-1">x{order.quantity}</span>}</div>
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        {order.riceAmount && order.riceAmount !== "正常" && <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 font-medium border border-green-200">{order.riceAmount}</span>}
+                                                        {order.note && <span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 font-medium border border-yellow-200 flex items-center gap-1"><MessageSquare size={10} /> {order.note}</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2 ml-3">
+                                                    <div className="font-bold text-slate-800 text-lg">${order.total}</div>
+                                                    <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => handleEdit(order)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg" title="修改"><Edit2 size={16} /></button>
+                                                        <button onClick={() => handleDelete(order.id)} className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg" title="刪除"><Trash2 size={16} /></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl space-y-3">
+                                    <button onClick={handleClearAll} className="w-full py-3 bg-white border-2 border-red-100 text-red-600 rounded-xl hover:bg-red-50 hover:border-red-200 font-bold transition-colors flex items-center justify-center gap-2 shadow-sm">結束今天訂購</button>
+                                    <button id="copy-btn" onClick={handleCopy} disabled={orders.length === 0} className="w-full py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 font-medium transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"><Copy size={18} /> 複製訂單內容</button>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    <footer className="fixed bottom-0 left-0 w-full py-2 bg-white/80 backdrop-blur-sm text-center border-t border-slate-200 z-20">
+                        <p className="text-xs font-mono text-slate-400">Made with ❤️ By Arthur WU</p>
+                    </footer>
                 </div>
-              ) : (
-                orders.map((order) => (
-                  <div 
-                    key={order.id} 
-                    className={`group p-4 rounded-xl border transition-all hover:shadow-md flex justify-between items-start ${
-                      editingId === order.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100'
-                    }`}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-slate-800 text-lg">{order.name}</span>
-                        <span className="text-xs text-slate-400 font-mono">
-                           {new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </span>
-                      </div>
-                      <div className="text-slate-600 font-medium">
-                        {order.dishName} 
-                        {order.quantity > 1 && <span className="text-orange-600 font-bold ml-1">x{order.quantity}</span>}
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                         {order.riceAmount && order.riceAmount !== "正常" && (
-                           <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 font-medium border border-green-200">
-                             {order.riceAmount}
-                           </span>
-                         )}
-                         {order.note && (
-                           <span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 font-medium border border-yellow-200 flex items-center gap-1">
-                             <MessageSquare size={10} /> {order.note}
-                           </span>
-                         )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-end gap-2 ml-3">
-                      <div className="font-bold text-slate-800 text-lg">${order.total}</div>
-                      <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleEdit(order)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg"
-                          title="修改"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(order.id)}
-                          className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg"
-                          title="刪除"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            );
+        }
 
-            {/* Footer Actions */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl space-y-3">
-              <button 
-                onClick={handleClearAll}
-                className="w-full py-3 bg-white border-2 border-red-100 text-red-600 rounded-xl hover:bg-red-50 hover:border-red-200 font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
-              >
-                結束今天訂購
-              </button>
-              
-              <button 
-                id="copy-btn"
-                onClick={handleCopy}
-                disabled={orders.length === 0}
-                className="w-full py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 font-medium transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Copy size={18} />
-                複製訂單內容
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer Credit */}
-      <footer className="fixed bottom-0 left-0 w-full py-2 bg-white/80 backdrop-blur-sm text-center border-t border-slate-200 z-20">
-        <p className="text-xs font-mono text-slate-400">
-          Made with ❤️ By Arthur WU
-        </p>
-      </footer>
-    </div>
-  );
-}
+        const root = createRoot(document.getElementById('root'));
+        root.render(<LunchOrderApp />);
+    </script>
+</body>
+</html>
