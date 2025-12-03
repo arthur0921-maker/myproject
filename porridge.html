@@ -226,6 +226,7 @@
             // --- Constants ---
             const DEADLINE_HOUR = 10;
             const RESTAURANT_ADDRESS = "新北市三重區碧華街376號";
+            const RESTAURANT_PHONE = "02-8287-0089";
             const MAP_URL = "https://www.google.com/maps/search/?api=1&query=新北市三重區碧華街376號";
             const COLLECTION_NAME = "porridge_orders_v2"; // Updated version for new data structure
 
@@ -570,6 +571,9 @@
                                 <a href={MAP_URL} target="_blank" rel="noreferrer" className="text-emerald-100 hover:text-white text-sm mt-1 flex items-center gap-1 hover:underline">
                                     📍 {RESTAURANT_ADDRESS}
                                 </a>
+                                <div className="text-emerald-100 text-sm mt-1 flex items-center gap-1">
+                                    📞 <a href={`tel:${RESTAURANT_PHONE.replace(/-/g, '')}`} className="hover:text-white hover:underline font-mono">{RESTAURANT_PHONE}</a>
+                                </div>
                             </div>
                             <div className="flex flex-col items-center md:items-end">
                                 <div className="text-sm opacity-80">{formattedDate}</div>
