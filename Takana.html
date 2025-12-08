@@ -319,6 +319,15 @@
             line-height: 1.6; 
             white-space: pre-wrap; 
         }
+        .order-note-display {
+            font-size: 0.95rem;
+            color: #d35400;
+            background: #fff5e6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+            display: inline-block;
+        }
         .order-total { 
             text-align: right; 
             font-weight: bold; 
@@ -403,7 +412,7 @@
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
         @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
 
-        /* --- 自訂 Modal (取代 confirm/alert) --- */
+        /* --- Modal Styles (Alert & Addon) --- */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -421,6 +430,8 @@
             text-align: center;
             box-shadow: 0 5px 25px rgba(0,0,0,0.3);
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
         
@@ -438,6 +449,19 @@
         .modal-btn-no:hover { background: #ddd; }
         .modal-btn-yes { background: #e74c3c; color: white; }
         .modal-btn-yes:hover { background: #c0392b; }
+
+        /* Addon List Specifics */
+        .addon-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px dashed #eee;
+            text-align: left;
+        }
+        .addon-item:last-child { border-bottom: none; }
+        .addon-item input { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
+        .addon-item label { flex: 1; cursor: pointer; font-size: 0.95rem; }
+        .addon-price { color: var(--primary-color); font-weight: bold; }
 
         /* --- AI Assistant Styles --- */
         .ai-fab {
@@ -589,7 +613,7 @@
 <header id="mainHeader">
     <div class="header-info">
         <h1>
-            <i class="fas fa-utensils"></i> 高田食堂 點餐系統 V2.7
+            <i class="fas fa-utensils"></i> 高田食堂 點餐系統 V2.8 
             <span id="connStatus" class="status-indicator disconnected"><i class="fas fa-circle"></i> 連線中...</span>
         </h1>
         <div class="sub-info">
@@ -610,8 +634,9 @@
 <div class="container">
     <div class="menu-section">
         <div class="input-group">
-            <label style="font-weight: bold; margin-bottom: 5px; color: #555;">訂購人姓名：</label>
+            <label style="font-weight: bold; margin-bottom: 5px; color: #555;">訂購人姓名 & 備註：</label>
             <input type="text" id="userName" class="form-control" placeholder="請輸入點餐者姓名 (必填)">
+            <input type="text" id="orderNote" class="form-control" placeholder="備註 (選填，例如：不要蔥、飯少...)" style="margin-top: 8px;">
         </div>
 
         <div class="category-tabs-row" id="categoryTabs1"></div>
@@ -665,7 +690,7 @@
 </div>
 
 <footer>
-    製作宣告 By Arthur WU | V2.7 (Menu Updates)
+    製作宣告 By Arthur WU | V2.8 (Addons & Notes)
 </footer>
 
 <!-- AI 助手 FAB -->
@@ -701,6 +726,23 @@
         <div class="modal-actions">
             <button class="modal-btn modal-btn-no" onclick="closeConfirm()">取消</button>
             <button class="modal-btn modal-btn-yes" onclick="onConfirmYes()">確定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 加購優惠視窗 -->
+<div class="modal-overlay" id="addonModal">
+    <div class="modal-box" style="width: 350px; text-align: left;">
+        <h3 style="margin-top:0; text-align:center; color:var(--primary-color); border-bottom: 1px solid #eee; padding-bottom:10px;">✨ 加購優惠</h3>
+        <p id="addonTargetName" style="text-align:center; font-weight:bold; margin-bottom:15px; color:#555;"></p>
+        
+        <div id="addonList" style="display:flex; flex-direction:column; gap:8px; max-height:250px; overflow-y:auto;">
+            <!-- Generated via JS -->
+        </div>
+        
+        <div class="modal-actions" style="margin-top:20px;">
+            <button class="modal-btn modal-btn-no" onclick="closeAddonModal()">不用，謝謝</button>
+            <button class="modal-btn modal-btn-yes" onclick="confirmAddon()">加入購物車</button>
         </div>
     </div>
 </div>
@@ -745,6 +787,16 @@
     let allOrders = [];
     let editingOrderId = null; 
     let editingDocId = null;
+    let pendingItem = null; // 暫存準備加入購物車的餐點
+
+    // --- 加購項目清單 ---
+    const ADDON_ITEMS = [
+        { name: "咖哩醬加價購", price: 10 },
+        { name: "唐揚豆腐加價購", price: 48 },
+        { name: "唐揚雞加價購", price: 78 },
+        { name: "黃金豬排加價購", price: 78 },
+        { name: "升級定食加價購", price: 135 }
+    ];
 
     // --- 完整菜單資料 (Updated V2.7) ---
     const menuData = {
@@ -913,7 +965,7 @@
         });
     }
 
-    // --- Modal 邏輯 ---
+    // --- Modal 邏輯 (Alert) ---
     let confirmCallback = null;
 
     window.showConfirm = function(msg, callback) {
@@ -930,6 +982,58 @@
     window.onConfirmYes = function() {
         if (confirmCallback) confirmCallback();
         closeConfirm();
+    }
+
+    // --- Addon Modal 邏輯 (加購優惠) ---
+    window.showAddonModal = function(item) {
+        pendingItem = item;
+        document.getElementById('addonTargetName').innerText = `已選擇：${item.name} ($${item.price})`;
+        
+        const list = document.getElementById('addonList');
+        list.innerHTML = ""; // Clear existing
+
+        ADDON_ITEMS.forEach((addon, index) => {
+            const div = document.createElement('div');
+            div.className = 'addon-item';
+            div.innerHTML = `
+                <input type="checkbox" id="addon_${index}" value="${index}">
+                <label for="addon_${index}">${addon.name} <span class="addon-price">+$${addon.price}</span></label>
+            `;
+            list.appendChild(div);
+        });
+
+        document.getElementById('addonModal').style.display = 'flex';
+    }
+
+    window.closeAddonModal = function() {
+        document.getElementById('addonModal').style.display = 'none';
+        // 如果取消加購，視為"不加購"並加入原餐點
+        // 但使用者按"取消/不用"按鈕時可能只想關閉，這裡設計為"不用，謝謝" -> 僅加入主餐點
+        // 如果想完全取消加入購物車，應該點背景或按叉叉? 這裡簡化為 "不加購"
+        if (pendingItem) {
+            addToCart(pendingItem); 
+            pendingItem = null;
+        }
+    }
+
+    // 當使用者點擊"加入購物車" (包含選取的加購項目)
+    window.confirmAddon = function() {
+        if (!pendingItem) return;
+        
+        // 先加入主餐點
+        addToCart(pendingItem);
+
+        // 檢查加購
+        ADDON_ITEMS.forEach((addon, index) => {
+            const checkbox = document.getElementById(`addon_${index}`);
+            if (checkbox.checked) {
+                addToCart(addon);
+            }
+        });
+
+        pendingItem = null;
+        document.getElementById('addonModal').style.display = 'none';
+        showToast("餐點與加購項目已加入！");
     }
 
     // --- 初始化 ---
@@ -1024,7 +1128,8 @@
                 <div class="item-name">${item.name}</div>
                 <div class="item-price">$${item.price}</div>
             `;
-            div.onclick = () => addToCart(item);
+            // 修改：點擊觸發加購視窗
+            div.onclick = () => showAddonModal(item);
             container.appendChild(div);
         });
     }
@@ -1086,6 +1191,7 @@
         submitBtn.disabled = true;
 
         const name = document.getElementById("userName").value.trim();
+        const note = document.getElementById("orderNote").value.trim(); // 取得備註
         const location = document.getElementById("locationSelect").value;
         
         const orderDetails = currentCart.map(i => i.name).join(", ");
@@ -1095,6 +1201,7 @@
         const newOrderData = {
             id: timestampId,
             name: name,
+            note: note, // 儲存備註
             items: orderDetails,
             rawItems: JSON.parse(JSON.stringify(currentCart)), 
             price: orderPrice,
@@ -1114,6 +1221,7 @@
             currentCart = [];
             updateCartDisplay();
             document.getElementById("userName").value = ""; 
+            document.getElementById("orderNote").value = ""; 
         } catch (e) {
             console.error(e);
             showToast("傳送失敗：" + e.message);
@@ -1247,6 +1355,7 @@
         if (!order) return;
         
         document.getElementById("userName").value = order.name;
+        document.getElementById("orderNote").value = order.note || ""; // 載入備註
         document.getElementById("locationSelect").value = order.location;
         if (order.rawItems && Array.isArray(order.rawItems)) {
             currentCart = JSON.parse(JSON.stringify(order.rawItems));
@@ -1272,6 +1381,7 @@
         editingOrderId = null;
         editingDocId = null;
         document.getElementById("userName").value = "";
+        document.getElementById("orderNote").value = "";
         currentCart = [];
         updateCartDisplay();
         const submitBtn = document.getElementById("submitBtn");
@@ -1302,6 +1412,9 @@
             const div = document.createElement("div");
             div.className = `order-card ${editingOrderId === order.id ? 'editing' : ''}`;
             
+            // 處理備註顯示 (如果有)
+            const noteHtml = order.note ? `<div class="order-note-display"><i class="fas fa-sticky-note"></i> ${order.note}</div>` : '';
+
             div.innerHTML = `
                 <div class="card-actions">
                     <button class="btn-icon btn-edit-single" onclick="editOrder(${order.id})" title="修改訂單">
@@ -1315,6 +1428,7 @@
                     <span><i class="fas fa-user"></i> ${order.name} <span style="font-size:0.8em; color:#999; font-weight:normal;">(${order.location})</span></span>
                 </div>
                 <div class="order-items">${order.items}</div>
+                ${noteHtml}
                 <div class="order-total">
                     $${order.price}
                 </div>
@@ -1360,7 +1474,8 @@
         let text = `【高田食堂訂購單】\n日期：${new Date().toLocaleDateString()}\n------------------\n`;
         let total = 0;
         allOrders.forEach(o => {
-            text += `${o.name}：${o.items} ($${o.price})\n`;
+            const noteText = o.note ? ` (備註: ${o.note})` : '';
+            text += `${o.name}：${o.items}${noteText} ($${o.price})\n`;
             total += o.price;
         });
         text += `------------------\n總金額：$${total}`;
