@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>根藤好好吃咖哩 V1.2 - 線上點餐系統</title>
+    <style>
+        :root {
+            --primary-color: #d35400; /* 咖哩色 */
+            --bg-color: #fdf5e6;
+            --text-color: #333;
+            --danger-color: #e74c3c;
+            --success-color: #27ae60;
+            --modal-bg: rgba(0, 0, 0, 0.6);
+            --container-bg: white;
+            --shadow-color: rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+        }
+
+        /* --- Theme Styles --- */
+        /* Theme 1: Saffron Sunset */
+        body.theme-saffron {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+        
+        /* Theme 2: Royal Pattern (CSS Pattern) */
+        body.theme-pattern {
+            background-color: #f8ecc2;
+            background-image: radial-gradient(#d35400 15%, transparent 16%),
+            radial-gradient(#d35400 15%, transparent 16%);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            opacity: 1;
+        }
+
+        /* Theme 3: Bombay Red */
+        body.theme-royal {
+            background: #631c1c; /* Deep Red */
+            background-image: repeating-linear-gradient(45deg, #571616 25%, transparent 25%, transparent 75%, #571616 75%, #571616), repeating-linear-gradient(45deg, #571616 25%, #631c1c 25%, #631c1c 75%, #571616 75%, #571616);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            background: var(--container-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            /* Glassmorphism support */
+            backdrop-filter: blur(5px);
+        }
+
+        /* Theme Switcher UI */
+        .theme-switcher {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 2000;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .theme-switcher span { font-size: 0.8rem; font-weight: bold; color: #555; margin-right: 5px; }
+        .theme-btn {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .theme-btn:hover { transform: scale(1.2); }
+        .t-default { background: #fdf5e6; border-color: #ccc; }
+        .t-saffron { background: linear-gradient(135deg, #f6d365, #fda085); }
+        .t-pattern { background: #f8ecc2; background-image: radial-gradient(#d35400 2px, transparent 2px); background-size: 10px 10px; }
+        .t-royal { background: #631c1c; }
+
+        /* Header Area */
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .info-bar a {
+            color: #2980b9;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .clock-area {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .clock-area.over-time {
+            color: var(--danger-color);
+            font-size: 2rem; /* 放大字體 */
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Controls */
+        .top-controls {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .btn-danger:hover { background-color: #c0392b; }
+
+        /* Left Panel: Form */
+        .order-form {
+            padding: 10px;
+        }
+
+        /* Menu Images Styles */
+        .menu-gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .menu-gallery img {
+            width: 100%;
+            height: auto;
+            border: 4px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* 圖片外框陰影 */
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            object-fit: cover;
+        }
+
+        .menu-gallery img:hover {
+            transform: scale(1.03);
+            border-color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        /* Checkbox Style */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #fff8f0;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            color: #d35400;
+        }
+
+        select.form-control {
+            background-color: white;
+        }
+
+        .btn-submit {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-submit:hover { background-color: #a04000; }
+        
+        .btn-update {
+            background-color: #27ae60;
+            display: none; /* Hidden by default */
+        }
+        
+        .btn-cancel-edit {
+            background-color: #7f8c8d;
+            margin-top: 10px;
+            display: none; /* Hidden by default */
+        }
+
+        .arthur-sign {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #888;
+            font-size: 0.9rem;
+            grid-column: 1 / -1;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border: 1px dashed #ccc;
+        }
+
+        /* Right Panel: List */
+        .order-list-panel {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 800px; /* Increased height to accommodate list */
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .order-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .order-card {
+            background: white;
+            border-left: 5px solid var(--primary-color);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .order-info strong { color: #2c3e50; font-size: 1.1rem; }
+        .order-info span { color: #7f8c8d; font-size: 0.9rem; }
+        .order-info .price { color: var(--primary-color); font-weight: bold; }
+        .order-note { font-size: 0.85rem; color: #666; font-style: italic; display: block; margin-top: 2px;}
+        
+        .sauce-tag {
+            background-color: #e67e22;
+            color: white;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .order-actions button {
+            margin-left: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .btn-edit { background-color: #f39c12; color: white; }
+        .btn-del { background-color: #e74c3c; color: white; }
+
+        .total-summary {
+            margin-top: 15px;
+            text-align: right;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-top: 2px solid #ccc;
+            padding-top: 10px;
+        }
+
+        .btn-copy {
+            background-color: #34495e;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn-copy:hover { background-color: #2c3e50; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-bg);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+        .modal-body { margin-bottom: 20px; font-size: 1rem; line-height: 1.5; }
+        
+        .modal-buttons { display: flex; justify-content: center; gap: 10px; }
+        .modal-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .modal-btn.confirm { background-color: var(--primary-color); color: white; }
+        .modal-btn.cancel { background-color: #95a5a6; color: white; }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+            .top-controls { position: relative; text-align: right; margin-bottom: 10px; }
+            .menu-gallery { grid-template-columns: 1fr; }
+            .theme-switcher { top: auto; bottom: 10px; left: 50%; transform: translateX(-50%); } /* Move to bottom on mobile */
+        }
+    </style>
+</head>
+<body class="theme-saffron">
+
+<!-- Theme Switcher -->
+<div class="theme-switcher">
+    <span>背景預覽:</span>
+    <div class="theme-btn t-default" onclick="setTheme('')" title="原始米色"></div>
+    <div class="theme-btn t-saffron" onclick="setTheme('theme-saffron')" title="蕃紅花夕陽"></div>
+    <div class="theme-btn t-pattern" onclick="setTheme('theme-pattern')" title="皇家圖騰"></div>
+    <div class="theme-btn t-royal" onclick="setTheme('theme-royal')" title="孟買紅磚"></div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <div class="top-controls">
+            <button class="btn-danger" id="btnClearAll">清除今天訂購資料</button>
+        </div>
+        <h1>根藤好好吃咖哩 V1.2</h1>
+        <div class="info-bar">
+            <span>📅 日期: <span id="currentDate"></span></span>
+            <span>📍 地址: <a href="https://www.google.com/maps/search/?api=1&query=新北市三重區仁愛街652號" target="_blank">新北市三重區仁愛街652號</a></span>
+            <span>📞 電話: 2280-7866~7</span>
+        </div>
+        <div id="clockDisplay" class="clock-area">現在時間: <span id="clockTime">--:--:--</span> (10:00 截止)</div>
+    </div>
+
+    <div class="order-form">
+        <!-- New Menu Images Section -->
+        <div class="menu-gallery">
+            <a href="https://github.com/arthur0921-maker/myproject/blob/main/curry1.jpg?raw=true" target="_blank">
+                <img src="https://github.com/arthur0921-maker/myproject/blob/main/curry1.jpg?raw=true" alt="根藤菜單1">
+            </a>
+            <a href="https://github.com/arthur0921-maker/myproject/blob/main/curry2.jpg?raw=true" target="_blank">
+                <img src="https://github.com/arthur0921-maker/myproject/blob/main/curry2.jpg?raw=true" alt="根藤菜單2">
+            </a>
+        </div>
+
+        <h3>🍴 我要點餐</h3>
+        <input type="hidden" id="editOrderId" value="">
+        
+        <div class="form-group">
+            <label for="userName">姓名</label>
+            <input type="text" id="userName" class="form-control" placeholder="請輸入您的姓名">
+        </div>
+
+        <div class="form-group">
+            <label for="menuItem">餐點選擇</label>
+            <select id="menuItem" class="form-control">
+                <!-- Menu populated by JS -->
+            </select>
+        </div>
+
+        <!-- New Extra Sauce Checkbox -->
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="addSauce">
+            <label for="addSauce">加購咖哩醬 (+$30)</label>
+        </div>
+
+        <div class="form-group">
+            <label for="userNote">備註 (選填)</label>
+            <input type="text" id="userNote" class="form-control" placeholder="例如：飯少、不加蔥、加辣">
+        </div>
+
+        <button id="btnSubmit" class="btn-submit">送出訂單</button>
+        <button id="btnUpdate" class="btn-submit btn-update">更新訂單</button>
+        <button id="btnCancelEdit" class="btn-submit btn-cancel-edit">取消修改</button>
+    </div>
+
+    <div class="order-list-panel">
+        <div class="order-list-header">
+            <h3>📋 今日訂單列表</h3>
+            <span id="orderCount">0 筆</span>
+        </div>
+        <div id="orderListContainer">
+            <p style="text-align:center; color:#999;">目前尚無訂單...</p>
+        </div>
+        
+        <div class="total-summary">
+            總金額: $<span id="grandTotal">0</span>
+        </div>
+        <button id="btnCopy" class="btn-copy">📋 複製訂單內容 (文字版)</button>
+    </div>
+
+    <div class="arthur-sign">By Arthur WU</div>
+</div>
+
+<div id="customModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-title" id="modalTitle">標題</div>
+        <div class="modal-body" id="modalBody">內容</div>
+        <div class="modal-buttons">
+            <button id="modalBtnCancel" class="modal-btn cancel">取消</button>
+            <button id="modalBtnConfirm" class="modal-btn confirm">確定</button>
+        </div>
+    </div>
+</div>
+
+<!-- Theme Switcher Logic -->
+<script>
+    function setTheme(themeName) {
+        document.body.className = themeName;
+    }
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, writeBatch, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyCR9poPRE_R6HFaRw32LNoGZQF4zbbfBo4",
+        authDomain: "curry-49272.firebaseapp.com",
+        projectId: "curry-49272",
+        storageBucket: "curry-49272.firebasestorage.app",
+        messagingSenderId: "1092759861458",
+        appId: "1:1092759861458:web:8f4d87ead07d0066e2550b",
+        measurementId: "G-NE7LBPZQZL"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // Setup ID
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const COLLECTION_NAME = "daily_orders";
+
+    // Menu Data
+    const menuItems = [
+        { name: "雞腿便當", price: 110 },
+        { name: "排骨便當", price: 100 },
+        { name: "鱈魚便當", price: 90 },
+        { name: "蝦捲便當", price: 90 },
+        { name: "腿庫便當", price: 90 },
+        { name: "豬棒腿便當", price: 90 },
+        { name: "紅燒肉便當", price: 85 },
+        { name: "香腸便當", price: 80 },
+        { name: "咖哩便當", price: 80 },
+        { name: "大咖哩飯", price: 75 },
+        { name: "滷肉便當", price: 70 },
+        { name: "小咖哩飯", price: 65 },
+        { name: "合菜便當", price: 65 },
+        { name: "每日例湯", price: 20 }
+    ];
+
+    // --- UI Logic ---
+    const menuSelect = document.getElementById('menuItem');
+    const orderListContainer = document.getElementById('orderListContainer');
+    const grandTotalSpan = document.getElementById('grandTotal');
+    const orderCountSpan = document.getElementById('orderCount');
+    const clockTimeSpan = document.getElementById('clockTime');
+    const clockDisplayDiv = document.getElementById('clockDisplay');
+    const currentDateSpan = document.getElementById('currentDate');
+
+    // Populate Menu
+    menuItems.forEach(item => {
+        const option = document.createElement('option');
+        option.value = `${item.name}|${item.price}`;
+        option.textContent = `${item.name} - $${item.price}`;
+        menuSelect.appendChild(option);
+    });
+
+    // Clock & Date Logic
+    function updateTime() {
+        const now = new Date();
+        currentDateSpan.textContent = now.toLocaleDateString('zh-TW');
+        clockTimeSpan.textContent = now.toLocaleTimeString('zh-TW', { hour12: false });
+        
+        const hour = now.getHours();
+        if (hour >= 10) {
+            clockDisplayDiv.classList.add('over-time');
+        } else {
+            clockDisplayDiv.classList.remove('over-time');
+        }
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Custom Modal Logic
+    const modal = document.getElementById('customModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalBtnConfirm = document.getElementById('modalBtnConfirm');
+    const modalBtnCancel = document.getElementById('modalBtnCancel');
+    let modalCallback = null;
+
+    function showModal(title, message, showCancel = true, callback = null) {
+        modalTitle.textContent = title;
+        modalBody.textContent = message;
+        modalBtnCancel.style.display = showCancel ? 'inline-block' : 'none';
+        modalCallback = callback;
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        modalCallback = null;
+    }
+
+    modalBtnCancel.addEventListener('click', closeModal);
+    modalBtnConfirm.addEventListener('click', () => {
+        if (modalCallback) modalCallback();
+        closeModal();
+    });
+
+    // --- Authentication & Initialization ---
+    function initApp() {
+        signInAnonymously(auth).catch((error) => {
+            console.error("Auth Error:", error);
+            showModal("系統錯誤", "無法連接到資料庫驗證系統，請重整網頁。", false);
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setupRealtimeListener();
+            }
+        });
+    }
+
+    // --- Data Logic (Firebase) ---
+    
+    // 1. Submit Order
+    document.getElementById('btnSubmit').addEventListener('click', async () => {
+        if (!auth.currentUser) {
+            showModal("錯誤", "尚未連線到資料庫，請稍候...", false);
+            return;
+        }
+
+        const name = document.getElementById('userName').value.trim();
+        const itemValue = document.getElementById('menuItem').value;
+        const note = document.getElementById('userNote').value.trim();
+        const hasSauce = document.getElementById('addSauce').checked;
+        
+        if (!name) {
+            showModal("提示", "請輸入姓名！", false);
+            return;
+        }
+
+        const [itemName, itemPriceStr] = itemValue.split('|');
+        let price = parseInt(itemPriceStr);
+        if (hasSauce) {
+            price += 30;
+        }
+
+        // Check Deadline
+        const now = new Date();
+        if (now.getHours() >= 10) {
+            showModal("超時警告", "已超過訂購時間(10:00)，請與訂餐發起人再次確認，避免沒訂到餐點!!!", true, async () => {
+                await pushOrderToFirebase(name, itemName, price, note, hasSauce);
+            });
+        } else {
+            await pushOrderToFirebase(name, itemName, price, note, hasSauce);
+        }
+    });
+
+    async function pushOrderToFirebase(name, item, price, note, hasSauce) {
+        try {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), {
+                name: name,
+                item: item,
+                price: price,
+                note: note,
+                hasSauce: hasSauce,
+                timestamp: new Date()
+            });
+            document.getElementById('userName').value = '';
+            document.getElementById('userNote').value = '';
+            document.getElementById('addSauce').checked = false; // Reset checkbox
+        } catch (e) {
+            console.error("Error adding document: ", e);
+            if (e.code === 'permission-denied') {
+                showModal("權限錯誤", "送出失敗，資料庫拒絕存取，請檢查資料庫規則。", false);
+            } else {
+                showModal("錯誤", "送出失敗，請檢查網路連線", false);
+            }
+        }
+    }
+
+    // 2. Realtime Sync (Listen)
+    let currentOrders = [];
+    let unsubscribeSnapshot = null;
+
+    function setupRealtimeListener() {
+        if (unsubscribeSnapshot) return;
+
+        const q = query(
+            collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), 
+            orderBy("timestamp", "asc")
+        );
+        
+        unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+            orderListContainer.innerHTML = '';
+            currentOrders = [];
+            let total = 0;
+
+            if (snapshot.empty) {
+                orderListContainer.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">目前尚無訂單...</p>';
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                currentOrders.push({ id: doc.id, ...data });
+                total += data.price;
+
+                // Handle Sauce Display
+                const sauceBadge = data.hasSauce ? `<span class="sauce-tag">+咖哩醬</span>` : '';
+
+                const div = document.createElement('div');
+                div.className = 'order-card';
+                div.innerHTML = `
+                    <div class="order-info">
+                        <strong>${data.name}</strong> 
+                        <span>點了</span> <span style="color:#333; font-weight:500;">${data.item}</span>${sauceBadge}
+                        <span class="price">$${data.price}</span>
+                        ${data.note ? `<span class="order-note">備註: ${data.note}</span>` : ''}
+                    </div>
+                    <div class="order-actions">
+                        <button class="btn-edit" data-id="${doc.id}">修改</button>
+                        <button class="btn-del" data-id="${doc.id}">刪除</button>
+                    </div>
+                `;
+                orderListContainer.appendChild(div);
+            });
+
+            grandTotalSpan.textContent = total;
+            orderCountSpan.textContent = `${snapshot.size} 筆`;
+
+            document.querySelectorAll('.btn-del').forEach(btn => {
+                btn.addEventListener('click', (e) => confirmDelete(e.target.dataset.id));
+            });
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', (e) => prepareEdit(e.target.dataset.id));
+            });
+        }, (error) => {
+            console.error("Snapshot Listener Error:", error);
+            if (error.code === 'permission-denied') {
+                orderListContainer.innerHTML = '<p style="text-align:center; color:red;">讀取資料失敗：權限不足</p>';
+            }
+        });
+    }
+
+    // 3. Delete Logic
+    function confirmDelete(id) {
+        showModal("確認刪除", "確定要刪除這筆訂單嗎？", true, async () => {
+            if (!auth.currentUser) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, id));
+        });
+    }
+
+    // 4. Edit Logic
+    function prepareEdit(id) {
+        const order = currentOrders.find(o => o.id === id);
+        if (!order) return;
+
+        document.getElementById('userName').value = order.name;
+        document.getElementById('userNote').value = order.note;
+        document.getElementById('addSauce').checked = order.hasSauce || false; // Set Checkbox
+        
+        const select = document.getElementById('menuItem');
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value.startsWith(order.item)) {
+                select.selectedIndex = i;
+                break;
+            }
+        }
+
+        document.getElementById('btnSubmit').style.display = 'none';
+        document.getElementById('btnUpdate').style.display = 'block';
+        document.getElementById('btnCancelEdit').style.display = 'block';
+        document.getElementById('editOrderId').value = id;
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('btnCancelEdit').addEventListener('click', resetFormState);
+
+    function resetFormState() {
+        document.getElementById('userName').value = '';
+        document.getElementById('userNote').value = '';
+        document.getElementById('editOrderId').value = '';
+        document.getElementById('addSauce').checked = false;
+        
+        document.getElementById('btnSubmit').style.display = 'block';
+        document.getElementById('btnUpdate').style.display = 'none';
+        document.getElementById('btnCancelEdit').style.display = 'none';
+    }
+
+    document.getElementById('btnUpdate').addEventListener('click', async () => {
+        if (!auth.currentUser) return;
+
+        const id = document.getElementById('editOrderId').value;
+        const name = document.getElementById('userName').value.trim();
+        const itemValue = document.getElementById('menuItem').value;
+        const note = document.getElementById('userNote').value.trim();
+        const hasSauce = document.getElementById('addSauce').checked;
+        const [itemName, itemPriceStr] = itemValue.split('|');
+
+        if (!name) {
+            showModal("提示", "姓名不能為空", false);
+            return;
+        }
+
+        let price = parseInt(itemPriceStr);
+        if (hasSauce) price += 30;
+
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, id), {
+            name: name,
+            item: itemName,
+            price: price,
+            note: note,
+            hasSauce: hasSauce,
+            timestamp: new Date()
+        });
+
+        resetFormState();
+    });
+
+    // 5. Clear All Logic
+    document.getElementById('btnClearAll').addEventListener('click', () => {
+        if (!auth.currentUser) {
+             showModal("錯誤", "尚未連線到資料庫", false);
+             return;
+        }
+        showModal("危險操作", "確定要「清空」今天所有的訂單資料嗎？此動作無法復原！", true, async () => {
+            const batch = writeBatch(db);
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                showModal("提示", "目前沒有資料可以清除", false);
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+
+            await batch.commit();
+            showModal("完成", "已清空所有訂單", false);
+        });
+    });
+
+    // 6. Copy Function
+    document.getElementById('btnCopy').addEventListener('click', () => {
+        if (currentOrders.length === 0) {
+            showModal("提示", "沒有訂單可以複製", false);
+            return;
+        }
+
+        let text = `📅 ${new Date().toLocaleDateString('zh-TW')} 根藤咖哩訂單\n`;
+        text += `------------------\n`;
+        
+        currentOrders.forEach(order => {
+            const sauceText = order.hasSauce ? " (+醬)" : "";
+            const noteText = order.note ? ` (${order.note})` : '';
+            text += `${order.name}：${order.item}${sauceText}${noteText} $${order.price}\n`;
+        });
+        
+        text += `------------------\n`;
+        text += `💰 總金額：$${document.getElementById('grandTotal').textContent}`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showModal("成功", "訂單內容已複製到剪貼簿！", false);
+            }).catch(err => {
+                fallbackCopyText(text);
+            });
+        } else {
+            fallbackCopyText(text);
+        }
+    });
+
+    function fallbackCopyText(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showModal("成功", "訂單內容已複製到剪貼簿！", false);
+            } else {
+                showModal("失敗", "複製失敗，請手動選取複製", false);
+            }
+        } catch (err) {
+            showModal("失敗", "瀏覽器不支援自動複製，請手動截圖", false);
+        }
+        document.body.removeChild(textArea);
+    }
+
+    initApp();
+
+</script>
+
+</body>
+</html>
