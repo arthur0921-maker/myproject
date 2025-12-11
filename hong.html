@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宏昇燒臘點餐系統 V1.2</title>
+    <style>
+        :root {
+            --primary-color: #d35400; /* 燒臘色 */
+            --secondary-color: #f39c12;
+            --bg-color: #fdf2e9;
+            --text-color: #2c3e50;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 1fr; /* 左側稍微加寬以容納方塊 */
+            gap: 20px;
+        }
+
+        /* Header */
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-top: 5px solid var(--primary-color);
+            position: relative;
+        }
+
+        .header-info h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 2em;
+        }
+
+        .header-info p {
+            margin: 5px 0 0;
+            font-size: 0.95em;
+        }
+
+        .header-info a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+
+        .clock-area {
+            text-align: right;
+        }
+
+        #current-time {
+            font-size: 1.5em;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .overtime {
+            color: red !important;
+            font-size: 2em !important; /* 超時放大 */
+            transition: all 0.5s ease;
+        }
+
+        .version-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #34495e;
+            color: white;
+            padding: 2px 8px;
+            font-size: 0.8em;
+            border-radius: 4px;
+        }
+
+        /* Left Panel: Menu & Input */
+        .order-panel {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        /* --- 新增：方塊選單樣式 --- */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 手機預設3列 */
+            gap: 8px;
+        }
+
+        .menu-btn {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 70px;
+            user-select: none;
+        }
+
+        .menu-btn:hover {
+            border-color: var(--secondary-color);
+            background: #fffdf5;
+        }
+
+        .menu-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 6px rgba(211, 84, 0, 0.3);
+            transform: translateY(-2px);
+            font-weight: bold;
+        }
+
+        .menu-btn .name {
+            font-size: 0.95em;
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .menu-btn .price {
+            font-size: 0.85em;
+            opacity: 0.85;
+        }
+        /* ----------------------- */
+
+        button.btn-submit {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1.1em;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        button.btn-submit:hover {
+            background-color: #a04000;
+        }
+
+        /* Right Panel: Order List */
+        .list-panel {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .btn-clear-all {
+            background-color: #c0392b;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .order-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .order-card {
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 15px;
+            background: #fafafa;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .order-item {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .order-note {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+        }
+
+        .card-actions button {
+            padding: 4px 8px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .btn-edit { background: #f39c12; color: white; }
+        .btn-delete { background: #e74c3c; color: white; }
+
+        .summary-area {
+            margin-top: 30px;
+            padding: 15px;
+            background: #eaf2f8;
+            border-radius: var(--border-radius);
+        }
+
+        .btn-copy {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            font-size: 1.1em;
+        }
+
+        .creator-tag {
+            text-align: center;
+            margin-top: 40px;
+            color: #95a5a6;
+            font-weight: bold;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 20px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Custom Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-modal {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .btn-modal.confirm { background: var(--primary-color); color: white; }
+        .btn-modal.cancel { background: #95a5a6; color: white; }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+            .menu-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 400px) {
+            .menu-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="version-badge">Ver 1.2</div>
+    <div class="header-info">
+        <h1>宏昇燒臘</h1>
+        <p>電話：02-2288-7343</p>
+        <p>地址：<a href="https://www.google.com/maps/search/?api=1&query=蘆洲區中山一路263號" target="_blank">蘆洲區中山一路263號 (點擊開啟地圖)</a></p>
+        <p>今日：<span id="date-display"></span></p>
+    </div>
+    <div class="clock-area">
+        <div>現在時間</div>
+        <div id="current-time">00:00:00</div>
+        <small>每日 10:00 截止</small>
+    </div>
+</header>
+
+<div class="container">
+    <!-- 左側：點餐表單 -->
+    <div class="order-panel">
+        <h3>我要點餐</h3>
+        <div class="form-group">
+            <label for="input-name">姓名</label>
+            <input type="text" id="input-name" placeholder="請輸入姓名">
+        </div>
+        
+        <!-- 修改：使用方塊狀排列的選單 -->
+        <div class="form-group">
+            <label>餐點選擇</label>
+            <div id="menu-grid" class="menu-grid">
+                <!-- JS 動態產生方塊 -->
+            </div>
+            <!-- 隱藏欄位儲存選擇的值 (格式: 菜名|價格) -->
+            <input type="hidden" id="selected-item-value">
+        </div>
+
+        <div class="form-group">
+            <label for="input-note">備註 (選填)</label>
+            <textarea id="input-note" rows="2" placeholder="例：飯少、不蔥..."></textarea>
+        </div>
+        <button class="btn-submit" id="btn-submit">送出訂單</button>
+    </div>
+
+    <!-- 右側：訂單列表 -->
+    <div class="list-panel">
+        <div class="list-header">
+            <h3>今日訂購清單 (依點餐順序)</h3>
+            <button class="btn-clear-all" id="btn-clear-today">清除今天訂購資料</button>
+        </div>
+        <div id="order-container" class="order-grid">
+            <p style="color:#999; grid-column:1/-1; text-align:center;">目前尚無訂單...</p>
+        </div>
+
+        <div class="summary-area">
+            <h4>統計資訊</h4>
+            <div id="total-summary">總份數: 0 / 總金額: $0</div>
+            <button class="btn-copy" id="btn-copy">複製訂單內容 (文字版)</button>
+        </div>
+    </div>
+</div>
+
+<div class="creator-tag">By Arthur WU</div>
+
+<!-- 自定義 Modal 視窗 -->
+<div class="modal-overlay" id="custom-modal">
+    <div class="modal-box">
+        <div class="modal-title" id="modal-title">提示</div>
+        <div class="modal-content" id="modal-text">內容</div>
+        
+        <div class="modal-buttons" id="modal-actions-default" style="display:none;">
+            <button class="btn-modal cancel" id="modal-btn-cancel">取消</button>
+            <button class="btn-modal confirm" id="modal-btn-confirm">確定</button>
+        </div>
+        
+        <div class="modal-buttons" id="modal-actions-alert" style="display:none;">
+            <button class="btn-modal confirm" id="modal-btn-ok">知道了</button>
+        </div>
+
+        <div id="modal-edit-form" style="display:none; text-align:left; margin-top:15px;">
+            <div class="form-group">
+                <label>修改餐點</label>
+                <!-- 編輯時保留下拉選單比較不佔空間 -->
+                <select id="edit-select-item">
+                    <!-- JS copy options here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>修改備註</label>
+                <textarea id="edit-input-note" rows="2"></textarea>
+            </div>
+            <div class="modal-buttons">
+                 <button class="btn-modal cancel" id="modal-edit-cancel">取消</button>
+                 <button class="btn-modal confirm" id="modal-edit-save">儲存修改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+  // 1. Firebase Configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBg9gNEVteL-VqHuKnX5g2gdUCeP5HPnos",
+    authDomain: "hong-870b0.firebaseapp.com",
+    projectId: "hong-870b0",
+    storageBucket: "hong-870b0.firebasestorage.app",
+    messagingSenderId: "460576156482",
+    appId: "1:460576156482:web:543a717b8976e6053cb6db",
+    measurementId: "G-Y6WT9GPS94"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const APP_ID = "hongsheng_app";
+  const DATA_PATH = `artifacts/${APP_ID}/public/data/orders`;
+  
+  // State
+  let currentOrders = [];
+  let isOvertime = false;
+
+  // --- Menu Data Configuration ---
+  const menuItems = [
+    { name: "咕咾肉飯", price: 90 },
+    { name: "炸排骨飯", price: 90 },
+    { name: "叉燒飯", price: 90 },
+    { name: "香腸飯", price: 90 },
+    { name: "油雞飯", price: 90 },
+    { name: "烤雞飯", price: 90 },
+    { name: "烤鴨飯", price: 100 },
+    { name: "叉雞飯", price: 100 },
+    { name: "叉鴨飯", price: 100 },
+    { name: "叉腸飯", price: 100 },
+    { name: "雞鴨飯", price: 100 },
+    { name: "油雞腿飯", price: 110 },
+    { name: "烤雞腿飯", price: 110 },
+    { name: "三寶飯", price: 120 },
+    { name: "招牌飯", price: 130 },
+    { name: "鴨腿飯", price: 130 },
+    { name: "叉燒油雞腿飯", price: 130 },
+    { name: "叉燒烤雞腿飯", price: 130 },
+    { name: "叉燒鴨腿飯", price: 150 },
+    { name: "菜飯(四菜)", price: 60 }
+  ];
+
+  // --- 2. Initialize Menu & Auth ---
+  
+  function initMenu() {
+      const grid = document.getElementById('menu-grid');
+      const editSelect = document.getElementById('edit-select-item');
+      const hiddenInput = document.getElementById('selected-item-value');
+
+      grid.innerHTML = '';
+      editSelect.innerHTML = '';
+
+      menuItems.forEach(item => {
+          const valKey = `${item.name}|${item.price}`;
+
+          // 1. Create Grid Buttons
+          const btn = document.createElement('div');
+          btn.className = 'menu-btn';
+          btn.dataset.value = valKey;
+          btn.innerHTML = `
+            <div class="name">${item.name}</div>
+            <div class="price">$${item.price}</div>
+          `;
+          
+          btn.addEventListener('click', () => {
+              // Remove active class from all
+              document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+              // Add active to current
+              btn.classList.add('active');
+              // Set value
+              hiddenInput.value = valKey;
+          });
+
+          grid.appendChild(btn);
+
+          // 2. Create Options for Edit Modal
+          const opt = document.createElement('option');
+          opt.value = valKey;
+          opt.textContent = `${item.name} $${item.price}`;
+          editSelect.appendChild(opt);
+      });
+  }
+  
+  // Call init immediately
+  initMenu();
+
+  signInAnonymously(auth).then(() => {
+      console.log("Signed in anonymously");
+      initRealtimeListener();
+  }).catch((error) => {
+      console.error("Auth Error", error);
+      showModal("系統錯誤", "無法連線至資料庫，請重新整理網頁。");
+  });
+
+  // --- 3. UI Logic: Clock & Date ---
+  function updateTime() {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`;
+      document.getElementById('date-display').textContent = dateStr;
+
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const timeStr = `${hours}:${minutes}:${seconds}`;
+      
+      const timeEl = document.getElementById('current-time');
+      timeEl.textContent = timeStr;
+
+      if (now.getHours() >= 10) {
+          if (!isOvertime) {
+              timeEl.classList.add('overtime');
+              isOvertime = true;
+          }
+      } else {
+          timeEl.classList.remove('overtime');
+          isOvertime = false;
+      }
+  }
+  setInterval(updateTime, 1000);
+  updateTime();
+
+  // --- 4. Helper: Modal System ---
+  const modal = document.getElementById('custom-modal');
+  const modalTitle = document.getElementById('modal-title');
+  const modalText = document.getElementById('modal-text');
+  const modalDefaultBtns = document.getElementById('modal-actions-default');
+  const modalAlertBtns = document.getElementById('modal-actions-alert');
+  const modalEditForm = document.getElementById('modal-edit-form');
+  
+  function closeModal() {
+      modal.style.display = 'none';
+  }
+
+  window.showAlert = (title, msg) => {
+      modalTitle.textContent = title;
+      modalText.textContent = msg;
+      modalText.style.display = 'block';
+      modalDefaultBtns.style.display = 'none';
+      modalEditForm.style.display = 'none';
+      modalAlertBtns.style.display = 'flex';
+      
+      const btnOk = document.getElementById('modal-btn-ok');
+      const newBtn = btnOk.cloneNode(true);
+      btnOk.parentNode.replaceChild(newBtn, btnOk);
+      newBtn.onclick = closeModal;
+      modal.style.display = 'flex';
+  };
+
+  window.showConfirm = (title, msg, onConfirm) => {
+      modalTitle.textContent = title;
+      modalText.textContent = msg;
+      modalText.style.display = 'block';
+      modalAlertBtns.style.display = 'none';
+      modalEditForm.style.display = 'none';
+      modalDefaultBtns.style.display = 'flex';
+
+      const btnConfirm = document.getElementById('modal-btn-confirm');
+      const btnCancel = document.getElementById('modal-btn-cancel');
+      
+      const newConfirm = btnConfirm.cloneNode(true);
+      const newCancel = btnCancel.cloneNode(true);
+      btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
+      btnCancel.parentNode.replaceChild(newCancel, btnCancel);
+
+      newCancel.onclick = closeModal;
+      newConfirm.onclick = () => {
+          onConfirm();
+          closeModal();
+      };
+      modal.style.display = 'flex';
+  };
+
+  window.showEditModal = (orderData, onSave) => {
+      modalTitle.textContent = "修改訂單";
+      modalText.style.display = 'none'; 
+      modalAlertBtns.style.display = 'none';
+      modalDefaultBtns.style.display = 'none';
+      modalEditForm.style.display = 'block';
+
+      const editSelect = document.getElementById('edit-select-item');
+      
+      // Set values
+      const valKey = `${orderData.item}|${orderData.price}`;
+      editSelect.value = valKey;
+      document.getElementById('edit-input-note').value = orderData.note || '';
+
+      const btnSave = document.getElementById('modal-edit-save');
+      const btnCancel = document.getElementById('modal-edit-cancel');
+
+      const newSave = btnSave.cloneNode(true);
+      const newCancel = btnCancel.cloneNode(true);
+      btnSave.parentNode.replaceChild(newSave, btnSave);
+      btnCancel.parentNode.replaceChild(newCancel, btnCancel);
+
+      newCancel.onclick = closeModal;
+      newSave.onclick = () => {
+          const rawVal = editSelect.value.split('|');
+          const newData = {
+              item: rawVal[0],
+              price: parseInt(rawVal[1]),
+              note: document.getElementById('edit-input-note').value
+          };
+          onSave(newData);
+          closeModal();
+      };
+
+      modal.style.display = 'flex';
+  }
+
+  // --- 5. Database Operations ---
+
+  function initRealtimeListener() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const q = query(collection(db, DATA_PATH));
+
+      onSnapshot(q, (snapshot) => {
+          const allDocs = [];
+          snapshot.forEach(doc => {
+              allDocs.push({ id: doc.id, ...doc.data() });
+          });
+          
+          // 修改排序邏輯：依照 timestamp (a - b) 進行升序排列，即最早的在最上面
+          currentOrders = allDocs
+              .filter(order => order.date === todayStr)
+              .sort((a, b) => a.timestamp - b.timestamp);
+
+          renderOrders();
+      }, (error) => {
+         console.error("Snapshot error:", error);
+      });
+  }
+
+  async function submitOrder() {
+      if (isOvertime) {
+          showAlert("無法訂購", "已超過訂購時間，請與訂餐發起人再次確認，避免沒訂到餐點!!!");
+          return;
+      }
+
+      const nameInput = document.getElementById('input-name');
+      // Changed: get value from hidden input
+      const itemValue = document.getElementById('selected-item-value').value;
+      const noteInput = document.getElementById('input-note');
+
+      const name = nameInput.value.trim();
+      if (!name) {
+          showAlert("資料缺漏", "請輸入姓名！");
+          return;
+      }
+      if (!itemValue) {
+          showAlert("資料缺漏", "請點選一份餐點！");
+          return;
+      }
+
+      const [itemName, itemPrice] = itemValue.split('|');
+
+      const newOrder = {
+          name: name,
+          item: itemName,
+          price: parseInt(itemPrice),
+          note: noteInput.value.trim(),
+          date: new Date().toISOString().split('T')[0],
+          timestamp: Date.now()
+      };
+
+      try {
+          await addDoc(collection(db, DATA_PATH), newOrder);
+          // Clear Inputs
+          nameInput.value = '';
+          noteInput.value = '';
+          // Clear Selection UI
+          document.getElementById('selected-item-value').value = '';
+          document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+      } catch (e) {
+          console.error(e);
+          showAlert("錯誤", "送出失敗，請稍後再試。");
+      }
+  }
+
+  async function deleteOrder(id) {
+      try {
+          await deleteDoc(doc(db, DATA_PATH, id));
+      } catch (e) {
+          showAlert("錯誤", "刪除失敗");
+      }
+  }
+
+  async function updateOrder(id, newData) {
+      try {
+          await updateDoc(doc(db, DATA_PATH, id), newData);
+      } catch (e) {
+          showAlert("錯誤", "更新失敗");
+      }
+  }
+
+  async function clearTodayOrders() {
+      if (currentOrders.length === 0) return;
+      
+      const batch = writeBatch(db);
+      currentOrders.forEach(order => {
+          const ref = doc(db, DATA_PATH, order.id);
+          batch.delete(ref);
+      });
+
+      try {
+          await batch.commit();
+          showAlert("完成", "已清空今日所有訂單。");
+      } catch (e) {
+          showAlert("錯誤", "清除失敗");
+      }
+  }
+
+  // --- 6. Rendering ---
+
+  function renderOrders() {
+      const container = document.getElementById('order-container');
+      const summaryEl = document.getElementById('total-summary');
+      
+      container.innerHTML = '';
+      let totalPrice = 0;
+
+      if (currentOrders.length === 0) {
+          container.innerHTML = '<p style="color:#999; grid-column:1/-1; text-align:center;">目前尚無訂單...</p>';
+      } else {
+          // 加上 index 參數來顯示序號
+          currentOrders.forEach((order, index) => {
+              totalPrice += order.price;
+              const card = document.createElement('div');
+              card.className = 'order-card';
+              // 在姓名欄位加上序號 #${index + 1}
+              card.innerHTML = `
+                  <div class="order-header">
+                      <span>#${index + 1} ${order.name}</span>
+                      <span>$${order.price}</span>
+                  </div>
+                  <div class="order-item">${order.item}</div>
+                  ${order.note ? `<div class="order-note">備註: ${order.note}</div>` : ''}
+                  <div class="order-footer">
+                      <small style="color:#ccc">${new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                      <div class="card-actions">
+                          <button class="btn-edit" data-id="${order.id}">修改</button>
+                          <button class="btn-delete" data-id="${order.id}">刪除</button>
+                      </div>
+                  </div>
+              `;
+              container.appendChild(card);
+          });
+      }
+
+      summaryEl.textContent = `總份數: ${currentOrders.length} / 總金額: $${totalPrice}`;
+
+      document.querySelectorAll('.btn-delete').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              const id = e.target.getAttribute('data-id');
+              showConfirm("確認刪除", "確定要刪除這筆訂單嗎？", () => deleteOrder(id));
+          });
+      });
+
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              const id = e.target.getAttribute('data-id');
+              const order = currentOrders.find(o => o.id === id);
+              if (order) {
+                  showEditModal(order, (newData) => updateOrder(id, newData));
+              }
+          });
+      });
+  }
+
+  function copyOrders() {
+      if (currentOrders.length === 0) {
+          showAlert("提示", "沒有訂單可以複製。");
+          return;
+      }
+      let text = `【宏昇燒臘訂購單】 ${new Date().toLocaleDateString()}\n`;
+      let grandTotal = 0;
+      currentOrders.forEach((o, index) => {
+          grandTotal += o.price;
+          const noteStr = o.note ? ` (${o.note})` : '';
+          text += `${index+1}. ${o.name}：${o.item} $${o.price}${noteStr}\n`;
+      });
+      text += `----------------\n總金額：$${grandTotal}`;
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+           navigator.clipboard.writeText(text).then(() => {
+              showAlert("成功", "訂單內容已複製到剪貼簿！");
+          }).catch(err => copyToClipboardFallback(text));
+      } else {
+          copyToClipboardFallback(text);
+      }
+  }
+
+  function copyToClipboardFallback(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+          document.execCommand('copy');
+          showAlert("成功", "訂單內容已複製到剪貼簿！");
+      } catch (err) {
+          showAlert("錯誤", "複製失敗，請手動複製。");
+      }
+      document.body.removeChild(textArea);
+  }
+
+  document.getElementById('btn-submit').addEventListener('click', submitOrder);
+  document.getElementById('btn-clear-today').addEventListener('click', () => {
+      showConfirm("危險操作", "確定要清空今天所有的訂單資料嗎？此動作無法復原。", clearTodayOrders);
+  });
+  document.getElementById('btn-copy').addEventListener('click', copyOrders);
+
+</script>
+
+</body>
+</html>
