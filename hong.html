@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏昇燒臘點餐系統 V1.4</title>
+    <title>宏昇燒臘點餐系統 V1.5</title>
     <style>
         :root {
             --primary-color: #d35400; /* 燒臘色 */
@@ -30,62 +30,90 @@
             gap: 20px;
         }
 
-        /* Header */
+        /* Header (Compact Version) */
         header {
             grid-column: 1 / -1;
             background: white;
-            padding: 20px;
+            padding: 12px 20px; /* 縮減內距 */
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
             border-top: 5px solid var(--primary-color);
             position: relative;
         }
 
-        .header-info h1 {
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .title-row h1 {
             margin: 0;
             color: var(--primary-color);
-            font-size: 2em;
+            font-size: 1.8em;
+            line-height: 1;
         }
 
-        .header-info p {
-            margin: 5px 0 0;
-            font-size: 0.95em;
+        .version-tag {
+            font-size: 0.8em;
+            color: #fff;
+            background-color: #34495e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            vertical-align: middle;
         }
 
-        .header-info a {
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #555;
+            align-items: center;
+        }
+
+        .info-row span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .info-row a {
             color: #2980b9;
             text-decoration: none;
         }
 
         .clock-area {
             text-align: right;
+            line-height: 1.2;
+            min-width: 110px;
+        }
+
+        .clock-label {
+            font-size: 0.8em;
+            color: #7f8c8d;
         }
 
         #current-time {
-            font-size: 1.5em;
+            font-size: 1.4em;
             font-weight: bold;
             font-family: monospace;
+            color: var(--text-color);
         }
 
         .overtime {
             color: red !important;
-            font-size: 2em !important; /* 超時放大 */
+            font-size: 1.6em !important; /* 超時稍微放大，不需太大 */
             transition: all 0.5s ease;
-        }
-
-        .version-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #34495e;
-            color: white;
-            padding: 2px 8px;
-            font-size: 0.8em;
-            border-radius: 4px;
         }
 
         /* Left Panel: Menu & Input */
@@ -467,6 +495,19 @@
         @media (max-width: 768px) {
             .container { grid-template-columns: 1fr; }
             .menu-grid { grid-template-columns: repeat(3, 1fr); }
+            
+            header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            .clock-area {
+                width: 100%;
+                text-align: left;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
         }
         @media (max-width: 400px) {
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
@@ -476,17 +517,21 @@
 <body>
 
 <header>
-    <div class="version-badge">Ver 1.4</div>
-    <div class="header-info">
-        <h1>宏昇燒臘</h1>
-        <p>電話：02-2288-7343</p>
-        <p>地址：<a href="https://www.google.com/maps/search/?api=1&query=蘆洲區中山一路263號" target="_blank">蘆洲區中山一路263號 (點擊開啟地圖)</a></p>
-        <p>今日：<span id="date-display"></span></p>
+    <div class="header-left">
+        <div class="title-row">
+            <h1>宏昇燒臘</h1>
+            <span class="version-tag">Ver 1.5</span>
+        </div>
+        <div class="info-row">
+            <span>☎ 02-2288-7343</span>
+            <span>📍 <a href="https://www.google.com/maps/search/?api=1&query=蘆洲區中山一路263號" target="_blank">蘆洲區中山一路263號</a></span>
+            <span>📅 <span id="date-display"></span></span>
+        </div>
     </div>
     <div class="clock-area">
-        <div>現在時間</div>
+        <div class="clock-label">現在時間</div>
         <div id="current-time">00:00:00</div>
-        <small>每日 10:00 截止</small>
+        <small style="color:#e74c3c; font-weight:bold;">10:00 截止</small>
     </div>
 </header>
 
