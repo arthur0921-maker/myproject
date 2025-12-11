@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏昇燒臘點餐系統 V1.5</title>
+    <title>宏昇燒臘點餐系統 V1.7</title>
     <style>
         :root {
             --primary-color: #d35400; /* 燒臘色 */
@@ -26,7 +26,7 @@
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 400px 1fr; /* 左側稍微加寬以容納方塊 */
+            grid-template-columns: 400px 1fr;
             gap: 20px;
         }
 
@@ -34,7 +34,7 @@
         header {
             grid-column: 1 / -1;
             background: white;
-            padding: 12px 20px; /* 縮減內距 */
+            padding: 12px 20px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             display: flex;
@@ -92,29 +92,49 @@
             text-decoration: none;
         }
 
+        /* --- 修改：時鐘區域樣式 --- */
         .clock-area {
             text-align: right;
-            line-height: 1.2;
-            min-width: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* 靠右對齊 */
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .time-wrapper {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
         }
 
         .clock-label {
-            font-size: 0.8em;
+            font-size: 1rem;
             color: #7f8c8d;
+            font-weight: normal;
         }
 
         #current-time {
-            font-size: 1.4em;
+            font-size: 2.5em; /* 放大字體 */
             font-weight: bold;
             font-family: monospace;
             color: var(--text-color);
+            line-height: 1;
+        }
+
+        .deadline-wrapper {
+            font-size: 1.1em;
+            color: #e74c3c;
+            font-weight: bold;
         }
 
         .overtime {
             color: red !important;
-            font-size: 1.6em !important; /* 超時稍微放大，不需太大 */
+            /* 超時不用特別再放大，因為原本已經很大了，改為閃爍或其他效果，這裡維持紅色即可 */
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
             transition: all 0.5s ease;
         }
+        /* ----------------------- */
 
         /* Left Panel: Menu & Input */
         .order-panel {
@@ -505,8 +525,19 @@
                 width: 100%;
                 text-align: left;
                 display: flex;
+                flex-direction: row; /* 手機版橫向排列較省空間 */
                 justify-content: space-between;
                 align-items: center;
+                margin-top: 5px;
+            }
+            .time-wrapper {
+                order: 1;
+            }
+            .deadline-wrapper {
+                order: 2;
+            }
+            #current-time {
+                font-size: 1.8em; /* 手機版字體微調 */
             }
         }
         @media (max-width: 400px) {
@@ -516,26 +547,32 @@
 </head>
 <body>
 
-<header>
-    <div class="header-left">
-        <div class="title-row">
-            <h1>宏昇燒臘</h1>
-            <span class="version-tag">Ver 1.5</span>
-        </div>
-        <div class="info-row">
-            <span>☎ 02-2288-7343</span>
-            <span>📍 <a href="https://www.google.com/maps/search/?api=1&query=蘆洲區中山一路263號" target="_blank">蘆洲區中山一路263號</a></span>
-            <span>📅 <span id="date-display"></span></span>
-        </div>
-    </div>
-    <div class="clock-area">
-        <div class="clock-label">現在時間</div>
-        <div id="current-time">00:00:00</div>
-        <small style="color:#e74c3c; font-weight:bold;">10:00 截止</small>
-    </div>
-</header>
-
 <div class="container">
+    <!-- Header 移動到 Container 內，使其寬度一致 -->
+    <header>
+        <div class="header-left">
+            <div class="title-row">
+                <h1>宏昇燒臘</h1>
+                <span class="version-tag">Ver 1.7</span>
+            </div>
+            <div class="info-row">
+                <span>☎ 02-2288-7343</span>
+                <span>📍 <a href="https://www.google.com/maps/search/?api=1&query=蘆洲區中山一路263號" target="_blank">蘆洲區中山一路263號</a></span>
+                <span>📅 <span id="date-display"></span></span>
+            </div>
+        </div>
+        <!-- 修改後的時鐘區域 -->
+        <div class="clock-area">
+            <div class="time-wrapper">
+                <span class="clock-label">現在時間</span>
+                <span id="current-time">00:00:00</span>
+            </div>
+            <div class="deadline-wrapper">
+                每日 10:00 截止
+            </div>
+        </div>
+    </header>
+
     <!-- 左側：點餐表單 -->
     <div class="order-panel">
         <h3>我要點餐</h3>
