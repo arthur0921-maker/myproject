@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>立利餐坊 - 線上點餐 (雲端同步版)</title>
-    <!-- 修正：加入 plugins=typography 以支援 Markdown 排版 -->
+    <!-- 加入 plugins=typography 以支援 Markdown 排版 -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <!-- Markdown Parser for AI responses -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -37,9 +37,11 @@
         const auth = getAuth(app);
 
         let isFirebaseReady = false;
+        
+        // 定義符合規則的路徑變數
+        const APP_ID_SEGMENT = 'lili_order_system'; // 對應規則中的 {appId}
 
         // --- 初始化流程 ---
-        // 嘗試匿名登入，若失敗則嘗試直接連線 (針對公開規則的資料庫)
         async function initApp() {
             try {
                 await signInAnonymously(auth);
@@ -47,15 +49,13 @@
                 isFirebaseReady = true;
                 setupRealtimeListener();
             } catch (error) {
-                console.warn("⚠️ Firebase 驗證失敗，嘗試以公開模式連線...", error.code);
-                
+                console.warn("⚠️ Firebase 驗證失敗", error.code);
                 if (error.code === 'auth/configuration-not-found' || error.code === 'auth/operation-not-allowed') {
                     setTimeout(() => {
                         showToast("⚠️ 請至 Firebase Console 開啟 '匿名登入'", true);
                     }, 1500);
                 }
-
-                // 即使驗證失敗，如果是公開資料庫，仍可嘗試連線
+                // 即使驗證失敗，仍嘗試運作 (視規則而定)
                 isFirebaseReady = true; 
                 setupRealtimeListener();
             }
@@ -68,9 +68,15 @@
         window.auth = auth;
         window.isFirebaseReady = () => isFirebaseReady;
         
-        // 設定資料庫集合路徑
+        // --- 修正：更新資料庫集合路徑 ---
+        // 配合規則: /artifacts/{appId}/public/data/{document}
         window.getOrdersCollection = () => {
-            return collection(db, 'orders');
+            return collection(db, 'artifacts', APP_ID_SEGMENT, 'public', 'data', 'orders');
+        };
+        
+        // 輔助函式：取得單一文件的參照路徑
+        window.getOrderDocRef = (id) => {
+            return doc(db, 'artifacts', APP_ID_SEGMENT, 'public', 'data', 'orders', id);
         };
         
         // 掛載 Firestore 函式
