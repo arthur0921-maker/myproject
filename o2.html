@@ -64,6 +64,14 @@
         </div>
     </div>
 
+    <!-- 載入中遮罩 -->
+    <div id="loadingOverlay" class="fixed inset-0 z-40 flex items-center justify-center bg-white bg-opacity-80 backdrop-blur-sm">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-3"></div>
+            <p class="text-gray-600 font-bold animate-pulse">連線同步中...</p>
+        </div>
+    </div>
+
     <header class="bg-white shadow-md z-20 shrink-0 border-t-4 border-orange-500">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-col md:flex-row justify-between items-center gap-3">
@@ -72,7 +80,7 @@
                     <div class="flex flex-wrap items-baseline gap-3 justify-center md:justify-start">
                         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-wide flex items-center gap-2">
                             <span>🦢 偶鵝嚐嚐</span>
-                            <span class="text-sm text-gray-400 font-normal self-end mb-1">V2.5</span>
+                            <span class="text-sm text-gray-400 font-normal self-end mb-1">V3.0 (雲端版)</span>
                             <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-lg border border-orange-200">碧華國中團</span>
                         </h1>
                         <div id="clockDisplay" class="text-lg font-mono font-bold text-gray-600 bg-gray-100 px-2 rounded">00:00:00</div>
@@ -86,10 +94,10 @@
 
                 <div class="flex flex-wrap gap-2 w-full md:w-auto justify-center">
                     <!-- 更新按鈕名稱與樣式 -->
-                    <button onclick="confirmClearAll()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm flex items-center gap-1 active:scale-95 whitespace-nowrap">
+                    <button onclick="window.confirmClearAll()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm flex items-center gap-1 active:scale-95 whitespace-nowrap">
                         <span>🗑️</span> 清除今天訂購資料
                     </button>
-                    <button onclick="copyAllOrders()" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-all text-sm flex items-center gap-1 active:scale-95 whitespace-nowrap">
+                    <button onclick="window.copyAllOrders()" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-all text-sm flex items-center gap-1 active:scale-95 whitespace-nowrap">
                         <span>📋</span> 複製訂單
                     </button>
                 </div>
@@ -126,7 +134,7 @@
                         </div>
                     </div>
 
-                    <button onclick="submitOrder()" class="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-md whitespace-nowrap h-[42px] flex items-center justify-center gap-2 transition-transform active:scale-95">
+                    <button onclick="window.submitOrder()" class="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-md whitespace-nowrap h-[42px] flex items-center justify-center gap-2 transition-transform active:scale-95">
                         <span>送出</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -148,7 +156,7 @@
             </div>
             
             <!-- 底部浮動：目前選擇 -->
-            <div id="currentSelectionBar" class="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] bg-gray-800 text-white p-3 rounded-full shadow-2xl flex justify-between items-center z-20 hidden transform transition-all duration-300 hover:scale-105 cursor-pointer" onclick="submitOrder()">
+            <div id="currentSelectionBar" class="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] bg-gray-800 text-white p-3 rounded-full shadow-2xl flex justify-between items-center z-20 hidden transform transition-all duration-300 hover:scale-105 cursor-pointer" onclick="window.submitOrder()">
                 <div class="flex items-center gap-2 px-2">
                     <div class="bg-orange-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold" id="currentCount">0</div>
                     <span class="text-sm">準備下單...</span>
@@ -171,7 +179,7 @@
                 <div class="text-center text-gray-400 mt-20 flex flex-col items-center">
                     <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
                     <p>目前還沒有人點餐</p>
-                    <p class="text-xs mt-2">碧華國中教務處午餐團開跑囉！</p>
+                    <p class="text-xs mt-2">連線同步中...</p>
                 </div>
             </div>
 
@@ -186,55 +194,64 @@
 
     </main>
 
-    <script>
-        // --- 0. Custom Modal System (取代原生 alert/confirm) ---
-        function showModal(title, message, type = 'info', onConfirm = null) {
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Init ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const COLLECTION_NAME = 'lunch_orders_v2';
+        let currentUser = null;
+
+        // --- 0. Custom Modal System ---
+        window.showModal = function(title, message, type = 'info', onConfirm = null) {
             const modal = document.getElementById('customModal');
             const modalTitle = document.getElementById('modalTitle');
             const modalMessage = document.getElementById('modalMessage');
             const modalActions = document.getElementById('modalActions');
 
-            // Set content
             modalTitle.innerHTML = title;
             modalMessage.innerHTML = message;
-            modalActions.innerHTML = ''; // Clear previous buttons
+            modalActions.innerHTML = ''; 
 
-            // Create buttons based on type
             if (type === 'confirm') {
                 const cancelBtn = document.createElement('button');
                 cancelBtn.className = "px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 font-bold transition-colors";
                 cancelBtn.textContent = "取消";
-                cancelBtn.onclick = closeModal;
+                cancelBtn.onclick = window.closeModal;
 
                 const confirmBtn = document.createElement('button');
                 confirmBtn.className = "px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold shadow-md transition-colors";
                 confirmBtn.textContent = "確定執行";
                 confirmBtn.onclick = () => {
                     if (onConfirm) onConfirm();
-                    closeModal();
+                    window.closeModal();
                 };
 
                 modalActions.appendChild(cancelBtn);
                 modalActions.appendChild(confirmBtn);
             } else {
-                // Info type (Alert)
                 const okBtn = document.createElement('button');
                 okBtn.className = "px-5 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 font-bold shadow-md transition-colors w-full sm:w-auto";
                 okBtn.textContent = "知道了";
-                okBtn.onclick = closeModal;
+                okBtn.onclick = window.closeModal;
                 modalActions.appendChild(okBtn);
             }
 
-            // Show Modal with Animation
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 modal.querySelector('div').classList.remove('scale-95');
                 modal.querySelector('div').classList.add('scale-100');
             }, 10);
-        }
+        };
 
-        function closeModal() {
+        window.closeModal = function() {
             const modal = document.getElementById('customModal');
             modal.classList.add('opacity-0');
             modal.querySelector('div').classList.remove('scale-100');
@@ -243,9 +260,9 @@
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
-        }
+        };
 
-        // --- 1. Data Structure ---
+        // --- 1. Data & Global Vars ---
         const menuData = [
             {
                 category: "便當系列",
@@ -343,43 +360,74 @@
             
             renderCategoryTabs();
             renderMenu();
+            initAuth();
         };
 
-        // --- 3. Time & Clock ---
-        function updateTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
-            
-            const clockEl = document.getElementById('clockDisplay');
-            clockEl.innerText = timeString;
-
-            if (now.getHours() >= 10) {
-                clockEl.classList.add('deadline-passed');
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
             } else {
-                clockEl.classList.remove('deadline-passed');
+                await signInAnonymously(auth);
             }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loadingOverlay').classList.add('hidden'); // Hide loading
+                
+                // Start Listening to Firestore
+                const q = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                
+                onSnapshot(q, (snapshot) => {
+                    // Update global submittedOrders
+                    submittedOrders = snapshot.docs.map(d => ({
+                        ...d.data(),
+                        firestoreId: d.id
+                    }));
+
+                    // Sort locally by creation time (id)
+                    submittedOrders.sort((a, b) => a.id - b.id);
+                    
+                    renderSubmittedOrders();
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                    window.showModal("連線錯誤", "無法取得訂單資料，請重新整理頁面。", "info");
+                });
+            }
+        });
+
+        // --- 3. UI Functions ---
+        window.switchCategory = function(cat) {
+            currentCategory = cat;
+            renderCategoryTabs();
+            renderMenu();
         }
 
-        // --- 4. Render Functions ---
+        window.adjustTempCart = function(name, price, change) {
+            if (!tempCart[name]) {
+                tempCart[name] = { price: price, count: 0 };
+            }
+            tempCart[name].count += change;
+            
+            if (tempCart[name].count <= 0) {
+                delete tempCart[name];
+            }
+
+            updateTempCartUI();
+            renderMenu();
+        }
+
         function renderCategoryTabs() {
             const container = document.getElementById('categoryTabs');
             container.innerHTML = menuData.map(cat => `
-                <button onclick="switchCategory('${cat.category}')" 
+                <button onclick="window.switchCategory('${cat.category}')" 
                     class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${cat.category === currentCategory 
                     ? 'bg-gray-800 text-white shadow-md transform scale-105' 
                     : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'}">
                     <span>${cat.icon}</span> ${cat.category}
                 </button>
             `).join('');
-        }
-
-        function switchCategory(cat) {
-            currentCategory = cat;
-            renderCategoryTabs();
-            renderMenu();
         }
 
         function renderMenu() {
@@ -390,7 +438,6 @@
                 const count = tempCart[item.name] ? tempCart[item.name].count : 0;
                 const activeClass = count > 0 ? "border-orange-400 ring-1 ring-orange-400 shadow-md bg-orange-50" : "border-gray-100 shadow-sm hover:shadow-md bg-white";
                 
-                // Tag Logic
                 let tagHtml = '';
                 if(item.tag) {
                     tagHtml = `<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg rounded-tr-lg font-bold shadow-sm">${item.tag}</span>`;
@@ -404,11 +451,11 @@
                         <p class="text-orange-600 font-bold mt-1 text-lg">$${item.price}</p>
                     </div>
                     <div class="flex items-center justify-end rounded-lg p-1">
-                        <button onclick="adjustTempCart('${item.name}', ${item.price}, -1)" 
+                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, -1)" 
                             class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-md text-gray-600 font-bold hover:bg-red-50 hover:text-red-500 active:scale-95 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors" 
                             ${count === 0 ? 'disabled' : ''}>-</button>
                         <span class="w-10 text-center font-bold text-gray-800 text-lg">${count}</span>
-                        <button onclick="adjustTempCart('${item.name}', ${item.price}, 1)" 
+                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, 1)" 
                             class="w-8 h-8 flex items-center justify-center bg-orange-500 border border-orange-500 rounded-md text-white font-bold hover:bg-orange-600 active:scale-95 shadow-sm transition-colors">+</button>
                     </div>
                 </div>
@@ -433,9 +480,10 @@
             }
 
             let totalMoney = 0;
-            const sortedOrders = [...submittedOrders].reverse();
+            // Display newest first
+            const displayOrders = [...submittedOrders].reverse();
 
-            container.innerHTML = sortedOrders.map(order => {
+            container.innerHTML = displayOrders.map(order => {
                 totalMoney += order.total;
                 const itemsHtml = order.items.map(i => 
                     `<div class="flex justify-between text-sm text-gray-600 pl-2 border-l-2 border-gray-200">
@@ -444,11 +492,13 @@
                     </div>`
                 ).join('');
 
-                // 備註顯示
                 const noteHtml = order.note ? 
                     `<div class="mt-2 text-xs bg-yellow-50 text-yellow-800 p-1.5 rounded border border-yellow-200 flex items-start gap-1">
                         <span>✏️</span> <span>${order.note}</span>
                      </div>` : '';
+
+                // Safe quote escaping for HTML
+                const safeFirestoreId = order.firestoreId;
 
                 return `
                 <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm relative group hover:shadow-md transition-shadow">
@@ -463,14 +513,12 @@
                             </div>
                         </div>
                         <div class="flex gap-1">
-                            <!-- 修改按鈕 -->
-                            <button onclick="editOrder(${order.id})" class="text-gray-300 hover:text-blue-500 transition-colors p-1" title="修改此單">
+                            <button onclick="window.editOrder('${safeFirestoreId}')" class="text-gray-300 hover:text-blue-500 transition-colors p-1" title="修改此單">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </button>
-                            <!-- 刪除按鈕 -->
-                            <button onclick="confirmDeleteOrder(${order.id})" class="text-gray-300 hover:text-red-500 transition-colors p-1" title="刪除此單">
+                            <button onclick="window.confirmDeleteOrder('${safeFirestoreId}')" class="text-gray-300 hover:text-red-500 transition-colors p-1" title="刪除此單">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
@@ -489,21 +537,6 @@
 
             countBadge.innerText = `${submittedOrders.length}筆`;
             grandTotalEl.innerText = totalMoney;
-        }
-
-        // --- 5. Logic Functions ---
-        function adjustTempCart(name, price, change) {
-            if (!tempCart[name]) {
-                tempCart[name] = { price: price, count: 0 };
-            }
-            tempCart[name].count += change;
-            
-            if (tempCart[name].count <= 0) {
-                delete tempCart[name];
-            }
-
-            updateTempCartUI();
-            renderMenu();
         }
 
         function updateTempCartUI() {
@@ -527,20 +560,44 @@
             }
         }
 
-        function submitOrder() {
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            const clockEl = document.getElementById('clockDisplay');
+            clockEl.innerText = timeString;
+
+            if (now.getHours() >= 10) {
+                clockEl.classList.add('deadline-passed');
+            } else {
+                clockEl.classList.remove('deadline-passed');
+            }
+        }
+
+        // --- 4. Logic Functions (Async for Firestore) ---
+
+        window.submitOrder = async function() {
             const nameInput = document.getElementById('userName');
-            const noteInput = document.getElementById('userNote'); // 取得備註
+            const noteInput = document.getElementById('userNote'); 
             const name = nameInput.value.trim();
             const note = noteInput.value.trim();
 
             if (!name) {
-                showModal("提示", "請輸入訂購人姓名！", "info");
+                window.showModal("提示", "請輸入訂購人姓名！", "info");
                 nameInput.focus();
                 return;
             }
 
             if (Object.keys(tempCart).length === 0) {
-                showModal("提示", "請先選擇餐點！", "info");
+                window.showModal("提示", "請先選擇餐點！", "info");
+                return;
+            }
+
+            if (!currentUser) {
+                window.showModal("錯誤", "尚未連線至資料庫，請稍後再試。", "error");
                 return;
             }
 
@@ -560,83 +617,96 @@
             }
 
             const newOrder = {
-                id: Date.now(),
+                id: Date.now(), // Use timestamp as order logic ID for sorting
                 name: name,
-                note: note, // 儲存備註
+                note: note, 
                 items: orderItems,
                 total: orderTotal,
                 time: timeStr
             };
 
-            submittedOrders.push(newOrder);
-
-            // Reset UI
-            tempCart = {};
-            nameInput.value = ''; 
-            noteInput.value = ''; // 清空備註
-            updateTempCartUI();
-            renderMenu(); 
-            renderSubmittedOrders(); 
+            // Firestore Add
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), newOrder);
+                
+                // Reset UI
+                tempCart = {};
+                // nameInput.value = ''; // Keep name? usually clearing is better for next person
+                nameInput.value = '';
+                noteInput.value = ''; 
+                updateTempCartUI();
+                renderMenu(); 
+                // renderSubmittedOrders is handled by onSnapshot
+            } catch (e) {
+                console.error(e);
+                window.showModal("錯誤", "送出訂單失敗，請檢查網路連線。", "error");
+            }
         }
 
-        function editOrder(id) {
-            const order = submittedOrders.find(o => o.id === id);
+        window.editOrder = async function(firestoreId) {
+            const order = submittedOrders.find(o => o.firestoreId === firestoreId);
             if(!order) return;
 
-            // 檢查目前購物車是否有未送出的餐點
             if(Object.keys(tempCart).length > 0) {
-                showModal("提示", "您目前有正在選擇的餐點，請先清空或送出後再修改舊訂單。", "info");
+                window.showModal("提示", "您目前有正在選擇的餐點，請先清空或送出後再修改舊訂單。", "info");
                 return;
             }
             
-            // 恢復表單資料
+            // Restore Form
             document.getElementById('userName').value = order.name;
             document.getElementById('userNote').value = order.note || '';
             
-            // 恢復購物車
+            // Restore Cart
             tempCart = {};
             order.items.forEach(item => {
                 tempCart[item.name] = { price: item.price, count: item.count };
             });
             
-            // 從清單中移除
-            submittedOrders = submittedOrders.filter(o => o.id !== id);
-            
-            // 更新 UI
-            updateTempCartUI();
-            renderMenu();
-            renderSubmittedOrders();
-            
-            showModal("修改訂單", `已取回 <b>${order.name}</b> 的訂單。<br>請修改內容後再次點擊「送出」。`, "info");
+            // Delete from Firestore immediately to simulate "Move to Cart"
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, firestoreId));
+                updateTempCartUI();
+                renderMenu();
+                window.showModal("修改訂單", `已取回 <b>${order.name}</b> 的訂單。<br>請修改內容後再次點擊「送出」。`, "info");
+            } catch(e) {
+                window.showModal("錯誤", "無法修改訂單，請檢查網路。", "error");
+            }
         }
 
-        function confirmDeleteOrder(id) {
-            showModal(
+        window.confirmDeleteOrder = function(firestoreId) {
+            window.showModal(
                 "刪除確認", 
                 "確定要刪除這筆訂單嗎？<br><span class='text-sm text-red-500'>此動作無法復原。</span>", 
                 "confirm", 
-                () => {
-                    submittedOrders = submittedOrders.filter(o => o.id !== id);
-                    renderSubmittedOrders();
+                async () => {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, firestoreId));
+                    } catch(e) {
+                         window.showModal("錯誤", "刪除失敗。", "error");
+                    }
                 }
             );
         }
 
-        function confirmClearAll() {
-            showModal(
+        window.confirmClearAll = function() {
+            window.showModal(
                 "警告：清除所有資料", 
                 "您確定要「清除今天所有訂購資料」並重新開始嗎？<br><br><span class='text-red-600 font-bold'>⚠️ 這將會刪除目前所有的訂單紀錄！</span>", 
                 "confirm", 
-                () => {
-                    submittedOrders = [];
-                    renderSubmittedOrders();
+                async () => {
+                     // Delete all documents in collection
+                     // Note: Client side deletion requires iterating docs
+                     const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME));
+                     snapshot.forEach((doc) => {
+                         deleteDoc(doc.ref);
+                     });
                 }
             );
         }
 
-        function copyAllOrders() {
+        window.copyAllOrders = function() {
             if (submittedOrders.length === 0) {
-                showModal("提示", "目前沒有任何訂單可複製", "info");
+                window.showModal("提示", "目前沒有任何訂單可複製", "info");
                 return;
             }
 
@@ -668,13 +738,13 @@
             try {
                 const successful = document.execCommand('copy');
                 if(successful) {
-                    showModal("複製成功", "✅ 訂單內容已複製到剪貼簿！<br>您可以直接貼到 Line 群組。", "info");
+                    window.showModal("複製成功", "✅ 訂單內容已複製到剪貼簿！<br>您可以直接貼到 Line 群組。", "info");
                 } else {
                     throw new Error("Copy failed");
                 }
             } catch (err) {
                 console.error('Fallback copy failed', err);
-                showModal("複製失敗", "瀏覽器不支援自動複製，請手動截圖或選取文字。", "info");
+                window.showModal("複製失敗", "瀏覽器不支援自動複製，請手動截圖或選取文字。", "info");
             }
 
             document.body.removeChild(textArea);
