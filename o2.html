@@ -68,7 +68,7 @@
     <div id="loadingOverlay" class="fixed inset-0 z-40 flex items-center justify-center bg-white bg-opacity-80 backdrop-blur-sm">
         <div class="flex flex-col items-center">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-3"></div>
-            <p class="text-gray-600 font-bold animate-pulse">連線同步中...</p>
+            <p id="loadingText" class="text-gray-600 font-bold animate-pulse">連線同步中...</p>
         </div>
     </div>
 
@@ -80,7 +80,7 @@
                     <div class="flex flex-wrap items-baseline gap-3 justify-center md:justify-start">
                         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-wide flex items-center gap-2">
                             <span>🦢 偶鵝嚐嚐</span>
-                            <span class="text-sm text-gray-400 font-normal self-end mb-1">V3.0 (雲端版)</span>
+                            <span class="text-sm text-gray-400 font-normal self-end mb-1">V3.1 (碧華專用版)</span>
                             <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-lg border border-orange-200">碧華國中團</span>
                         </h1>
                         <div id="clockDisplay" class="text-lg font-mono font-bold text-gray-600 bg-gray-100 px-2 rounded">00:00:00</div>
@@ -93,7 +93,6 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2 w-full md:w-auto justify-center">
-                    <!-- 更新按鈕名稱與樣式 -->
                     <button onclick="window.confirmClearAll()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm flex items-center gap-1 active:scale-95 whitespace-nowrap">
                         <span>🗑️</span> 清除今天訂購資料
                     </button>
@@ -115,7 +114,7 @@
                 <div class="flex flex-col sm:flex-row gap-2 items-end max-w-4xl mx-auto md:mx-0">
                     
                     <div class="flex-1 w-full sm:w-auto grid grid-cols-2 sm:grid-cols-5 gap-2">
-                        <!-- 姓名輸入 (佔較大比例) -->
+                        <!-- 姓名輸入 -->
                         <div class="col-span-2 sm:col-span-2">
                             <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">誰要點餐？</label>
                             <div class="relative">
@@ -124,7 +123,7 @@
                             </div>
                         </div>
 
-                        <!-- 備註輸入 (佔剩餘比例) -->
+                        <!-- 備註輸入 -->
                         <div class="col-span-2 sm:col-span-3">
                             <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">備註 (選填)</label>
                             <div class="relative">
@@ -195,18 +194,40 @@
     </main>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // 1. 使用您提供的 Firebase Config 和 12.7.0 版本 SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+        // 您的設定檔
+        const firebaseConfig = {
+            apiKey: "AIzaSyCi4D6TUHM88K6_gbKlU2RW7ECKfSqR2zk",
+            authDomain: "myorder-o2.firebaseapp.com",
+            projectId: "myorder-o2",
+            storageBucket: "myorder-o2.firebasestorage.app",
+            messagingSenderId: "1018780108356",
+            appId: "1:1018780108356:web:9792d9f2bcbcc0d8209e11",
+            measurementId: "G-9Y8QM1TBVW"
+        };
+        
+        // --- 關鍵修改：路徑對應 ---
+        // 您的規則：match /artifacts/{appId}/public/data/{document=**}
+        // 所以我們必須使用對應的路徑結構
+        const APP_ID_FOR_DB = "myorder-o2"; // 使用專案 ID 當作路徑中的 appId
+        const DATA_COLLECTION_NAME = "lunch_orders_v2"; // 實際的集合名稱
 
         // --- Firebase Init ---
-        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const COLLECTION_NAME = 'lunch_orders_v2';
+        
         let currentUser = null;
+
+        // --- 輔助函式：取得正確的 Collection 參考 ---
+        function getOrdersCollectionRef() {
+            // 對應到: /artifacts/myorder-o2/public/data/lunch_orders_v2
+            return collection(db, 'artifacts', APP_ID_FOR_DB, 'public', 'data', DATA_COLLECTION_NAME);
+        }
 
         // --- 0. Custom Modal System ---
         window.showModal = function(title, message, type = 'info', onConfirm = null) {
@@ -360,24 +381,22 @@
             
             renderCategoryTabs();
             renderMenu();
-            initAuth();
+            
+            // 開始登入流程
+            signInAnonymously(auth).catch(e => {
+                console.error("Auth Error", e);
+                window.showModal("錯誤", "無法登入系統，請檢查 Firebase Console 是否已啟用「匿名登入 (Anonymous Auth)」", "error");
+            });
         };
 
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-
+        // 監聽登入狀態
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('loadingOverlay').classList.add('hidden'); // Hide loading
+                document.getElementById('loadingOverlay').classList.add('hidden'); // 隱藏載入畫面
                 
-                // Start Listening to Firestore
-                const q = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                // 登入成功後，監聽 Firestore
+                const q = getOrdersCollectionRef();
                 
                 onSnapshot(q, (snapshot) => {
                     // Update global submittedOrders
@@ -392,7 +411,12 @@
                     renderSubmittedOrders();
                 }, (error) => {
                     console.error("Firestore Error:", error);
-                    window.showModal("連線錯誤", "無法取得訂單資料，請重新整理頁面。", "info");
+                    // 如果權限被拒絕，通常是規則問題
+                    if(error.code === 'permission-denied') {
+                         window.showModal("權限錯誤", "無法讀取資料庫 (Permission Denied)。<br>請確認 Firestore Rules 路徑是否為 /artifacts/myorder-o2/public/data/...", "error");
+                    } else {
+                         window.showModal("連線錯誤", "無法取得訂單資料，請重新整理頁面。", "info");
+                    }
                 });
             }
         });
@@ -625,9 +649,9 @@
                 time: timeStr
             };
 
-            // Firestore Add
+            // Firestore Add (使用 helper function 取得正確路徑)
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), newOrder);
+                await addDoc(getOrdersCollectionRef(), newOrder);
                 
                 // Reset UI
                 tempCart = {};
@@ -636,10 +660,9 @@
                 noteInput.value = ''; 
                 updateTempCartUI();
                 renderMenu(); 
-                // renderSubmittedOrders is handled by onSnapshot
             } catch (e) {
                 console.error(e);
-                window.showModal("錯誤", "送出訂單失敗，請檢查網路連線。", "error");
+                window.showModal("錯誤", "送出訂單失敗，請檢查網路連線或資料庫規則。", "error");
             }
         }
 
@@ -664,7 +687,7 @@
             
             // Delete from Firestore immediately to simulate "Move to Cart"
             try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, firestoreId));
+                await deleteDoc(doc(getOrdersCollectionRef(), firestoreId));
                 updateTempCartUI();
                 renderMenu();
                 window.showModal("修改訂單", `已取回 <b>${order.name}</b> 的訂單。<br>請修改內容後再次點擊「送出」。`, "info");
@@ -680,7 +703,7 @@
                 "confirm", 
                 async () => {
                     try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, firestoreId));
+                        await deleteDoc(doc(getOrdersCollectionRef(), firestoreId));
                     } catch(e) {
                          window.showModal("錯誤", "刪除失敗。", "error");
                     }
@@ -696,10 +719,14 @@
                 async () => {
                      // Delete all documents in collection
                      // Note: Client side deletion requires iterating docs
-                     const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME));
-                     snapshot.forEach((doc) => {
-                         deleteDoc(doc.ref);
-                     });
+                     try {
+                         const snapshot = await getDocs(getOrdersCollectionRef());
+                         const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
+                         await Promise.all(deletePromises);
+                     } catch(e) {
+                         console.error(e);
+                         window.showModal("錯誤", "清除失敗，請稍後再試。", "error");
+                     }
                 }
             );
         }
