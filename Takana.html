@@ -613,7 +613,7 @@
 <header id="mainHeader">
     <div class="header-info">
         <h1>
-            <i class="fas fa-utensils"></i> 高田食堂 點餐系統 V2.8 
+            <i class="fas fa-utensils"></i> 高田食堂 點餐系統 V2.9 
             <span id="connStatus" class="status-indicator disconnected"><i class="fas fa-circle"></i> 連線中...</span>
         </h1>
         <div class="sub-info">
@@ -690,7 +690,7 @@
 </div>
 
 <footer>
-    製作宣告 By Arthur WU | V2.8 (Addons & Notes)
+    製作宣告 By Arthur WU | V2.9 (Fixed Syntax)
 </footer>
 
 <!-- AI 助手 FAB -->
@@ -798,7 +798,7 @@
         { name: "升級定食加價購", price: 135 }
     ];
 
-    // --- 完整菜單資料 (Updated V2.7) ---
+    // --- 完整菜單資料 (Updated V2.9) ---
     const menuData = {
         "加購優惠": [
              {name: "★升級定食加價購", price: 135}, {name: "★黃金豬排加價購", price: 78},
@@ -808,7 +808,8 @@
         "日式便當": [
             {name: "九品御膳弁當", price: 168}, {name: "照燒雞腿便當", price: 138},
             {name: "日式豬排便當", price: 128}, {name: "咖哩豬排便當", price: 128},
-            {name: "挪威薄鹽鯖魚便當", price: 138}, {name: "特製燒肉便當", price: 128},
+            {name: "挪威薄鹽鯖魚便當", price: 158}, // 修改: 138 -> 158
+            {name: "特製燒肉便當", price: 128},
             {name: "北海道鮭魚便當", price: 138}, {name: "炸蝦便當", price: 170},
             {name: "牛小排便當", price: 168}, {name: "浦燒鰻魚飯", price: 250},
             {name: "醬燒中卷便當", price: 158}, {name: "唐揚炸雞便當", price: 148},
@@ -818,20 +819,20 @@
         ],
         "定食": [
             {name: "日式黃金豬排定食", price: 238}, {name: "傳奇照燒雞腿定食", price: 258},
-            {name: "大阪梅花燒肉定食", price: 248}, // 新增
+            {name: "大阪梅花燒肉定食", price: 248}, 
             {name: "咖哩風味豬排定食", price: 248}, {name: "挪威薄鹽鯖魚定食", price: 248},
             {name: "玫瑰鹽牛小排定食", price: 268}, {name: "炸蝦天婦羅定食", price: 268},
             {name: "蒲燒鰻魚定食", price: 348}, {name: "北海道烤鮭魚定食", price: 248},
-            {name: "醬燒中卷定食", price: 268}, // 修改: 248 -> 268
-            {name: "唐揚炸雞定食", price: 248}, // 修改: 268 -> 248
+            {name: "醬燒中卷定食", price: 268}, 
+            {name: "唐揚炸雞定食", price: 248}, 
             {name: "自家漬味噌魚定食", price: 248}, {name: "鹽燒香魚定食", price: 248},
-            {name: "竹筴魚定食", price: 288}, // 修改: 263 -> 288
-            {name: "香魚甘露煮定食", price: 263}, // 修改: 288 -> 263
+            {name: "竹筴魚定食", price: 288}, 
+            {name: "香魚甘露煮定食", price: 263}, 
             {name: "赤宗魚定食", price: 248}, {name: "三品生魚片定食", price: 278},
             {name: "養生禪風定食", price: 238}
         ],
         "生丼飯": [
-            {name: "加炙燒", price: 20}, // 新增在第一個位置
+            {name: "加炙燒", price: 20},
             {name: "旗魚丼", price: 138}, {name: "三品生魚片丼", price: 165},
             {name: "鮭魚親子丼", price: 220}, {name: "鮭魚肚丼", price: 235},
             {name: "鮭魚海景丼", price: 250}, {name: "散壽司", price: 210},
@@ -851,10 +852,10 @@
             {name: "鮭魚握壽司(三貫)", price: 100}, {name: "鮪魚握壽司(三貫)", price: 115},
             {name: "花枝握壽司(三貫)", price: 100}, {name: "鮮蝦握壽司(三貫)", price: 95},
             {name: "蛋條握壽司(三貫)", price: 70}, {name: "蟹肉棒握壽司(三貫)", price: 70},
-            {name: "炙燒干貝握壽司(一貫)", price: 85}, // 修改: 90 -> 85
-            {name: "炙燒天使紅蝦握壽司(二貫)", price: 90}, // 修改: 85 -> 90
+            {name: "炙燒干貝握壽司(一貫)", price: 85}, 
+            {name: "炙燒天使紅蝦握壽司(二貫)", price: 90}, 
             {name: "干貝握壽司(一貫)", price: 75}, 
-            {name: "星鰻握壽司(一貫)", price: 80} // 修改: 二貫 -> 一貫
+            {name: "星鰻握壽司(一貫)", price: 80} 
         ],
         "手捲/捲壽司": [
             {name: "鮮蝦蘆筍手捲", price: 60}, {name: "鮮蝦手捲", price: 55},
@@ -868,12 +869,12 @@
         "丼飯/麵/泡飯": [
             {name: "黃金豬排丼", price: 120}, {name: "照燒雞腿丼", price: 125},
             {name: "經典牛丼", price: 120}, {name: "親子丼", price: 115},
-            {name: "唐揚雞丼", price: 135}, // 新增
+            {name: "唐揚雞丼", price: 135},
             {name: "讚岐海陸湯烏龍", price: 105}, 
-            {name: "京都豆皮豬排湯烏龍", price: 148}, // 修改: 105 -> 148
-            {name: "京都豆皮湯烏龍", price: 85}, // 修改: 148 -> 85
+            {name: "京都豆皮豬排湯烏龍", price: 148}, 
+            {name: "京都豆皮湯烏龍", price: 85}, 
             {name: "鍋燒意麵", price: 90},
-            {name: "海陸泡飯", price: 85} // 修改: 90 -> 85
+            {name: "海陸泡飯", price: 85} 
         ],
         "茶碗蒸/蛋包飯/湯": [
             {name: "茶碗蒸", price: 50}, {name: "茄汁蛋包飯", price: 80},
@@ -884,7 +885,8 @@
         ],
         "炒物": [
             {name: "鮭魚炒飯", price: 110}, {name: "夏威夷炒飯", price: 110},
-            {name: "櫻花蝦炒飯", price: 95}, {name: "讚岐炒烏龍", price: 105},
+            {name: "櫻花蝦炒飯", price: 110}, // 修改: 95 -> 110
+            {name: "讚岐炒烏龍", price: 105},
             {name: "清炒時蔬", price: 100}, {name: "炒意麵", price: 75},
             {name: "櫻花蝦炒時蔬", price: 95}, {name: "溫野菜", price: 95},
             {name: "白飯", price: 15}
