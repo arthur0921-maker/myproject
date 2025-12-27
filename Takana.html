@@ -613,7 +613,7 @@
 <header id="mainHeader">
     <div class="header-info">
         <h1>
-            <i class="fas fa-utensils"></i> 高田食堂 點餐系統 V2.9 
+            <i class="fas fa-utensils"></i> 高田食堂 點餐系統 V2.10
             <span id="connStatus" class="status-indicator disconnected"><i class="fas fa-circle"></i> 連線中...</span>
         </h1>
         <div class="sub-info">
@@ -690,7 +690,7 @@
 </div>
 
 <footer>
-    製作宣告 By Arthur WU | V2.9 (Fixed Syntax)
+    製作宣告 By Arthur WU | V2.10 (Rules Alignment)
 </footer>
 
 <!-- AI 助手 FAB -->
@@ -768,7 +768,10 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     
-    const collectionName = 'takada_orders';
+    // 定義應用程式 ID (請與 Firebase Rules 中的 appId 保持一致)
+    const appId = 'takada_canteen';
+    // 定義資料庫路徑 (符合 Rules: /artifacts/{appId}/public/data/...)
+    const COLLECTION_PATH = `artifacts/${appId}/public/data/orders`;
 
     // --- UI Status ---
     function setConnectionStatus(isConnected, msg = "") {
@@ -808,7 +811,7 @@
         "日式便當": [
             {name: "九品御膳弁當", price: 168}, {name: "照燒雞腿便當", price: 138},
             {name: "日式豬排便當", price: 128}, {name: "咖哩豬排便當", price: 128},
-            {name: "挪威薄鹽鯖魚便當", price: 158}, // 修改: 138 -> 158
+            {name: "挪威薄鹽鯖魚便當", price: 158}, 
             {name: "特製燒肉便當", price: 128},
             {name: "北海道鮭魚便當", price: 138}, {name: "炸蝦便當", price: 170},
             {name: "牛小排便當", price: 168}, {name: "浦燒鰻魚飯", price: 250},
@@ -885,7 +888,7 @@
         ],
         "炒物": [
             {name: "鮭魚炒飯", price: 110}, {name: "夏威夷炒飯", price: 110},
-            {name: "櫻花蝦炒飯", price: 110}, // 修改: 95 -> 110
+            {name: "櫻花蝦炒飯", price: 110}, 
             {name: "讚岐炒烏龍", price: 105},
             {name: "清炒時蔬", price: 100}, {name: "炒意麵", price: 75},
             {name: "櫻花蝦炒時蔬", price: 95}, {name: "溫野菜", price: 95},
@@ -945,7 +948,7 @@
     });
 
     function setupRealtimeListener() {
-        const q = collection(db, collectionName);
+        const q = collection(db, COLLECTION_PATH);
         
         onSnapshot(q, (snapshot) => {
             setConnectionStatus(true); // 成功收到資料
@@ -1010,8 +1013,6 @@
     window.closeAddonModal = function() {
         document.getElementById('addonModal').style.display = 'none';
         // 如果取消加購，視為"不加購"並加入原餐點
-        // 但使用者按"取消/不用"按鈕時可能只想關閉，這裡設計為"不用，謝謝" -> 僅加入主餐點
-        // 如果想完全取消加入購物車，應該點背景或按叉叉? 這裡簡化為 "不加購"
         if (pendingItem) {
             addToCart(pendingItem); 
             pendingItem = null;
@@ -1213,10 +1214,10 @@
 
         try {
             if (editingDocId) {
-                await updateDoc(doc(db, collectionName, editingDocId), newOrderData);
+                await updateDoc(doc(db, COLLECTION_PATH, editingDocId), newOrderData);
                 showToast("訂單修改成功！");
             } else {
-                await addDoc(collection(db, collectionName), newOrderData);
+                await addDoc(collection(db, COLLECTION_PATH), newOrderData);
                 showToast("訂單已送出！");
             }
             cancelEditMode(); 
@@ -1447,7 +1448,7 @@
             const order = allOrders.find(o => o.id === id);
             if (order && order.docId) {
                 try {
-                    await deleteDoc(doc(db, collectionName, order.docId));
+                    await deleteDoc(doc(db, COLLECTION_PATH, order.docId));
                 } catch (e) {
                     showToast("刪除失敗");
                 }
@@ -1459,7 +1460,7 @@
         if (allOrders.length === 0) return;
         showConfirm("確定要「結束今天訂購」並清空所有資料嗎？", async function() {
             try {
-                const promises = allOrders.map(o => deleteDoc(doc(db, collectionName, o.docId)));
+                const promises = allOrders.map(o => deleteDoc(doc(db, COLLECTION_PATH, o.docId)));
                 await Promise.all(promises);
                 editingOrderId = null;
                 editingDocId = null;
