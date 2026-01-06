@@ -405,7 +405,7 @@
         <!-- Extra Sauce Checkbox -->
         <div class="form-group checkbox-group">
             <input type="checkbox" id="addSauce">
-            <label for="addSauce">加購咖哩醬 (+$30)</label>
+            <label for="addSauce">加購咖哩醬 (+$45)</label>
         </div>
 
         <div class="form-group">
@@ -586,7 +586,7 @@
         const [itemName, itemPriceStr] = itemValue.split('|');
         let price = parseInt(itemPriceStr);
         if (hasSauce) {
-            price += 30;
+            price += 45;
         }
 
         // Check Deadline
@@ -845,3 +845,4 @@
 
 </body>
 </html>
+
