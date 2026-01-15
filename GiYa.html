@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>吉野烤肉飯點餐系統 V2.0 (Live Sync)</title>
+    <!-- 使用 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
@@ -43,10 +45,14 @@
         .sync-status { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
         .sync-online { background-color: #22c55e; box-shadow: 0 0 5px #22c55e; }
         .sync-offline { background-color: #ef4444; }
+        .sync-connecting { background-color: #fbbf24; animation: blink 1s infinite; }
+        
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="flex flex-col h-screen text-gray-800">
 
+    <!-- 頂部資訊列 -->
     <header class="bg-white shadow-md z-20 px-4 py-2 flex justify-between items-center h-16 shrink-0">
         <div class="flex items-center gap-4">
             <div class="bg-orange-500 text-white p-2 rounded-lg font-bold text-xl hidden sm:block">
@@ -76,10 +82,13 @@
         </div>
     </header>
 
+    <!-- 主畫面 -->
     <main class="flex-1 flex overflow-hidden">
         
+        <!-- 左側：菜單與購物車 -->
         <div class="flex-1 flex flex-col md:flex-row min-w-0 bg-gray-100">
             
+            <!-- 菜單區域 -->
             <div class="flex-1 overflow-y-auto p-4 scroll-hidden" id="menu-container">
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2 scroll-hidden" id="category-tabs">
                     <button class="bg-gray-800 text-white px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap shadow hover:bg-gray-700 transition">全部</button>
@@ -93,6 +102,7 @@
                 </div>
             </div>
 
+            <!-- 當前購物車 -->
             <div class="w-full md:w-80 bg-white border-l border-gray-200 flex flex-col shadow-xl z-10">
                 <div class="p-4 bg-gray-50 border-b border-gray-200">
                     <h2 class="font-bold text-lg text-gray-700"><i class="fas fa-shopping-cart mr-2"></i>當前選擇</h2>
@@ -122,6 +132,7 @@
                             <label class="block text-xs font-bold text-gray-500 mb-1">備註</label>
                             <input type="text" id="input-note" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition" placeholder="例: 不要蔥, 飯少">
                         </div>
+                        <!-- 注意：onclick 已移除，改用 JS 綁定或 window 全域呼叫 -->
                         <button onclick="window.submitOrder()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg shadow-lg transition transform active:scale-95 flex justify-center items-center gap-2">
                             <span>送出訂單</span>
                             <i class="fas fa-paper-plane"></i>
@@ -131,6 +142,7 @@
             </div>
         </div>
 
+        <!-- 右側：歷史訂單 (雲端同步) -->
         <div class="w-80 bg-gray-800 text-gray-100 flex flex-col border-l border-gray-700 hidden xl:flex shrink-0 transition-all">
             <div class="p-4 bg-gray-900 border-b border-gray-700 flex justify-between items-center">
                 <h2 class="font-bold"><i class="fas fa-cloud mr-2 text-blue-400"></i>即時訂單列表</h2>
@@ -138,6 +150,7 @@
             </div>
 
             <div class="flex-1 overflow-y-auto p-3 space-y-3 scroll-hidden" id="history-list">
+                <!-- 訂單項目由 Firebase 監聽器生成 -->
                 <div class="text-center text-gray-500 py-10 text-sm">
                     <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
                     <p>連線同步中...</p>
@@ -159,6 +172,7 @@
         </div>
     </main>
 
+    <!-- 手機版浮動按鈕 -->
     <button onclick="window.toggleMobileHistory()" class="xl:hidden fixed bottom-6 right-6 bg-gray-800 hover:bg-gray-700 text-white w-14 h-14 rounded-full shadow-2xl z-30 flex items-center justify-center transition transform hover:scale-110 border-2 border-white">
         <div class="relative">
             <i class="fas fa-list-ul text-xl"></i>
@@ -166,6 +180,7 @@
         </div>
     </button>
 
+    <!-- 手機版歷史訂單 Drawer -->
     <div id="mobile-history-drawer" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden xl:hidden transition-opacity">
         <div class="absolute right-0 top-0 bottom-0 w-80 max-w-full bg-gray-800 text-gray-100 flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl" id="drawer-content">
             <div class="p-4 flex justify-between items-center border-b border-gray-700 bg-gray-900">
@@ -192,6 +207,7 @@
         </div>
     </div>
 
+    <!-- Modal -->
     <div id="custom-modal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md p-4">
         <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-sm text-center relative overflow-hidden transform transition-all">
             <div class="h-3 bg-orange-500 w-full"></div>
@@ -204,9 +220,11 @@
         </div>
     </div>
 
+    <!-- Firebase Script (Module) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // FIX: Added signInWithCustomToken to import
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // 1. Firebase Config
@@ -229,29 +247,6 @@
         const APP_ID = "giya_app"; 
         const ORDERS_COLLECTION = collection(db, 'artifacts', APP_ID, 'public', 'data', 'orders');
 
-        // 3. Auth & Connection Logic
-        signInAnonymously(auth)
-            .then(() => {
-                console.log("Firebase: Signed in anonymously");
-            })
-            .catch((error) => {
-                console.error("Firebase Auth Error", error);
-                window.showModal("連線錯誤", "無法連線至資料庫，請檢查網路", "error");
-            });
-
-        onAuthStateChanged(auth, (user) => {
-            const dot = document.getElementById('connection-dot');
-            const text = document.getElementById('connection-text');
-            if (user) {
-                dot.className = "sync-status sync-online";
-                text.textContent = "已連線同步";
-                startListening();
-            } else {
-                dot.className = "sync-status sync-offline";
-                text.textContent = "離線";
-            }
-        });
-
         // 4. Global State & Variables
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyUfbXxolikiqdgTQmB7LZL9XT2pQEI5AYVphOXZ-2sbkn_Un4HkBV0j6wk0LQ1SI0PnA/exec';
         const CUTOFF_HOUR = 10;
@@ -263,8 +258,63 @@
         };
         let unsubscribeOrders = null;
 
+        // 3. Auth & Connection Logic
+        const dot = document.getElementById('connection-dot');
+        const text = document.getElementById('connection-text');
+        
+        dot.className = "sync-status sync-connecting";
+        text.textContent = "連線中...";
+
+        // Auth Logic: Try custom token first, fallback to anonymous
+        async function initAuth() {
+            let signedIn = false;
+
+            // 嘗試使用環境提供的 token
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                    signedIn = true;
+                    console.log("Firebase: Signed in with custom token");
+                } catch (e) {
+                    console.warn("Custom token failed (likely mismatch), falling back to anonymous auth", e);
+                }
+            }
+
+            // 如果沒有登入成功 (沒 token 或 token 失敗)，轉用匿名登入
+            if (!signedIn) {
+                try {
+                    await signInAnonymously(auth);
+                    console.log("Firebase: Signed in anonymously");
+                } catch (e) {
+                    console.error("Anonymous auth failed", e);
+                    dot.className = "sync-status sync-offline";
+                    text.textContent = "連線失敗";
+                }
+            }
+        }
+        
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                dot.className = "sync-status sync-online";
+                text.textContent = "已連線同步";
+                startListening(user);
+            } else {
+                dot.className = "sync-status sync-offline";
+                text.textContent = "離線";
+                // 停止監聽
+                if (unsubscribeOrders) {
+                    unsubscribeOrders();
+                    unsubscribeOrders = null;
+                }
+            }
+        });
+
         // --- Logic: Real-time Listener ---
-        function startListening() {
+        function startListening(user) {
+            if (!user) return; // Guard logic
+
             // 依據時間戳排序 (假設寫入時有帶 createdAt)
             const q = query(ORDERS_COLLECTION, orderBy("createdAt", "desc"));
             
@@ -277,6 +327,10 @@
                 renderHistory(); // 資料庫一變動，畫面馬上更新
             }, (error) => {
                 console.error("Snapshot error:", error);
+                // 權限錯誤或其他問題
+                if (error.code === 'permission-denied') {
+                    window.showModal("權限錯誤", "無法讀取資料，請確認登入狀態。", "error");
+                }
             });
         }
 
@@ -294,6 +348,11 @@
             if (!name) {
                 window.showModal("錯誤", "請輸入點餐者姓名", "error");
                 document.getElementById('input-name').focus();
+                return;
+            }
+            
+            if (!auth.currentUser) {
+                window.showModal("連線錯誤", "尚未連線至資料庫，請稍候再試。", "error");
                 return;
             }
 
@@ -320,6 +379,9 @@
 
             try {
                 // 寫入 Firestore
+                // Guard: check auth again
+                if (!auth.currentUser) throw new Error("Not authenticated");
+
                 await addDoc(ORDERS_COLLECTION, {
                     name: name,
                     items: fullItemsStr,
@@ -350,6 +412,7 @@
 
         // 刪除單筆 (從 Firebase 刪除)
         window.deleteOrder = function(docId) {
+            if (!auth.currentUser) return;
             window.showModal("確認", "確定要刪除這筆訂單嗎？所有人的畫面都會同步刪除。", "warning", async () => {
                 try {
                     await deleteDoc(doc(ORDERS_COLLECTION, docId));
@@ -378,12 +441,14 @@
                 }
                 
                 // 從資料庫刪除
-                try {
-                    await deleteDoc(doc(ORDERS_COLLECTION, docId));
-                    window.renderCart();
-                    window.closeMobileDrawer();
-                } catch (e) {
-                    window.showModal("錯誤", "操作失敗", "error");
+                if (auth.currentUser) {
+                    try {
+                        await deleteDoc(doc(ORDERS_COLLECTION, docId));
+                        window.renderCart();
+                        window.closeMobileDrawer();
+                    } catch (e) {
+                        window.showModal("錯誤", "操作失敗", "error");
+                    }
                 }
             });
         }
@@ -391,11 +456,12 @@
         // 清除全部 (Batch Delete)
         window.confirmClearAll = function() {
             if (state.orders.length === 0) return;
+            if (!auth.currentUser) return;
+
             window.showModal("危險操作", "確定要清除「雲端」所有的訂購資料嗎？所有人的資料都會消失！", "warning", async () => {
                 try {
                     const snapshot = await getDocs(ORDERS_COLLECTION);
                     // Firestore Batch 限制一次 500 筆，這裡簡單處理直接 Loop 刪除 (小規模用)
-                    // 若量大建議使用 batch
                     const batch = writeBatch(db);
                     snapshot.docs.forEach((doc) => {
                         batch.delete(doc.ref);
@@ -614,9 +680,18 @@
             const total = state.orders.reduce((sum, ord) => sum + ord.total, 0);
             text += `------------------\n💰 總金額: $${total}`;
             
-            navigator.clipboard.writeText(text).then(() => {
+            // Clipboard fallback for iframe
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
                 window.showModal("成功", "訂單內容已複製到剪貼簿！", "success");
-            }).catch(() => window.showModal("錯誤", "複製失敗，請手動選取", "error"));
+            } catch (err) {
+                window.showModal("錯誤", "複製失敗，請手動選取", "error");
+            }
+            document.body.removeChild(textarea);
         }
 
         // --- UI Utils ---
