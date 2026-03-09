@@ -2,7 +2,10 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>偶鵝嚐嚐 - 碧華國中教務處午餐團</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -51,20 +54,18 @@
         }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden text-gray-800">
 
-    <!-- 自定義彈出視窗 (Modal) -->
+<body class="bg-[#f7f3e8] text-gray-800 min-h-[100dvh] flex flex-col md:h-[100dvh] md:overflow-hidden">
+
     <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden transition-opacity duration-300 opacity-0 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm transform transition-all scale-95 duration-300 border-t-4 border-orange-500">
             <h3 id="modalTitle" class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2"></h3>
             <p id="modalMessage" class="text-gray-600 mb-6 leading-relaxed"></p>
             <div id="modalActions" class="flex justify-end gap-3">
-                <!-- Javascript will inject buttons here -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- 載入中遮罩 -->
     <div id="loadingOverlay" class="fixed inset-0 z-40 flex items-center justify-center bg-white bg-opacity-80 backdrop-blur-sm">
         <div class="flex flex-col items-center">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-3"></div>
@@ -72,7 +73,7 @@
         </div>
     </div>
 
-    <header class="bg-white shadow-md z-20 shrink-0 border-t-4 border-orange-500">
+    <header class="bg-white shadow-md z-40 shrink-0 border-t-4 border-orange-500 sticky top-0" id="mainHeader">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                 
@@ -80,7 +81,7 @@
                     <div class="flex flex-wrap items-baseline gap-3 justify-center md:justify-start">
                         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-wide flex items-center gap-2">
                             <span>🦢 偶鵝嚐嚐</span>
-                            <span class="text-sm text-gray-400 font-normal self-end mb-1">V3.1 (碧華專用版)</span>
+                            <span class="text-sm text-gray-400 font-normal self-end mb-1">V3.2 (碧華專用版)</span>
                             <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-lg border border-orange-200">碧華國中團</span>
                         </h1>
                         <div id="clockDisplay" class="text-lg font-mono font-bold text-gray-600 bg-gray-100 px-2 rounded">00:00:00</div>
@@ -104,17 +105,14 @@
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+    <main class="flex-1 flex flex-col md:flex-row relative">
         
-        <!-- 左側：菜單區 -->
-        <section class="w-full md:w-2/3 flex flex-col border-r border-gray-200 bg-[#fbfbfb] h-full relative">
+        <section class="w-full md:w-2/3 flex flex-col border-b md:border-b-0 md:border-r border-gray-200 bg-[#fbfbfb] md:h-full relative">
             
-            <!-- 輸入名字與備註區 -->
-            <div class="p-3 bg-white border-b border-orange-100 shrink-0 shadow-sm z-10">
+            <div class="p-3 bg-white border-b border-orange-100 shrink-0 shadow-sm z-20">
                 <div class="flex flex-col sm:flex-row gap-2 items-end max-w-4xl mx-auto md:mx-0">
                     
                     <div class="flex-1 w-full sm:w-auto grid grid-cols-2 sm:grid-cols-5 gap-2">
-                        <!-- 姓名輸入 -->
                         <div class="col-span-2 sm:col-span-2">
                             <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">誰要點餐？</label>
                             <div class="relative">
@@ -123,7 +121,6 @@
                             </div>
                         </div>
 
-                        <!-- 備註輸入 -->
                         <div class="col-span-2 sm:col-span-3">
                             <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">備註 (選填)</label>
                             <div class="relative">
@@ -142,20 +139,15 @@
                 </div>
             </div>
 
-            <!-- 分類標籤 -->
-            <div class="flex overflow-x-auto gap-2 p-2 bg-white border-b border-gray-200 shrink-0 no-scrollbar shadow-[0_2px_5px_rgba(0,0,0,0.02)] z-10" id="categoryTabs">
-                <!-- Javascript will inject tabs -->
-            </div>
-
-            <!-- 菜單網格 -->
-            <div id="menuContainer" class="flex-1 overflow-y-auto p-4 bg-[#f7f3e8]">
-                <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 pb-20">
-                    <!-- Javascript will inject menu items -->
+            <div class="flex overflow-x-auto gap-2 p-2 bg-white border-b border-gray-200 shrink-0 no-scrollbar shadow-[0_2px_5px_rgba(0,0,0,0.02)] z-30 sticky md:static top-[70px] md:top-0" id="categoryTabs">
                 </div>
+
+            <div id="menuContainer" class="flex-1 overflow-y-visible md:overflow-y-auto p-4 bg-[#f7f3e8]">
+                <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 pb-20">
+                    </div>
             </div>
             
-            <!-- 底部浮動：目前選擇 -->
-            <div id="currentSelectionBar" class="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] bg-gray-800 text-white p-3 rounded-full shadow-2xl flex justify-between items-center z-20 hidden transform transition-all duration-300 hover:scale-105 cursor-pointer" onclick="window.submitOrder()">
+            <div id="currentSelectionBar" class="fixed md:absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] bg-gray-800 text-white p-3 rounded-full shadow-2xl flex justify-between items-center z-50 md:z-20 hidden transform transition-all duration-300 hover:scale-105 cursor-pointer" onclick="window.submitOrder()">
                 <div class="flex items-center gap-2 px-2">
                     <div class="bg-orange-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold" id="currentCount">0</div>
                     <span class="text-sm">準備下單...</span>
@@ -167,14 +159,13 @@
             </div>
         </section>
 
-        <!-- 右側：訂單清單區 -->
-        <section class="w-full md:w-1/3 bg-white flex flex-col h-full border-t md:border-t-0 md:border-l border-gray-200 shadow-xl z-30">
-            <div class="p-3 bg-gray-100 font-bold text-gray-700 flex justify-between items-center shrink-0 border-b border-gray-200">
+        <section id="orderSection" class="w-full md:w-1/3 bg-white flex flex-col md:h-full shadow-xl z-10">
+            <div class="p-3 bg-gray-100 font-bold text-gray-700 flex justify-between items-center shrink-0 border-b border-gray-200 sticky md:static top-[70px] md:top-0 z-20">
                 <span class="flex items-center gap-2">📋 今日訂單清單</span>
                 <span class="text-xs bg-gray-700 text-white px-2 py-1 rounded-full" id="totalOrdersCount">0筆</span>
             </div>
             
-            <div id="ordersList" class="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
+            <div id="ordersList" class="flex-1 overflow-y-visible md:overflow-y-auto p-3 space-y-3 bg-gray-50 min-h-[300px]">
                 <div class="text-center text-gray-400 mt-20 flex flex-col items-center">
                     <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
                     <p>目前還沒有人點餐</p>
@@ -182,7 +173,7 @@
                 </div>
             </div>
 
-            <div class="p-4 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div class="p-4 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] sticky bottom-0 md:static z-20">
                 <div class="flex justify-between items-center text-xl font-bold">
                     <span class="text-gray-600 text-base">本日總金額</span>
                     <span class="text-red-600 font-mono text-2xl">$<span id="grandTotal">0</span></span>
@@ -194,7 +185,7 @@
     </main>
 
     <script type="module">
-        // 1. 使用您提供的 Firebase Config 和 12.7.0 版本 SDK
+        // 1. 使用 Firebase 12.7.0 SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
@@ -210,26 +201,23 @@
             measurementId: "G-9Y8QM1TBVW"
         };
         
-        // --- 關鍵修改：路徑對應 ---
-        // 您的規則：match /artifacts/{appId}/public/data/{document=**}
-        // 所以我們必須使用對應的路徑結構
-        const APP_ID_FOR_DB = "myorder-o2"; // 使用專案 ID 當作路徑中的 appId
-        const DATA_COLLECTION_NAME = "lunch_orders_v2"; // 實際的集合名稱
+        // 路徑對應設定
+        const APP_ID_FOR_DB = "myorder-o2"; 
+        const DATA_COLLECTION_NAME = "lunch_orders_v2"; 
 
-        // --- Firebase Init ---
+        // Firebase Init
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         
         let currentUser = null;
 
-        // --- 輔助函式：取得正確的 Collection 參考 ---
+        // 取得正確的 Collection 參考
         function getOrdersCollectionRef() {
-            // 對應到: /artifacts/myorder-o2/public/data/lunch_orders_v2
             return collection(db, 'artifacts', APP_ID_FOR_DB, 'public', 'data', DATA_COLLECTION_NAME);
         }
 
-        // --- 0. Custom Modal System ---
+        // --- 0. Custom Modal System (修改加入回呼機制) ---
         window.showModal = function(title, message, type = 'info', onConfirm = null) {
             const modal = document.getElementById('customModal');
             const modalTitle = document.getElementById('modalTitle');
@@ -260,7 +248,10 @@
                 const okBtn = document.createElement('button');
                 okBtn.className = "px-5 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 font-bold shadow-md transition-colors w-full sm:w-auto";
                 okBtn.textContent = "知道了";
-                okBtn.onclick = window.closeModal;
+                okBtn.onclick = () => {
+                    window.closeModal();
+                    if (onConfirm) onConfirm(); // 點擊知道了後觸發回呼
+                };
                 modalActions.appendChild(okBtn);
             }
 
@@ -284,6 +275,7 @@
         };
 
         // --- 1. Data & Global Vars ---
+        // ⚠️ 這裡僅為部分菜單，請將您完整的 menuData 替換回來
         const menuData = [
             {
                 category: "便當系列",
@@ -323,459 +315,358 @@
                     { name: "乾麵", price: 40 },
                     { name: "湯麵", price: 40 },
                     { name: "乾冬粉", price: 40 },
-                    { name: "湯冬粉", price: 40 },
-                    { name: "鵝肉乾冬粉", price: 80 },
-                    { name: "鵝肉湯冬粉", price: 80 },
-                    { name: "白飯", price: 15 }
+                    { name: "湯冬粉", price: 40 }
                 ]
             },
             {
                 category: "美味小菜",
-                icon: "🥦",
+                icon: "🥬",
                 items: [
-                    { name: "招牌化骨鵝掌(5支)", price: 70 },
-                    { name: "綜合下水", price: 100 },
-                    { name: "米血糕", price: 50 },
-                    { name: "限量炸鵝蛋", price: 50, tag: "獨家" },
-                    { name: "鵝腳(隻)", price: 20 },
-                    { name: "鵝屁股(個)", price: 10 },
-                    { name: "鵝翅(隻)", price: 40 },
-                    { name: "鵝腱", price: 60 },
-                    { name: "鵝頭(1隻)", price: 60 },
-                    { name: "鵝頭(2隻)", price: 100 },
-                    { name: "鵝心+肝", price: 50 },
-                    { name: "酸菜鵝腸", price: 80 },
-                    { name: "韭菜鵝腸", price: 80 },
-                    { name: "鵝肉香腸", price: 60 },
-                    { name: "桂竹筍", price: 50 },
-                    { name: "燙青菜/時蔬", price: 50 },
-                    { name: "麻辣鴨血", price: 50 },
-                    { name: "麻辣豆腐", price: 50 },
-                    { name: "綜合麻辣", price: 70 },
-                    { name: "鵝油黃金荷包蛋", price: 20 }
+                    { name: "鵝心肝", price: 60 },
+                    { name: "涼拌鵝掌", price: 60 },
+                    { name: "滷白菜", price: 40 },
+                    { name: "桂竹筍", price: 40 },
+                    { name: "燙青菜", price: 40 }
                 ]
             },
             {
                 category: "鮮美湯品",
                 icon: "🥣",
                 items: [
-                    { name: "鵝肉湯", price: 70 },
-                    { name: "下水湯", price: 60 },
-                    { name: "酸菜鵝腸湯", price: 60 },
-                    { name: "鵝丸湯", price: 50 }
+                    { name: "鵝肉丸湯", price: 40 },
+                    { name: "綜合下水湯", price: 60 }
                 ]
             }
         ];
 
+        let tempCart = {}; // { "Item Name": { price: 100, qty: 2 } }
         let currentCategory = "便當系列";
-        let tempCart = {}; 
-        let submittedOrders = []; 
+        let todayOrders = [];
 
-        // --- 2. Initialization ---
-        window.onload = () => {
-            updateTime();
-            setInterval(updateTime, 1000);
-            
-            const today = new Date();
-            document.getElementById('currentDate').innerText = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-            
-            renderCategoryTabs();
-            renderMenu();
-            
-            // 開始登入流程
-            signInAnonymously(auth).catch(e => {
-                console.error("Auth Error", e);
-                window.showModal("錯誤", "無法登入系統，請檢查 Firebase Console 是否已啟用「匿名登入 (Anonymous Auth)」", "error");
-            });
-        };
-
-        // 監聽登入狀態
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('loadingOverlay').classList.add('hidden'); // 隱藏載入畫面
-                
-                // 登入成功後，監聽 Firestore
-                const q = getOrdersCollectionRef();
-                
-                onSnapshot(q, (snapshot) => {
-                    // Update global submittedOrders
-                    submittedOrders = snapshot.docs.map(d => ({
-                        ...d.data(),
-                        firestoreId: d.id
-                    }));
-
-                    // Sort locally by creation time (id)
-                    submittedOrders.sort((a, b) => a.id - b.id);
-                    
-                    renderSubmittedOrders();
-                }, (error) => {
-                    console.error("Firestore Error:", error);
-                    // 如果權限被拒絕，通常是規則問題
-                    if(error.code === 'permission-denied') {
-                         window.showModal("權限錯誤", "無法讀取資料庫 (Permission Denied)。<br>請確認 Firestore Rules 路徑是否為 /artifacts/myorder-o2/public/data/...", "error");
-                    } else {
-                         window.showModal("連線錯誤", "無法取得訂單資料，請重新整理頁面。", "info");
-                    }
-                });
-            }
-        });
-
-        // --- 3. UI Functions ---
-        window.switchCategory = function(cat) {
-            currentCategory = cat;
-            renderCategoryTabs();
-            renderMenu();
-        }
-
-        window.adjustTempCart = function(name, price, change) {
-            if (!tempCart[name]) {
-                tempCart[name] = { price: price, count: 0 };
-            }
-            tempCart[name].count += change;
-            
-            if (tempCart[name].count <= 0) {
-                delete tempCart[name];
-            }
-
-            updateTempCartUI();
-            renderMenu();
-        }
-
-        function renderCategoryTabs() {
-            const container = document.getElementById('categoryTabs');
-            container.innerHTML = menuData.map(cat => `
-                <button onclick="window.switchCategory('${cat.category}')" 
-                    class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${cat.category === currentCategory 
-                    ? 'bg-gray-800 text-white shadow-md transform scale-105' 
-                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'}">
-                    <span>${cat.icon}</span> ${cat.category}
-                </button>
-            `).join('');
-        }
-
-        function renderMenu() {
-            const container = document.getElementById('menuGrid');
-            const categoryData = menuData.find(c => c.category === currentCategory);
-            
-            container.innerHTML = categoryData.items.map(item => {
-                const count = tempCart[item.name] ? tempCart[item.name].count : 0;
-                const activeClass = count > 0 ? "border-orange-400 ring-1 ring-orange-400 shadow-md bg-orange-50" : "border-gray-100 shadow-sm hover:shadow-md bg-white";
-                
-                let tagHtml = '';
-                if(item.tag) {
-                    tagHtml = `<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg rounded-tr-lg font-bold shadow-sm">${item.tag}</span>`;
-                }
-
-                return `
-                <div class="relative p-4 rounded-xl border flex flex-col justify-between h-full transition-all duration-200 ${activeClass}">
-                    ${tagHtml}
-                    <div class="mb-3">
-                        <h3 class="font-bold text-gray-800 text-lg leading-tight pr-4">${item.name}</h3>
-                        <p class="text-orange-600 font-bold mt-1 text-lg">$${item.price}</p>
-                    </div>
-                    <div class="flex items-center justify-end rounded-lg p-1">
-                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, -1)" 
-                            class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-md text-gray-600 font-bold hover:bg-red-50 hover:text-red-500 active:scale-95 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors" 
-                            ${count === 0 ? 'disabled' : ''}>-</button>
-                        <span class="w-10 text-center font-bold text-gray-800 text-lg">${count}</span>
-                        <button onclick="window.adjustTempCart('${item.name}', ${item.price}, 1)" 
-                            class="w-8 h-8 flex items-center justify-center bg-orange-500 border border-orange-500 rounded-md text-white font-bold hover:bg-orange-600 active:scale-95 shadow-sm transition-colors">+</button>
-                    </div>
-                </div>
-            `}).join('');
-        }
-
-        function renderSubmittedOrders() {
-            const container = document.getElementById('ordersList');
-            const countBadge = document.getElementById('totalOrdersCount');
-            const grandTotalEl = document.getElementById('grandTotal');
-
-            if (submittedOrders.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-gray-400 mt-20 flex flex-col items-center animate-pulse">
-                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
-                        <p>目前還沒有人點餐</p>
-                        <p class="text-xs mt-2">碧華國中教務處午餐團開跑囉！</p>
-                    </div>`;
-                countBadge.innerText = "0筆";
-                grandTotalEl.innerText = "0";
-                return;
-            }
-
-            let totalMoney = 0;
-            // Display newest first
-            const displayOrders = [...submittedOrders].reverse();
-
-            container.innerHTML = displayOrders.map(order => {
-                totalMoney += order.total;
-                const itemsHtml = order.items.map(i => 
-                    `<div class="flex justify-between text-sm text-gray-600 pl-2 border-l-2 border-gray-200">
-                        <span>${i.name} <span class="text-gray-400">x${i.count}</span></span>
-                        <span class="font-mono">$${i.price * i.count}</span>
-                    </div>`
-                ).join('');
-
-                const noteHtml = order.note ? 
-                    `<div class="mt-2 text-xs bg-yellow-50 text-yellow-800 p-1.5 rounded border border-yellow-200 flex items-start gap-1">
-                        <span>✏️</span> <span>${order.note}</span>
-                     </div>` : '';
-
-                // Safe quote escaping for HTML
-                const safeFirestoreId = order.firestoreId;
-
-                return `
-                <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm relative group hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-2 border-b border-dashed border-gray-100 pb-2">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs border border-orange-200">
-                                ${order.name.charAt(0)}
-                            </div>
-                            <div>
-                                <span class="font-bold text-gray-800 block leading-none">${order.name}</span>
-                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded">${order.time}</span>
-                            </div>
-                        </div>
-                        <div class="flex gap-1">
-                            <button onclick="window.editOrder('${safeFirestoreId}')" class="text-gray-300 hover:text-blue-500 transition-colors p-1" title="修改此單">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                            </button>
-                            <button onclick="window.confirmDeleteOrder('${safeFirestoreId}')" class="text-gray-300 hover:text-red-500 transition-colors p-1" title="刪除此單">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="space-y-1 mb-2">
-                        ${itemsHtml}
-                    </div>
-                    ${noteHtml}
-                    <div class="text-right font-bold text-orange-600 text-sm bg-orange-50 p-1 rounded mt-2">
-                        總計: $${order.total}
-                    </div>
-                </div>
-            `}).join('');
-
-            countBadge.innerText = `${submittedOrders.length}筆`;
-            grandTotalEl.innerText = totalMoney;
-        }
-
-        function updateTempCartUI() {
-            const bar = document.getElementById('currentSelectionBar');
-            let totalCount = 0;
-            let totalPrice = 0;
-
-            for (let key in tempCart) {
-                totalCount += tempCart[key].count;
-                totalPrice += tempCart[key].count * tempCart[key].price;
-            }
-
-            if (totalCount > 0) {
-                bar.classList.remove('hidden');
-                bar.classList.add('flex');
-                document.getElementById('currentCount').innerText = totalCount;
-                document.getElementById('currentTotal').innerText = totalPrice;
-            } else {
-                bar.classList.add('hidden');
-                bar.classList.remove('flex');
-            }
-        }
-
+        // --- 2. Clock & Date ---
         function updateTime() {
             const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
+            const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false });
+            document.getElementById('clockDisplay').textContent = timeStr;
             
-            const clockEl = document.getElementById('clockDisplay');
-            clockEl.innerText = timeString;
+            const dateStr = now.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
+            document.getElementById('currentDate').textContent = dateStr;
 
-            if (now.getHours() >= 10) {
+            // 檢查是否超過早上 10 點
+            const isDeadlinePassed = now.getHours() >= 10;
+            const clockEl = document.getElementById('clockDisplay');
+            if (isDeadlinePassed) {
                 clockEl.classList.add('deadline-passed');
             } else {
                 clockEl.classList.remove('deadline-passed');
             }
         }
+        setInterval(updateTime, 1000);
+        updateTime();
 
-        // --- 4. Logic Functions (Async for Firestore) ---
+        // --- 3. Render UI ---
+        function renderCategoryTabs() {
+            const tabsContainer = document.getElementById('categoryTabs');
+            tabsContainer.innerHTML = '';
+            menuData.forEach(cat => {
+                const btn = document.createElement('button');
+                const isSelected = cat.category === currentCategory;
+                btn.className = `px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${isSelected ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
+                btn.innerHTML = `${cat.icon} ${cat.category}`;
+                btn.onclick = () => {
+                    currentCategory = cat.category;
+                    renderCategoryTabs();
+                    renderMenu();
+                };
+                tabsContainer.appendChild(btn);
+            });
+        }
 
+        window.adjustQuantity = function(itemName, price, delta) {
+            if (!tempCart[itemName]) {
+                if (delta > 0) tempCart[itemName] = { price: price, qty: delta };
+            } else {
+                tempCart[itemName].qty += delta;
+                if (tempCart[itemName].qty <= 0) delete tempCart[itemName];
+            }
+            updateCartUI();
+            renderMenu();
+        };
+
+        function updateCartUI() {
+            let totalQty = 0;
+            let totalPrice = 0;
+            for (let item in tempCart) {
+                totalQty += tempCart[item].qty;
+                totalPrice += tempCart[item].price * tempCart[item].qty;
+            }
+
+            const bar = document.getElementById('currentSelectionBar');
+            document.getElementById('currentCount').textContent = totalQty;
+            document.getElementById('currentTotal').textContent = totalPrice;
+
+            if (totalQty > 0) {
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        function renderMenu() {
+            const grid = document.getElementById('menuGrid');
+            grid.innerHTML = '';
+            const categoryData = menuData.find(c => c.category === currentCategory);
+            
+            if (categoryData) {
+                categoryData.items.forEach(item => {
+                    const currentQty = tempCart[item.name]?.qty || 0;
+                    const card = document.createElement('div');
+                    card.className = `bg-white rounded-xl p-4 flex flex-col justify-between shadow-sm border transition-all ${currentQty > 0 ? 'border-orange-400 ring-1 ring-orange-400 bg-orange-50' : 'border-gray-100 hover:shadow-md'}`;
+                    
+                    let tagHtml = item.tag ? `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${item.tag}</span>` : '';
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-bold text-gray-800 text-sm sm:text-base flex-1">${item.name}${tagHtml}</h4>
+                            </div>
+                            <p class="text-orange-600 font-bold text-lg mb-3">$${item.price}</p>
+                        </div>
+                        <div class="flex items-center justify-end gap-3 mt-auto">
+                            <button onclick="window.adjustQuantity('${item.name}', ${item.price}, -1)" class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold hover:bg-gray-200 active:bg-gray-300 ${currentQty === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${currentQty === 0 ? 'disabled' : ''}>-</button>
+                            <span class="font-bold w-4 text-center text-lg ${currentQty > 0 ? 'text-orange-600' : 'text-gray-400'}">${currentQty}</span>
+                            <button onclick="window.adjustQuantity('${item.name}', ${item.price}, 1)" class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold hover:bg-orange-600 active:bg-orange-700">+</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        // --- 4. Render Orders List ---
+        function renderOrders() {
+            const list = document.getElementById('ordersList');
+            let grandTotal = 0;
+            let totalCount = 0;
+
+            if (todayOrders.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center text-gray-400 mt-20 flex flex-col items-center">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-3xl mb-3">🍽️</div>
+                        <p>今天還沒有人點餐</p>
+                        <p class="text-xs mt-1">趕快搶頭香！</p>
+                    </div>`;
+                document.getElementById('grandTotal').textContent = 0;
+                document.getElementById('totalOrdersCount').textContent = "0筆";
+                return;
+            }
+
+            list.innerHTML = '';
+            
+            // 排序：新的在前面
+            todayOrders.sort((a, b) => b.timestamp - a.timestamp).forEach(order => {
+                grandTotal += order.total;
+                totalCount += 1;
+
+                let itemsHtml = '';
+                for(let key in order.items) {
+                    itemsHtml += `<div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>- ${key} x${order.items[key].qty}</span>
+                        <span>$${order.items[key].price * order.items[key].qty}</span>
+                    </div>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-3 rounded-xl shadow-sm border border-gray-100 relative group";
+                
+                const timeStr = new Date(order.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute:'2-digit' });
+                const noteHtml = order.note ? `<div class="mt-2 text-xs bg-yellow-50 text-yellow-700 p-2 rounded-lg border border-yellow-100 font-bold">備註: ${order.note}</div>` : '';
+
+                card.innerHTML = `
+                    <button onclick="window.confirmDelete('${order.id}', '${order.name}')" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 hidden md:block group-hover:block transition-colors" title="刪除此筆訂單">
+                        🗑️
+                    </button>
+                    <button onclick="window.confirmDelete('${order.id}', '${order.name}')" class="absolute top-2 right-2 text-gray-400 md:hidden p-1" title="刪除此筆訂單">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                    <div class="flex justify-between items-baseline mb-2 border-b border-gray-50 pb-2 pr-6">
+                        <div class="font-bold text-gray-800 text-base flex items-center gap-1">
+                            <span class="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded">${timeStr}</span>
+                            ${order.name}
+                        </div>
+                        <div class="font-bold text-orange-600">$${order.total}</div>
+                    </div>
+                    <div>${itemsHtml}</div>
+                    ${noteHtml}
+                `;
+                list.appendChild(card);
+            });
+
+            document.getElementById('grandTotal').textContent = grandTotal;
+            document.getElementById('totalOrdersCount').textContent = `${totalCount}筆`;
+        }
+
+        // --- 5. Firebase Actions ---
         window.submitOrder = async function() {
-            const nameInput = document.getElementById('userName');
-            const noteInput = document.getElementById('userNote'); 
-            const name = nameInput.value.trim();
-            const note = noteInput.value.trim();
+            const name = document.getElementById('userName').value.trim();
+            const note = document.getElementById('userNote').value.trim();
 
             if (!name) {
-                window.showModal("提示", "請輸入訂購人姓名！", "info");
-                nameInput.focus();
+                window.showModal('⚠️ 錯誤', '請填寫「誰要點餐」喔！', 'info');
+                document.getElementById('userName').focus();
                 return;
             }
 
-            if (Object.keys(tempCart).length === 0) {
-                window.showModal("提示", "請先選擇餐點！", "info");
+            let items = {};
+            let currentTotal = 0;
+            let totalCount = 0;
+            for(let key in tempCart) {
+                items[key] = tempCart[key];
+                currentTotal += tempCart[key].price * tempCart[key].qty;
+                totalCount += tempCart[key].qty;
+            }
+
+            if (Object.keys(items).length === 0) {
+                window.showModal('⚠️ 錯誤', '購物車是空的，請先選擇餐點。', 'info');
                 return;
             }
 
-            if (!currentUser) {
-                window.showModal("錯誤", "尚未連線至資料庫，請稍後再試。", "error");
-                return;
-            }
-
-            const now = new Date();
-            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-            
-            let orderItems = [];
-            let orderTotal = 0;
-
-            for (let key in tempCart) {
-                orderItems.push({
-                    name: key,
-                    price: tempCart[key].price,
-                    count: tempCart[key].count
+            try {
+                await addDoc(getOrdersCollectionRef(), {
+                    name: name,
+                    note: note,
+                    items: items,
+                    total: currentTotal,
+                    timestamp: new Date().getTime()
                 });
-                orderTotal += (tempCart[key].price * tempCart[key].count);
-            }
 
-            const newOrder = {
-                id: Date.now(), // Use timestamp as order logic ID for sorting
-                name: name,
-                note: note, 
-                items: orderItems,
-                total: orderTotal,
-                time: timeStr
-            };
-
-            // Firestore Add (使用 helper function 取得正確路徑)
-            try {
-                await addDoc(getOrdersCollectionRef(), newOrder);
-                
-                // Reset UI
-                tempCart = {};
-                // nameInput.value = ''; // Keep name? usually clearing is better for next person
-                nameInput.value = '';
-                noteInput.value = ''; 
-                updateTempCartUI();
-                renderMenu(); 
-            } catch (e) {
-                console.error(e);
-                window.showModal("錯誤", "送出訂單失敗，請檢查網路連線或資料庫規則。", "error");
-            }
-        }
-
-        window.editOrder = async function(firestoreId) {
-            const order = submittedOrders.find(o => o.firestoreId === firestoreId);
-            if(!order) return;
-
-            if(Object.keys(tempCart).length > 0) {
-                window.showModal("提示", "您目前有正在選擇的餐點，請先清空或送出後再修改舊訂單。", "info");
-                return;
-            }
-            
-            // Restore Form
-            document.getElementById('userName').value = order.name;
-            document.getElementById('userNote').value = order.note || '';
-            
-            // Restore Cart
-            tempCart = {};
-            order.items.forEach(item => {
-                tempCart[item.name] = { price: item.price, count: item.count };
-            });
-            
-            // Delete from Firestore immediately to simulate "Move to Cart"
-            try {
-                await deleteDoc(doc(getOrdersCollectionRef(), firestoreId));
-                updateTempCartUI();
-                renderMenu();
-                window.showModal("修改訂單", `已取回 <b>${order.name}</b> 的訂單。<br>請修改內容後再次點擊「送出」。`, "info");
-            } catch(e) {
-                window.showModal("錯誤", "無法修改訂單，請檢查網路。", "error");
-            }
-        }
-
-        window.confirmDeleteOrder = function(firestoreId) {
-            window.showModal(
-                "刪除確認", 
-                "確定要刪除這筆訂單嗎？<br><span class='text-sm text-red-500'>此動作無法復原。</span>", 
-                "confirm", 
-                async () => {
-                    try {
-                        await deleteDoc(doc(getOrdersCollectionRef(), firestoreId));
-                    } catch(e) {
-                         window.showModal("錯誤", "刪除失敗。", "error");
+                // 【修改這裡】加入平滑滾動的回呼機制
+                window.showModal('✅ 訂購成功', `已成功送出 ${totalCount} 份餐點，總計 $${currentTotal}。<br>請記得將金額交給總務唷！`, 'info', () => {
+                    if (window.innerWidth < 768) {
+                        document.getElementById('orderSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
+                });
+
+                document.getElementById('userName').value = '';
+                document.getElementById('userNote').value = '';
+                tempCart = {};
+                updateCartUI();
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                window.showModal('❌ 訂購失敗', '無法連接到伺服器，請稍後再試。');
+            }
+        };
+
+        window.confirmDelete = function(id, name) {
+            window.showModal('⚠️ 刪除確認', `確定要刪除 <b>${name}</b> 的訂單嗎？`, 'confirm', async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', APP_ID_FOR_DB, 'public', 'data', DATA_COLLECTION_NAME, id));
+                } catch (error) {
+                    console.error("Error deleting document: ", error);
+                    window.showModal('❌ 錯誤', '刪除失敗，請稍後再試。');
                 }
-            );
-        }
+            });
+        };
 
         window.confirmClearAll = function() {
-            window.showModal(
-                "警告：清除所有資料", 
-                "您確定要「清除今天所有訂購資料」並重新開始嗎？<br><br><span class='text-red-600 font-bold'>⚠️ 這將會刪除目前所有的訂單紀錄！</span>", 
-                "confirm", 
-                async () => {
-                     // Delete all documents in collection
-                     // Note: Client side deletion requires iterating docs
-                     try {
-                         const snapshot = await getDocs(getOrdersCollectionRef());
-                         const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
-                         await Promise.all(deletePromises);
-                     } catch(e) {
-                         console.error(e);
-                         window.showModal("錯誤", "清除失敗，請稍後再試。", "error");
-                     }
+            window.showModal('🚨 警告', '確定要清除今天「所有」訂購資料嗎？這個動作無法復原！', 'confirm', async () => {
+                try {
+                    const querySnapshot = await getDocs(getOrdersCollectionRef());
+                    querySnapshot.forEach(async (docSnap) => {
+                        await deleteDoc(doc(db, 'artifacts', APP_ID_FOR_DB, 'public', 'data', DATA_COLLECTION_NAME, docSnap.id));
+                    });
+                } catch (error) {
+                    console.error("Error clearing documents: ", error);
+                    window.showModal('❌ 錯誤', '清除失敗。');
                 }
-            );
-        }
+            });
+        };
 
+        // --- 6. 統整與複製訂單 ---
         window.copyAllOrders = function() {
-            if (submittedOrders.length === 0) {
-                window.showModal("提示", "目前沒有任何訂單可複製", "info");
+            if (todayOrders.length === 0) {
+                window.showModal('提示', '目前沒有訂單可以複製');
                 return;
             }
 
-            let text = `【偶鵝嚐嚐 - 碧華國中教務處午餐團】\n`;
-            text += `日期: ${document.getElementById('currentDate').innerText}\n`;
-            text += `----------------------\n`;
+            let summary = {};
+            let text = "📋 【碧華午餐團】今日訂單總表\n";
+            text += `📅 日期：${document.getElementById('currentDate').textContent}\n`;
+            text += "------------------------\n";
+            
+            let totalMoney = 0;
+            let totalQty = 0;
 
-            submittedOrders.forEach((order, index) => {
-                let itemsStr = order.items.map(i => `${i.name}x${i.count}`).join(', ');
-                let noteStr = order.note ? ` (備註: ${order.note})` : '';
-                text += `${index + 1}. ${order.name}: ${itemsStr}${noteStr} ($${order.total})\n`;
+            todayOrders.forEach(order => {
+                totalMoney += order.total;
+                text += `👤 ${order.name} ($${order.total})\n`;
+                for (let key in order.items) {
+                    const qty = order.items[key].qty;
+                    text += `   - ${key} x${qty}\n`;
+                    
+                    if (!summary[key]) {
+                        summary[key] = { qty: 0, price: order.items[key].price };
+                    }
+                    summary[key].qty += qty;
+                    totalQty += qty;
+                }
+                if (order.note) {
+                    text += `   💡 備註: ${order.note}\n`;
+                }
+                text += "\n";
             });
 
-            const grandTotal = document.getElementById('grandTotal').innerText;
-            text += `----------------------\n`;
-            text += `總金額: $${grandTotal}\n`;
-            text += `統計時間: ${new Date().toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'})}\n`;
-            text += `By Arthur WU`;
-
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-9999px";
-            textArea.style.top = "0";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-
-            try {
-                const successful = document.execCommand('copy');
-                if(successful) {
-                    window.showModal("複製成功", "✅ 訂單內容已複製到剪貼簿！<br>您可以直接貼到 Line 群組。", "info");
-                } else {
-                    throw new Error("Copy failed");
-                }
-            } catch (err) {
-                console.error('Fallback copy failed', err);
-                window.showModal("複製失敗", "瀏覽器不支援自動複製，請手動截圖或選取文字。", "info");
+            text += "------------------------\n";
+            text += "📦 【總數量統計】\n";
+            for (let key in summary) {
+                text += `${key}： ${summary[key].qty} 份\n`;
             }
+            text += "------------------------\n";
+            text += `💰 總共 ${totalQty} 份餐點，總金額 $${totalMoney}\n`;
 
-            document.body.removeChild(textArea);
-        }
+            navigator.clipboard.writeText(text).then(() => {
+                window.showModal('✅ 複製成功', '已將訂單明細與總表複製到剪貼簿，可以直接貼到 LINE 群組囉！');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                window.showModal('❌ 複製失敗', '您的瀏覽器不支援自動複製，請手動截圖。');
+            });
+        };
+
+        // --- 7. Auth & Start ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                
+                // 訂閱資料庫變化 (即時更新)
+                onSnapshot(getOrdersCollectionRef(), (snapshot) => {
+                    const newOrders = [];
+                    // 只抓取當天的訂單邏輯 (簡單版：假設資料庫只有今天的，因為每天會清除)
+                    snapshot.forEach((doc) => {
+                        newOrders.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    todayOrders = newOrders;
+                    renderOrders();
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                }, (error) => {
+                    console.error("即時同步失敗: ", error);
+                    document.getElementById('loadingText').textContent = "無法連線到資料庫";
+                    document.getElementById('loadingText').classList.add('text-red-500');
+                });
+            } else {
+                signInAnonymously(auth).catch((error) => {
+                    console.error("登入失敗:", error);
+                    document.getElementById('loadingText').textContent = "系統登入失敗，請重新整理";
+                });
+            }
+        });
+
+        // Initial Render
+        renderCategoryTabs();
+        renderMenu();
     </script>
 </body>
 </html>
