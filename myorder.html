@@ -141,8 +141,14 @@
             </button>
           </div>
 
-          <div id="orders-container" class="max-h-[500px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+          <div id="orders-container" class="max-h-[400px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
             <p class="text-slate-400 text-center py-10">資料載入中...</p>
+          </div>
+
+          <!-- 新增：今日總計金額區塊 -->
+          <div class="flex justify-between items-center mt-4 pt-4 border-t-2 border-slate-200">
+            <span class="text-lg font-bold text-slate-800">今日總計金額</span>
+            <span class="text-3xl font-bold text-red-600">$<span id="orders-grand-total">0</span></span>
           </div>
 
           <!-- 複製訂單按鈕 -->
@@ -409,6 +415,10 @@
     const renderOrdersList = () => {
       const container = document.getElementById('orders-container');
       document.getElementById('orders-count').textContent = state.orders.length;
+      
+      // 計算並更新總計金額
+      const grandTotal = state.orders.reduce((sum, order) => sum + order.total, 0);
+      document.getElementById('orders-grand-total').textContent = grandTotal;
       
       if (state.orders.length === 0) {
         container.innerHTML = '<p class="text-slate-400 text-center py-10">目前尚無訂單</p>';
