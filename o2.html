@@ -105,9 +105,9 @@
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col md:flex-row relative">
+    <main class="flex-1 flex flex-col md:flex-row relative min-h-0">
         
-        <section class="w-full md:w-2/3 flex flex-col border-b md:border-b-0 md:border-r border-gray-200 bg-[#fbfbfb] md:h-full relative">
+        <section class="w-full md:w-2/3 flex flex-col border-b md:border-b-0 md:border-r border-gray-200 bg-[#fbfbfb] md:h-full relative min-h-0">
             
             <div class="p-3 bg-white border-b border-orange-100 shrink-0 shadow-sm z-20">
                 <div class="flex flex-col sm:flex-row gap-2 items-end max-w-4xl mx-auto md:mx-0">
@@ -142,7 +142,7 @@
             <div class="flex overflow-x-auto gap-2 p-2 bg-white border-b border-gray-200 shrink-0 no-scrollbar shadow-[0_2px_5px_rgba(0,0,0,0.02)] z-30 sticky md:static top-[70px] md:top-0" id="categoryTabs">
                 </div>
 
-            <div id="menuContainer" class="flex-1 overflow-y-visible md:overflow-y-auto p-4 bg-[#f7f3e8]">
+            <div id="menuContainer" class="flex-1 overflow-y-auto p-4 bg-[#f7f3e8] min-h-0">
                 <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 pb-20">
                     </div>
             </div>
@@ -314,6 +314,8 @@
                     { name: "古早味瓜仔鵝燥飯", price: 35 },
                     { name: "乾麵", price: 40 },
                     { name: "湯麵", price: 40 },
+                    { name: "鵝肉乾冬粉", price: 80 },
+                    { name: "鵝肉湯冬粉", price: 80 },
                     { name: "乾冬粉", price: 40 },
                     { name: "湯冬粉", price: 40 }
                 ]
@@ -348,8 +350,10 @@
                 category: "鮮美湯品",
                 icon: "🥣",
                 items: [
-                    { name: "鵝肉丸湯", price: 40 },
-                    { name: "綜合下水湯", price: 60 }
+                    { name: "鵝肉湯", price: 70 },
+                    { name: "鵝丸湯", price: 50 },
+                    { name: "酸菜鵝腸湯", price: 60 },
+                    { name: "下水湯", price: 60 }
                 ]
             }
         ];
