@@ -41,7 +41,6 @@
     ];
 
     function App() {
-      // 狀態管理擴充了 'year_review' 模式
       const [appState, setAppState] = useState('select_subject'); 
       const [selectedSubject, setSelectedSubject] = useState(null);
       const [database, setDatabase] = useState([]);
@@ -51,9 +50,8 @@
       const [score, setScore] = useState(0);
       const [errorMsg, setErrorMsg] = useState('');
       
-      // 新增功能狀態
-      const [quizLength, setQuizLength] = useState(10); // 記憶測驗題數
-      const [selectedYear, setSelectedYear] = useState(''); // 選擇的檢視年度
+      const [quizLength, setQuizLength] = useState(10); 
+      const [selectedYear, setSelectedYear] = useState(''); 
 
       const handleSubjectSelect = (subject) => {
         setSelectedSubject(subject);
@@ -139,7 +137,7 @@
       };
 
       const startQuiz = (numQuestions) => {
-        setQuizLength(numQuestions); // 記憶選擇的題數
+        setQuizLength(numQuestions);
         const shuffled = [...database].sort(() => 0.5 - Math.random());
         const selected = shuffled.slice(0, Math.min(numQuestions, database.length));
         
@@ -186,7 +184,7 @@
       // --- 畫面渲染組件 ---
 
       const renderSelectSubject = () => (
-        <section className="flex flex-col items-center justify-center min-h-[70vh] px-4 animate-fade-in">
+        <section className="flex flex-col items-center justify-center min-h-[60vh] px-4 animate-fade-in">
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-4 tracking-tight">
               教檢雲端刷題系統
@@ -219,7 +217,7 @@
       );
 
       const renderLoading = () => (
-        <section className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-fade-in">
+        <section className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 animate-fade-in">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-6"></div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">正在載入雲端題庫...</h2>
           <p className="text-gray-500">正在與 Google 試算表同步【{selectedSubject?.name}】資料</p>
@@ -227,7 +225,7 @@
       );
 
       const renderError = () => (
-        <section className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-fade-in">
+        <section className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 animate-fade-in">
           <div className="bg-red-50 p-8 rounded-3xl border border-red-200 max-w-md w-full">
             <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <h2 className="text-2xl font-bold text-red-700 mb-2">載入失敗</h2>
@@ -245,11 +243,10 @@
       );
 
       const renderReady = () => {
-        // 動態取得所有年份並由大到小排序
         const availableYears = [...new Set(database.map(q => q.year).filter(y => y !== ''))].sort((a, b) => b.localeCompare(a));
 
         return (
-          <section className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-fade-in">
+          <section className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 animate-fade-in">
             <div className={`inline-flex items-center justify-center p-4 bg-${selectedSubject.color}-50 rounded-full mb-6`}>
                <svg className={`w-12 h-12 text-${selectedSubject.color}-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={selectedSubject.icon}></path>
@@ -264,7 +261,6 @@
 
             <div className="bg-white p-8 rounded-3xl shadow-lg max-w-md w-full border border-gray-100">
               
-              {/* 隨機測驗區塊 */}
               <div className="mb-6">
                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">隨機模擬測驗</h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -283,7 +279,6 @@
                 </div>
               </div>
 
-              {/* 歷屆試題瀏覽區塊 */}
               {availableYears.length > 0 && (
                 <div className="border-t border-gray-100 pt-6 mb-6">
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">歷屆試題與解析瀏覽</h3>
@@ -291,7 +286,7 @@
                     <select 
                       value={selectedYear} 
                       onChange={(e) => setSelectedYear(e.target.value)}
-                      className="flex-1 bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-${selectedSubject.color}-500 focus:border-${selectedSubject.color}-500 block p-3 outline-none"
+                      className={`flex-1 bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-${selectedSubject.color}-500 focus:border-${selectedSubject.color}-500 block p-3 outline-none cursor-pointer`}
                     >
                       <option value="">請選擇年度...</option>
                       {availableYears.map(year => (
@@ -315,7 +310,7 @@
 
               <button
                 onClick={backToHome}
-                className="w-full bg-white hover:bg-gray-50 text-gray-500 font-bold py-3 px-6 rounded-xl transition-all text-sm border border-gray-200"
+                className="w-full bg-white hover:bg-gray-50 text-gray-500 font-bold py-3 px-6 rounded-xl transition-all text-sm border border-gray-200 mt-2"
               >
                 返回選單重新選擇科目
               </button>
@@ -324,9 +319,7 @@
         );
       };
 
-      // --- 全新的「年度考題瀏覽」畫面 ---
       const renderYearReview = () => {
-        // 過濾出符合所選年份的題目
         const reviewQuestions = database.filter(q => q.year === selectedYear);
         
         return (
@@ -341,7 +334,7 @@
               
               <button
                 onClick={() => {
-                  setSelectedYear(''); // 清除年份選擇
+                  setSelectedYear(''); 
                   setAppState('ready');
                 }}
                 className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md inline-flex items-center"
@@ -611,37 +604,49 @@
         </section>
       );
 
+      // --- 核心架構調整：加入 flex 與 min-h-screen 來實現 Sticky Footer ---
       return (
-        <main className="min-h-screen font-sans py-6 md:py-10">
-          <nav className="max-w-5xl mx-auto px-4 mb-8">
-            <div className="flex justify-between items-center">
-              <div 
-                className={`flex items-center font-extrabold text-2xl tracking-tight ${appState !== 'select_subject' ? 'cursor-pointer hover:opacity-80' : ''}`}
-                onClick={() => appState !== 'select_subject' && backToHome()}
-              >
-                <div className="bg-gray-800 text-white p-2 rounded-xl mr-3 shadow-md">
-                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        <div className="min-h-screen flex flex-col font-sans bg-slate-50">
+          <main className="flex-grow py-6 md:py-10">
+            <nav className="max-w-5xl mx-auto px-4 mb-8">
+              <div className="flex justify-between items-center">
+                <div 
+                  className={`flex items-center font-extrabold text-2xl tracking-tight ${appState !== 'select_subject' ? 'cursor-pointer hover:opacity-80' : ''}`}
+                  onClick={() => appState !== 'select_subject' && backToHome()}
+                >
+                  <div className="bg-gray-800 text-white p-2 rounded-xl mr-3 shadow-md">
+                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                  </div>
+                  <span className="text-gray-800">教檢題庫</span>
                 </div>
-                <span className="text-gray-800">教檢題庫</span>
+                
+                {appState !== 'select_subject' && (
+                  <button onClick={backToHome} className="text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    首頁考科列表
+                  </button>
+                )}
               </div>
-              
-              {appState !== 'select_subject' && (
-                <button onClick={backToHome} className="text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                  首頁考科列表
-                </button>
-              )}
-            </div>
-          </nav>
+            </nav>
 
-          {appState === 'select_subject' && renderSelectSubject()}
-          {appState === 'loading' && renderLoading()}
-          {appState === 'error' && renderError()}
-          {appState === 'ready' && renderReady()}
-          {appState === 'playing' && renderPlaying()}
-          {appState === 'result' && renderResult()}
-          {appState === 'year_review' && renderYearReview()}
-        </main>
+            {appState === 'select_subject' && renderSelectSubject()}
+            {appState === 'loading' && renderLoading()}
+            {appState === 'error' && renderError()}
+            {appState === 'ready' && renderReady()}
+            {appState === 'playing' && renderPlaying()}
+            {appState === 'result' && renderResult()}
+            {appState === 'year_review' && renderYearReview()}
+          </main>
+
+          {/* --- 新增的版權宣告 Footer --- */}
+          <footer className="w-full py-6 mt-8 border-t border-gray-200 bg-white/60">
+            <div className="max-w-5xl mx-auto px-4 text-center">
+              <p className="text-sm font-medium text-gray-400 tracking-wide">
+                網站製作宣告 By Arthur WU 2026
+              </p>
+            </div>
+          </footer>
+        </div>
       );
     }
 
