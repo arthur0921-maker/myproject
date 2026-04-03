@@ -56,27 +56,28 @@
       const [quizLength, setQuizLength] = useState(10); 
       const [selectedYear, setSelectedYear] = useState('');
 
-      // --- Google Drive 圖片連結自動轉換器 (突破 Google 防盜鏈升級版) ---
-      const formatImageUrl = (url) => {
-        if (!url) return '';
-        const cleanUrl = url.replace(/^"|"$/g, '').trim();
-        
-        // 防呆：如果不是 http 開頭，直接當作沒圖片，避免產生破圖圖示
-        if (!cleanUrl.startsWith('http')) {
-          return '';
-        }
+      // --- Google Drive 圖片連結自動轉換器 (2026 穩定直連版) ---
+const formatImageUrl = (url) => {
+  if (!url) return '';
+  const cleanUrl = url.replace(/^"|"$/g, '').trim();
+  
+  // 防呆：如果不是 http 開頭，直接當作沒圖片，避免產生破圖圖示
+  if (!cleanUrl.startsWith('http')) {
+    return '';
+  }
 
-        const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([\w-]+)/;
-        const match = cleanUrl.match(driveRegex);
-        
-        if (match && match[1]) {
-          // ✨ 關鍵修改：改用 Google Drive 的 Thumbnail API
-          // sz=w1000 代表請 Google 壓縮提供最大寬度 1000px 的圖片，既清晰又不會被擋
-          return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
-        }
-        
-        return cleanUrl;
-      };
+  const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([\w-]+)/;
+  const match = cleanUrl.match(driveRegex);
+
+  if (match && match[1]) {
+    // ✨ 網頁設計師專業修正：
+    // 捨棄不穩定的 thumbnail API，改用目前業界公認最穩定的 lh3.googleusercontent.com 網域
+    // 這能有效規避多數瀏覽器的跨站追蹤阻擋機制
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  
+  return cleanUrl;
+};
 
       // --- 核心：升級版 CSV 解析器 (解決 Excel 換行問題) ---
       const parseCSVData = (csvText) => {
