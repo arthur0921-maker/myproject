@@ -328,9 +328,10 @@
       const renderYearReview = () => {
         // 過濾出符合所選年份的題目
         const reviewQuestions = database.filter(q => q.year === selectedYear);
-        
+
         return (
           <section className="max-w-4xl mx-auto w-full px-4 animate-fade-in pb-12">
+            {/* 上方標題與返回按鈕 */}
             <div className="bg-white rounded-3xl shadow-sm p-8 text-center mb-8 border border-gray-100 relative overflow-hidden">
               <div className={`absolute top-0 left-0 w-full h-2 bg-${selectedSubject.color}-500`}></div>
               <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold bg-${selectedSubject.color}-50 text-${selectedSubject.color}-700 mb-4 mt-2`}>
@@ -351,6 +352,7 @@
               </button>
             </div>
 
+            {/* 試題列表區塊 */}
             <div className="space-y-6">
               {reviewQuestions.map((q, index) => (
                 <div key={index} className={`bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100`}>
@@ -395,6 +397,7 @@
                         📍 考點：{q.concept}
                       </span>
                     </div>
+                   
                     {q.explanation && (
                       <div className="mt-2 text-sm text-gray-800 bg-amber-50 p-5 rounded-xl border border-amber-200 leading-relaxed shadow-inner">
                         <span className="font-bold text-amber-800 block mb-2 flex items-center text-base">
@@ -408,6 +411,30 @@
                 </div>
               ))}
             </div>
+
+            {/* --- 新增：畫面最下方的導覽列 --- */}
+            <div className="mt-10 pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-center gap-4">
+              <button
+                onClick={() => {
+                  setSelectedYear(''); // 清除年份選擇
+                  setAppState('ready');
+                }}
+                className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md inline-flex items-center justify-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                返回準備選單
+              </button>
+              
+              <button
+                onClick={backToHome}
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3 px-8 rounded-xl transition-all shadow-sm inline-flex items-center justify-center"
+              >
+                <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                首頁考科列表
+              </button>
+            </div>
+            {/* ----------------------------- */}
+            
           </section>
         );
       };
