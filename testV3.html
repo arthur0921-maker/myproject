@@ -56,16 +56,23 @@
       const [quizLength, setQuizLength] = useState(10); 
       const [selectedYear, setSelectedYear] = useState('');
 
-      // --- Google Drive 圖片連結自動轉換器 ---
+      // --- Google Drive 圖片連結自動轉換器 (防呆升級版) ---
       const formatImageUrl = (url) => {
         if (!url) return '';
         const cleanUrl = url.replace(/^"|"$/g, '').trim();
+        
+        // 🚨 關鍵防呆：如果內容不是 http 開頭 (例如不小心輸入了空白、"-" 或 "無")，就不顯示圖片，避免破圖
+        if (!cleanUrl.startsWith('http')) {
+          return '';
+        }
+
         const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([\w-]+)/;
         const match = cleanUrl.match(driveRegex);
         
         if (match && match[1]) {
           return `https://drive.google.com/uc?export=view&id=${match[1]}`;
         }
+        
         return cleanUrl;
       };
 
