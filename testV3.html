@@ -56,37 +56,43 @@
       const [quizLength, setQuizLength] = useState(10); 
       const [selectedYear, setSelectedYear] = useState('');
 
-     // --- 圖片連結自動轉換器 (2026 Meee直連 & Google Drive相容版) ---
-const formatImageUrl = (url) => {
-  if (!url) return '';
-  const cleanUrl = url.replace(/^"|"$/g, '').trim();
-  
-  if (!cleanUrl.startsWith('http')) {
-    return '';
-  }
+      // --- 圖片錯誤自動備援機制 (解決 Meee 副檔名盲測問題) ---
+      const handleImgFallback = (e) => {
+        const src = e.target.src;
+        // 如果預設的 png 載入失敗，我們聰明地改請求 jpg
+        if (src.includes('i.meee.com.tw') && src.endsWith('.png')) {
+          e.target.src = src.replace('.png', '.jpg');
+        }
+      };
 
-  // ✨ 1. Meee 圖床自動轉址處理
-  // 檢查使用者是否誤貼了預覽連結 (例如: https://meee.com.tw/3NQeTHd)
-  const meeeRegex = /meee\.com\.tw\/([\w-]+)(?!\.)/;
-  const meeeMatch = cleanUrl.match(meeeRegex);
-  
-  if (meeeMatch && meeeMatch[1] && !cleanUrl.includes('i.meee.com.tw')) {
-    // 程式會自動將其轉為 Meee 直連專用的 i.meee.com.tw 網域
-    // 由於無法由預覽網址得知正確副檔名，這裡預設補上 .png
-    // 若原圖為 jpg 導致破圖，請在資料庫試算表中直接改貼真實的 .jpg 直連網址
-    return `https://i.meee.com.tw/${meeeMatch[1]}.png`; 
-  }
+      // --- 圖片連結自動轉換器 (2026 Meee直連 & Google Drive相容穩定版) ---
+      const formatImageUrl = (url) => {
+        if (!url) return '';
+        const cleanUrl = url.replace(/^"|"$/g, '').trim();
+        
+        if (!cleanUrl.startsWith('http')) {
+          return '';
+        }
 
-  // ✨ 2. 保留舊版 Google Drive 相容處理
-  const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([\w-]+)/;
-  const driveMatch = cleanUrl.match(driveRegex);
-  if (driveMatch && driveMatch[1]) {
-    return `https://lh3.googleusercontent.com/d/$${driveMatch[1]}`;
-  }
-  
-  // ✨ 3. 其他標準直連網址（包含您直接貼上正確帶有副檔名的 Meee 直連）
-  return cleanUrl;
-};
+        // ✨ 1. Meee 圖床自動轉址處理
+        const meeeRegex = /meee\.com\.tw\/([\w-]+)(?!\.)/;
+        const meeeMatch = cleanUrl.match(meeeRegex);
+        
+        if (meeeMatch && meeeMatch[1] && !cleanUrl.includes('i.meee.com.tw')) {
+          // 預設給予 .png，如果失敗會由上面的 handleImgFallback 接手改為 .jpg
+          return `https://i.meee.com.tw/${meeeMatch[1]}.png`;
+        }
+
+        // ✨ 2. 保留舊版 Google Drive 相容處理 (已修復變數錯誤，並改用穩定 API)
+        const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([\w-]+)/;
+        const driveMatch = cleanUrl.match(driveRegex);
+        if (driveMatch && driveMatch[1]) {
+          return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+        }
+        
+        // ✨ 3. 其他標準直連網址
+        return cleanUrl;
+      };
 
       // --- 核心：升級版 CSV 解析器 (解決 Excel 換行問題) ---
       const parseCSVData = (csvText) => {
@@ -94,7 +100,6 @@ const formatImageUrl = (url) => {
         let row = [];
         let curVal = '';
         let inQuotes = false;
-        
         for (let i = 0; i < csvText.length; i++) {
           const char = csvText[i];
           const nextChar = csvText[i + 1];
@@ -103,12 +108,12 @@ const formatImageUrl = (url) => {
             curVal += '"'; 
             i++; 
           } else if (char === '"') {
-            inQuotes = !inQuotes; 
+            inQuotes = !inQuotes;
           } else if (char === ',' && !inQuotes) {
             row.push(curVal.trim());
             curVal = '';
           } else if ((char === '\n' || char === '\r') && !inQuotes) {
-            if (char === '\r' && nextChar === '\n') i++; 
+            if (char === '\r' && nextChar === '\n') i++;
             row.push(curVal.trim());
             if (row.some(val => val !== '')) rows.push(row);
             row = [];
@@ -137,7 +142,6 @@ const formatImageUrl = (url) => {
                 const regex = new RegExp(`^\\(${prefix}\\)\\s*`);
                 return cleaned.replace(regex, '').trim();
               };
-
               parsedData.push({
                 id: `choice_${i}`,
                 type: '選擇題',
@@ -176,7 +180,6 @@ const formatImageUrl = (url) => {
               const context = rowData[2] ? rowData[2].trim() : '';
               const questionText = rowData[3] ? rowData[3].trim() : '';
               const fullQuestion = context ? `${context}\n\n${questionText}` : questionText;
-
               parsedData.push({
                 id: `essay_${i}`,
                 type: '問答題',
@@ -206,18 +209,15 @@ const formatImageUrl = (url) => {
       const fetchData = async (subject) => {
         setAppState('loading');
         setErrorMsg('');
-        
         try {
           const [choiceRes, essayRes] = await Promise.all([
             fetch(subject.choiceUrl),
             subject.essayUrl ? fetch(subject.essayUrl) : Promise.resolve(null)
           ]);
-
           if (!choiceRes.ok) throw new Error('選擇題連線失敗');
           
           const choiceText = await choiceRes.text();
           let combinedData = parseChoiceCSV(choiceText);
-
           if (essayRes && essayRes.ok) {
             const essayText = await essayRes.text();
             const essayData = parseEssayCSV(essayText);
@@ -347,7 +347,6 @@ const formatImageUrl = (url) => {
 
       const renderReady = () => {
         const availableYears = [...new Set(database.map(q => q.year).filter(y => y !== ''))].sort((a, b) => b.localeCompare(a));
-
         return (
           <section className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 animate-fade-in">
             <div className={`inline-flex items-center justify-center p-4 bg-${selectedSubject.color}-50 rounded-full mb-6`}>
@@ -425,7 +424,6 @@ const formatImageUrl = (url) => {
       // --- 全新的「年度考題瀏覽」畫面 ---
       const renderYearReview = () => {
         const reviewQuestions = database.filter(q => q.year === selectedYear);
-
         return (
           <section className="max-w-4xl mx-auto w-full px-4 animate-fade-in pb-12">
             <div className="bg-white rounded-3xl shadow-sm p-8 text-center mb-8 border border-gray-100 relative overflow-hidden">
@@ -453,7 +451,8 @@ const formatImageUrl = (url) => {
                 <div key={index} className={`bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100`}>
                   
                   {/* --- 問答題 UI 呈現 --- */}
-                  {q.type === '問答題' ? (
+                  {q.type === '問答題' ?
+                  (
                     <div className="bg-indigo-50/50 p-2 md:p-4 rounded-2xl border-none">
                       <div className="flex justify-between items-start mb-4">
                         <span className={`text-sm font-extrabold text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-4 py-1.5 rounded-lg`}>
@@ -468,14 +467,14 @@ const formatImageUrl = (url) => {
                       
                       {q.imageUrl && (
                         <div className="mb-8 flex justify-center">
-                          <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
+                          <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
                         </div>
                       )}
 
                       <div className="bg-white rounded-xl p-6 shadow-sm border border-indigo-100 mt-6">
                         <span className="block text-sm uppercase tracking-wider font-bold mb-3 text-indigo-800 flex items-center">
                           <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                          官方參考解答
+                          AI參考解答
                         </span>
                         <div className="text-gray-700 leading-relaxed font-medium whitespace-pre-wrap">
                           {q.answer}
@@ -501,7 +500,7 @@ const formatImageUrl = (url) => {
                       
                       {q.imageUrl && (
                         <div className="mb-8 flex justify-center">
-                          <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
+                          <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
                         </div>
                       )}
 
@@ -577,7 +576,7 @@ const formatImageUrl = (url) => {
                 首頁考科列表
               </button>
             </div>
-            
+        
           </section>
         );
       };
@@ -586,7 +585,6 @@ const formatImageUrl = (url) => {
         const question = currentQuestions[currentIndex];
         const isAnswered = !!userAnswers[currentIndex];
         const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
-
         return (
           <article className="max-w-3xl mx-auto w-full px-4 animate-fade-in">
             <div className="mb-8">
@@ -599,22 +597,22 @@ const formatImageUrl = (url) => {
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
-                 <div className={`bg-${selectedSubject.color}-600 h-2.5 rounded-full transition-all duration-300`} style={{ width: `${progress}%` }}></div>
+                <div className={`bg-${selectedSubject.color}-600 h-2.5 rounded-full transition-all duration-300`} style={{ width: `${progress}%` }}></div>
               </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm p-6 md:p-8 mb-6 border border-gray-100">
               <div className="flex justify-between items-center mb-6">
-                 <div className="flex gap-2">
+                <div className="flex gap-2">
                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-md font-medium">
                      考點：{question.concept}
                    </span>
                    {question.year && (
-                      <span className="inline-block bg-blue-50 text-blue-600 text-xs px-3 py-1.5 rounded-md font-medium border border-blue-100">
+                     <span className="inline-block bg-blue-50 text-blue-600 text-xs px-3 py-1.5 rounded-md font-medium border border-blue-100">
                        {question.year}
                      </span>
                    )}
-                  </div>
+                </div>
               </div>
               <h2 className="text-xl md:text-2xl font-semibold text-gray-800 leading-relaxed mb-8 whitespace-pre-wrap">
                 {question.question}
@@ -622,7 +620,7 @@ const formatImageUrl = (url) => {
 
               {question.imageUrl && (
                 <div className="mb-8 flex justify-center">
-                  <img src={question.imageUrl} alt="題目附圖" className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
+                  <img src={question.imageUrl} alt="題目附圖" onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
                 </div>
               )}
 
@@ -634,10 +632,10 @@ const formatImageUrl = (url) => {
                       key={key}
                       onClick={() => handleAnswerSelect(key)}
                       className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start ${
-                         userAnswers[currentIndex] === key
+                        userAnswers[currentIndex] === key
                           ? `border-${selectedSubject.color}-600 bg-${selectedSubject.color}-50 text-${selectedSubject.color}-900 shadow-sm`
                           : `border-gray-200 hover:border-${selectedSubject.color}-300 hover:bg-gray-50 text-gray-700`
-                       }`}
+                      }`}
                     >
                       <span className={`font-bold mr-3 text-lg flex-shrink-0 ${userAnswers[currentIndex] === key ? `text-${selectedSubject.color}-600` : 'text-gray-400'}`}>
                         {key}.
@@ -744,7 +742,7 @@ const formatImageUrl = (url) => {
                   
                   {q.imageUrl && (
                     <div className="mb-8 flex justify-center">
-                      <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
+                      <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
                     </div>
                   )}
 
