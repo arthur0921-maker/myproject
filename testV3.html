@@ -56,12 +56,12 @@
       const [quizLength, setQuizLength] = useState(10); 
       const [selectedYear, setSelectedYear] = useState('');
 
-      // --- Google Drive 圖片連結自動轉換器 (防呆升級版) ---
+      // --- Google Drive 圖片連結自動轉換器 (突破 Google 防盜鏈升級版) ---
       const formatImageUrl = (url) => {
         if (!url) return '';
         const cleanUrl = url.replace(/^"|"$/g, '').trim();
         
-        // 🚨 關鍵防呆：如果內容不是 http 開頭 (例如不小心輸入了空白、"-" 或 "無")，就不顯示圖片，避免破圖
+        // 防呆：如果不是 http 開頭，直接當作沒圖片，避免產生破圖圖示
         if (!cleanUrl.startsWith('http')) {
           return '';
         }
@@ -70,7 +70,9 @@
         const match = cleanUrl.match(driveRegex);
         
         if (match && match[1]) {
-          return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+          // ✨ 關鍵修改：改用 Google Drive 的 Thumbnail API
+          // sz=w1000 代表請 Google 壓縮提供最大寬度 1000px 的圖片，既清晰又不會被擋
+          return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
         }
         
         return cleanUrl;
