@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>教師資格與甄試雲端題庫系統V2.0</title>
+  <title>教師資格與甄試雲端題庫系統V2.1</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -80,7 +80,7 @@
 
     function App() {
       // 系統預設載入「教檢專區 (cert)」
-      const [activeTab, setActiveTab] = useState('cert'); 
+      const [activeTab, setActiveTab] = useState('cert');
       const [appState, setAppState] = useState('select_subject'); 
       const [selectedSubject, setSelectedSubject] = useState(null);
       const [database, setDatabase] = useState([]);
@@ -89,9 +89,21 @@
       const [userAnswers, setUserAnswers] = useState({});
       const [score, setScore] = useState(0);
       const [errorMsg, setErrorMsg] = useState('');
-      
       const [quizLength, setQuizLength] = useState(10); 
       const [selectedYear, setSelectedYear] = useState('');
+
+      // --- 不蒜子計數器動態載入 ---
+      useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+        script.async = true;
+        document.body.appendChild(script);
+        
+        // 元件卸載時清理腳本，保持潔淨的 DOM 結構
+        return () => {
+          document.body.removeChild(script);
+        };
+      }, []);
 
       // --- 圖片錯誤自動備援機制 ---
       const handleImgFallback = (e) => {
@@ -135,7 +147,8 @@
           } else if (char === '"') {
             inQuotes = !inQuotes;
           } else if (char === ',' && !inQuotes) {
-            row.push(curVal.trim()); curVal = '';
+            row.push(curVal.trim());
+            curVal = '';
           } else if ((char === '\n' || char === '\r') && !inQuotes) {
             if (char === '\r' && nextChar === '\n') i++;
             row.push(curVal.trim());
@@ -199,7 +212,8 @@
           for (let i = 1; i < rows.length; i++) {
             const rowData = rows[i];
             if (rowData.length >= 5) {
-              const context = rowData[2] ? rowData[2].trim() : '';
+              const context = rowData[2] ?
+rowData[2].trim() : '';
               const questionText = rowData[3] ? rowData[3].trim() : '';
               const fullQuestion = context ? `${context}\n\n${questionText}` : questionText;
               parsedData.push({
@@ -240,17 +254,14 @@
               return res.text();
             })
           );
-          
           // 非同步抓取所有問答題網址 (如果有的話)
           const essayPromises = (subject.essayUrls || []).map(url => 
             fetch(url).then(res => res.ok ? res.text() : null)
           );
-
           const choiceTexts = await Promise.all(choicePromises);
           const essayTexts = await Promise.all(essayPromises);
 
           let combinedData = [];
-          
           // 解析並合併所有抓取回來的 CSV 資料
           for (const text of choiceTexts) {
             combinedData = [...combinedData, ...parseChoiceCSV(text)];
@@ -319,7 +330,6 @@
 
       const renderSelectSubject = () => {
         const filteredSubjects = SUBJECTS.filter(s => s.category === activeTab);
-        
         return (
           <section className="flex flex-col items-center justify-center min-h-[60vh] px-4 animate-fade-in">
             <div className="text-center mb-10 mt-4">
@@ -332,7 +342,7 @@
                 <button
                   onClick={() => setActiveTab('cert')}
                   className={`px-8 py-3.5 rounded-2xl font-bold text-lg transition-all flex items-center shadow-sm ${
-                    activeTab === 'cert'
+                  activeTab === 'cert'
                       ? 'bg-indigo-600 text-white shadow-md transform scale-105 border-transparent'
                       : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-200'
                   }`}
@@ -409,7 +419,6 @@
 
       const renderReady = () => {
         const availableYears = [...new Set(database.map(q => q.year).filter(y => y !== ''))].sort((a, b) => b.localeCompare(a));
-        
         return (
           <section className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 animate-fade-in">
             <div className={`inline-flex items-center justify-center p-4 bg-${selectedSubject.color}-50 rounded-full mb-6`}>
@@ -515,8 +524,7 @@
               {reviewQuestions.map((q, index) => (
                 <div key={q.id} className={`bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100`}>
                   
-                  {q.type === '問答題' ?
-                  (
+                  {q.type === '問答題' ? (
                     <div className="bg-indigo-50/50 p-2 md:p-4 rounded-2xl border-none">
                       <div className="flex justify-between items-start mb-4">
                         <span className={`text-sm font-extrabold text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-4 py-1.5 rounded-lg`}>
@@ -528,7 +536,7 @@
                       </div>
                       
                       <p className="text-gray-800 font-semibold mb-6 text-lg md:text-xl leading-relaxed whitespace-pre-wrap">{q.question}</p>
-                      
+                       
                       {q.imageUrl && (
                         <div className="mb-8 flex justify-center">
                           <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
@@ -560,7 +568,7 @@
                       </div>
                       
                       <p className="text-gray-800 font-semibold mb-8 text-lg md:text-xl leading-relaxed whitespace-pre-wrap">{q.question}</p>
-                      
+                       
                       {q.imageUrl && (
                         <div className="mb-8 flex justify-center">
                           <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
@@ -638,7 +646,7 @@
                 首頁考科列表
               </button>
             </div>
-          </section>
+           </section>
         );
       };
 
@@ -887,9 +895,15 @@
 
           <footer className="w-full py-6 mt-8 border-t border-gray-200 bg-white/60">
             <div className="max-w-5xl mx-auto px-4 text-center">
-              <p className="text-sm font-medium text-gray-400 tracking-wide">
-                網站製作宣告 By Arthur WU 2026
-              </p>
+              {/* ✨ 已修改：整合版權與不蒜子計數器，並使用 Flexbox 做美化排版 */}
+              <div className="text-sm font-medium text-gray-400 tracking-wide flex justify-center items-center gap-2 flex-wrap">
+                <span>網站製作宣告 By Arthur WU 2026</span>
+                <span className="hidden sm:inline">|</span>
+                {/* 不蒜子計數器容器，載入前預設隱藏 (display: none)，載入後由不蒜子自動顯示 */}
+                <span id="busuanzi_container_site_pv" style={{ display: 'none' }}>
+                  本站累積瀏覽次數：<span id="busuanzi_value_site_pv" className="font-bold text-gray-500"></span> 次
+                </span>
+              </div>
             </div>
           </footer>
         </div>
