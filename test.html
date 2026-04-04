@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>教檢雲端題庫系統V1.5</title>
+  <title>教檢雲端題庫系統V1.6</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -55,6 +55,19 @@
       
       const [quizLength, setQuizLength] = useState(10); 
       const [selectedYear, setSelectedYear] = useState('');
+
+      // --- 不蒜子計數器動態載入 ---
+      useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+        script.async = true;
+        document.body.appendChild(script);
+        
+        // 元件卸載時清理腳本，保持潔淨的 DOM 結構
+        return () => {
+          document.body.removeChild(script);
+        };
+      }, []);
 
       // --- 圖片錯誤自動備援機制 (解決 Meee 副檔名盲測問題) ---
       const handleImgFallback = (e) => {
@@ -148,7 +161,7 @@
                 answer: rowData[0] ? rowData[0] : '',
                 question: rowData[1] ? rowData[1] : '',
                 options: {
-                  A: cleanOption(rowData[2], 'A'),
+                   A: cleanOption(rowData[2], 'A'),
                   B: cleanOption(rowData[3], 'B'),
                   C: cleanOption(rowData[4], 'C'),
                   D: cleanOption(rowData[5], 'D')
@@ -177,7 +190,8 @@
             const rowData = rows[i];
             // 欄位: A=0(年度), B=1(考點), C=2(情境), D=3(題目), E=4(參考解答), F=5(圖片)
             if (rowData.length >= 5) {
-              const context = rowData[2] ? rowData[2].trim() : '';
+              const context = rowData[2] ?
+rowData[2].trim() : '';
               const questionText = rowData[3] ? rowData[3].trim() : '';
               const fullQuestion = context ? `${context}\n\n${questionText}` : questionText;
               parsedData.push({
@@ -451,8 +465,7 @@
                 <div key={index} className={`bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100`}>
                   
                   {/* --- 問答題 UI 呈現 --- */}
-                  {q.type === '問答題' ?
-                  (
+                  {q.type === '問答題' ? (
                     <div className="bg-indigo-50/50 p-2 md:p-4 rounded-2xl border-none">
                       <div className="flex justify-between items-start mb-4">
                         <span className={`text-sm font-extrabold text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-4 py-1.5 rounded-lg`}>
@@ -464,7 +477,7 @@
                       </div>
                       
                       <p className="text-gray-800 font-semibold mb-6 text-lg md:text-xl leading-relaxed whitespace-pre-wrap">{q.question}</p>
-                      
+                       
                       {q.imageUrl && (
                         <div className="mb-8 flex justify-center">
                           <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
@@ -576,7 +589,6 @@
                 首頁考科列表
               </button>
             </div>
-        
           </section>
         );
       };
@@ -826,9 +838,15 @@
 
           <footer className="w-full py-6 mt-8 border-t border-gray-200 bg-white/60">
             <div className="max-w-5xl mx-auto px-4 text-center">
-              <p className="text-sm font-medium text-gray-400 tracking-wide">
-                網站製作宣告 By Arthur WU 2026
-              </p>
+              {/* ✨ 已修改：整合版權與不蒜子計數器，並使用 Flexbox 做美化排版 */}
+              <div className="text-sm font-medium text-gray-400 tracking-wide flex justify-center items-center gap-2 flex-wrap">
+                <span>網站製作宣告 By Arthur WU 2026</span>
+                <span className="hidden sm:inline">|</span>
+                {/* 不蒜子計數器容器，載入前預設隱藏 (display: none)，載入後由不蒜子自動顯示 */}
+                <span id="busuanzi_container_site_pv" style={{ display: 'none' }}>
+                  本站累積瀏覽次數：<span id="busuanzi_value_site_pv" className="font-bold text-gray-500"></span> 次
+                </span>
+              </div>
             </div>
           </footer>
         </div>
