@@ -303,20 +303,40 @@
             });
         }
 
+        // === 新增：從 Google Sheets 拉回所有已經評過分的歷史成績 (改用穩定 POST 請求) ===
+        async function fetchHistoryData() {
+            try {
+                const response = await fetch(GAS_API_URL, {
+                    method: 'POST', 
+                    body: JSON.stringify({ action: "getHistory" }), 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+                if (result.status === "success") {
+                    localRecords7 = result.data.grade7 || {};
+                    localRecords8 = result.data.grade8 || {};
+                }
+            } catch (error) {
+                console.log("尚無歷史成績或網路異常，將以全新狀態開始。", error);
+            }
+        }
+
         async function handleLogin() {
             const user = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-password').value.trim();
             if (!user || !pass) return Swal.fire('錯誤', '請輸入帳號與密碼', 'warning');
 
-            showLoading('驗證身分中...');
+            showLoading('驗證身分並同步雲端資料...');
             try {
                 const accounts = await fetchCSV(URL_ACCOUNTS);
                 const isValid = accounts.some(row => row[0] === user && row[1] === pass);
 
                 if (isValid) {
-                    Swal.fire({ icon: 'success', title: '登入成功', timer: 1000, showConfirmButton: false });
                     document.getElementById('nav-logout').classList.remove('hidden');
                     await loadAllStudents();
+                    await fetchHistoryData(); // 登入成功後，立刻同步歷史成績
+                    
+                    Swal.fire({ icon: 'success', title: '登入成功', timer: 1000, showConfirmButton: false });
                     switchView('view-dashboard');
                 } else {
                     Swal.fire('登入失敗', '帳號或密碼錯誤', 'error');
@@ -354,7 +374,6 @@
             container.innerHTML = "";
             const filterLower = filterText.trim().toLowerCase();
 
-            // ★ 核心變更：如果沒有輸入任何文字，隱藏整個網格，不佔用版面空間
             if (filterLower === "") {
                 container.style.display = "none";
                 return;
@@ -382,35 +401,18 @@
         }
 
         function selectStudent(grade, index) {
-            const currentSelected = grade === '7' ? currentStudentIdx7 : currentStudentIdx8;
             const searchInput = document.getElementById(`search-student-${grade}`);
+            const student = (grade === '7' ? studentsData7 : studentsData8)[index];
+            
+            // 無論是否已經選中，點擊就是確實載入該學生 (不再有防呆取消的功能，以免造成誤會)
+            document.getElementById(`g${grade}-selected-name`).innerText = `${student.cls}班 ${student.seat}號 ${student.name}`;
+            
+            if (grade === '7') currentStudentIdx7 = index.toString();
+            else currentStudentIdx8 = index.toString();
 
-            // ★ 核心變更：如果點擊的是目前已選的選手 -> 取消選取
-            if (currentSelected === index.toString()) {
-                if (grade === '7') currentStudentIdx7 = "";
-                else currentStudentIdx8 = "";
+            loadStudentData(grade, index);
 
-                document.getElementById(`g${grade}-selected-name`).innerText = "尚未選擇";
-                clearForm(grade); // 清空下方表單資料
-
-                // 恢復儲存按鈕的顏色與文字狀態
-                const btn = document.getElementById(`btn-save-${grade}`);
-                btn.innerHTML = `<i class="ph ph-floppy-disk mr-2"></i>儲存成績`;
-                btn.classList.replace('bg-orange-500', grade==='7'?'bg-blue-600':'bg-emerald-600');
-                btn.classList.replace('hover:bg-orange-600', grade==='7'?'hover:bg-blue-700':'hover:bg-emerald-700');
-            } 
-            // 否則：選取新的選手
-            else {
-                const student = (grade === '7' ? studentsData7 : studentsData8)[index];
-                document.getElementById(`g${grade}-selected-name`).innerText = `${student.cls}班 ${student.seat}號 ${student.name}`;
-                
-                if (grade === '7') currentStudentIdx7 = index.toString();
-                else currentStudentIdx8 = index.toString();
-
-                loadStudentData(grade, index);
-            }
-
-            // ★ 無論是選取還是取消選取，點擊後都會自動清空搜尋列文字，讓名單網格自動隱藏收合
+            // 點擊後自動清空搜尋列文字，讓名單網格自動隱藏收合
             searchInput.value = "";
             renderStudentGrid(grade, "");
         }
@@ -432,18 +434,20 @@
                 if (grade === '7') {
                     document.getElementById('g7-score-1').value = record.scoreCreativity;
                     document.getElementById('g7-score-2').value = record.scoreContent;
-                    if(record.rawProgScores) {
-                        record.rawProgScores.forEach((val, i) => {
-                            const radio = document.querySelector(`input[name="g7_prog_${i}"][value="${val}"]`);
-                            if(radio) radio.checked = true;
-                        });
-                    }
+                    
+                    const progScores = record.rawProgScores || [];
+                    progScores.forEach((val, i) => {
+                        const radio = document.querySelector(`input[name="g7_prog_${i}"][value="${val}"]`);
+                        if(radio) radio.checked = true;
+                    });
                     calcG7Total();
                 } else {
+                    const tData = record.t1t2Data || {}; 
                     const fields = ['speed', 'correct', 'wrong', 'missed', 'time'];
                     fields.forEach(f => {
-                        document.getElementById(`g8-t1-${f}`).value = record[`t1_${f}`] !== undefined ? record[`t1_${f}`] : '';
-                        document.getElementById(`g8-t2-${f}`).value = record[`t2_${f}`] !== undefined ? record[`t2_${f}`] : '';
+                        // 相容歷史從 GAS 抓回來的 t1t2Data 結構
+                        document.getElementById(`g8-t1-${f}`).value = tData[`t1_${f}`] !== undefined ? tData[`t1_${f}`] : (record[`t1_${f}`] !== undefined ? record[`t1_${f}`] : '');
+                        document.getElementById(`g8-t2-${f}`).value = tData[`t2_${f}`] !== undefined ? tData[`t2_${f}`] : (record[`t2_${f}`] !== undefined ? record[`t2_${f}`] : '');
                     });
                     calcG8Result();
                 }
@@ -599,26 +603,35 @@
 
                 payloadData = {
                     className: student.cls, seatNumber: student.seat, studentName: student.name,
-                    scoreCreativity: s1, scoreContent: s2, scoreProgramming: s3, totalScore: total
+                    scoreCreativity: s1, scoreContent: s2, scoreProgramming: s3, totalScore: total,
+                    rawProgScores: progScores // 將詳細數據也傳給後端備查
                 };
-                localRecords7[key] = { ...payloadData, rawProgScores: progScores };
+                localRecords7[key] = { ...payloadData };
 
             } else {
                 calcG8Result(); 
-                if (!currentG8Final) {
-                    const confirmZero = await Swal.fire({ title: '無有效成績', text: '此選手兩次測驗皆未達標，將記錄為 0 分。確定送出？', icon: 'warning', showCancelButton: true, confirmButtonText: '確定' });
-                    if (!confirmZero.isConfirmed) return;
-                    payloadData = { className: student.cls, seatNumber: student.seat, studentName: student.name, bestSpeed: 0, accuracy: 0, wrongCount: 0, correctCount: 0 };
-                } else {
-                    payloadData = { className: student.cls, seatNumber: student.seat, studentName: student.name, bestSpeed: currentG8Final.speed, accuracy: currentG8Final.acc, wrongCount: currentG8Final.wrong, correctCount: currentG8Final.correct };
-                }
-
+                
                 const v = (id) => parseFloat(document.getElementById(`g8-${id}`).value);
-                localRecords8[key] = { 
-                    ...payloadData, 
+                const t1t2Data = { 
                     t1_speed: v('t1-speed'), t1_correct: v('t1-correct'), t1_wrong: v('t1-wrong'), t1_missed: v('t1-missed'), t1_time: v('t1-time'),
                     t2_speed: v('t2-speed'), t2_correct: v('t2-correct'), t2_wrong: v('t2-wrong'), t2_missed: v('t2-missed'), t2_time: v('t2-time')
                 };
+
+                if (!currentG8Final) {
+                    const confirmZero = await Swal.fire({ title: '無有效成績', text: '此選手兩次測驗皆未達標，將記錄為 0 分。確定送出？', icon: 'warning', showCancelButton: true, confirmButtonText: '確定' });
+                    if (!confirmZero.isConfirmed) return;
+                    payloadData = { 
+                        className: student.cls, seatNumber: student.seat, studentName: student.name, 
+                        bestSpeed: 0, accuracy: 0, wrongCount: 0, correctCount: 0, t1t2Data: t1t2Data 
+                    };
+                } else {
+                    payloadData = { 
+                        className: student.cls, seatNumber: student.seat, studentName: student.name, 
+                        bestSpeed: currentG8Final.speed, accuracy: currentG8Final.acc, wrongCount: currentG8Final.wrong, correctCount: currentG8Final.correct, t1t2Data: t1t2Data 
+                    };
+                }
+
+                localRecords8[key] = { ...payloadData };
             }
 
             const payload = { grade: grade, data: payloadData };
@@ -631,7 +644,7 @@
                 const result = await response.json();
                 if (result.status === "success") {
                     Swal.fire({ icon: 'success', title: '儲存成功！', text: `已紀錄 ${student.name} 的成績`, timer: 1500, showConfirmButton: false });
-                    loadStudentData(grade, studentIdx);
+                    loadStudentData(grade, studentIdx); // 儲存完畢自動轉為修改狀態
                 } else Swal.fire('儲存失敗', result.message, 'error');
             } catch (error) { Swal.fire('網路錯誤', '資料無法傳送至資料庫，請檢查連線。', 'error'); }
         }
@@ -642,7 +655,7 @@
         function generateRanking() {
             const arr7 = Object.values(localRecords7);
             const arr8 = Object.values(localRecords8);
-            if (arr7.length === 0 && arr8.length === 0) return Swal.fire('無資料', '您目前尚未評分任何學生。', 'info');
+            if (arr7.length === 0 && arr8.length === 0) return Swal.fire('無資料', '目前尚未從雲端讀取到或未評分任何學生。', 'info');
 
             arr7.sort((a, b) => b.totalScore - a.totalScore);
             arr8.sort((a, b) => {
