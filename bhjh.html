@@ -42,7 +42,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-8 text-center border border-gray-100">
                 <i class="ph ph-shield-check text-6xl text-blue-500 mb-4 inline-block"></i>
                 <h2 class="text-2xl font-bold mb-2">評審系統登入</h2>
-                <p class="text-gray-500 mb-6">請使用系統配發的帳號密碼登入以進行評分作業</p>
+                <p class="text-gray-500 mb-6">請使用系統配發的帳號密碼登入以進行評分與檢錄作業</p>
                 <div class="space-y-4 text-left">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">帳號</label>
@@ -77,9 +77,34 @@
             </div>
         </section>
 
-        <!-- [視圖 2: 評審主控台] -->
+        <!-- [視圖 2: 主控台 ( Dashboard )] -->
         <section id="view-dashboard" class="view-section max-w-4xl mx-auto space-y-6">
-            <h2 class="text-2xl font-bold text-gray-800">選擇評分項目</h2>
+            
+            <!-- 新增：檢錄中心 -->
+            <div class="bg-indigo-50 rounded-2xl border border-indigo-100 p-6 shadow-sm">
+                <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                    <i class="ph ph-clipboard-text text-2xl"></i> 學生檢錄中心
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="openCheckinView('7')" class="flex items-center justify-between bg-white hover:bg-indigo-100 p-4 rounded-xl border border-indigo-200 transition-colors shadow-sm active:scale-[0.98]">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-blue-100 p-3 rounded-lg"><i class="ph ph-users text-blue-600 text-2xl"></i></div>
+                            <div class="text-left"><div class="font-bold text-gray-800 text-lg">7 年級 檢錄</div><div class="text-sm text-gray-500">掌握報到出席狀態</div></div>
+                        </div>
+                        <i class="ph ph-caret-right text-gray-400"></i>
+                    </button>
+                    <button onclick="openCheckinView('8')" class="flex items-center justify-between bg-white hover:bg-indigo-100 p-4 rounded-xl border border-indigo-200 transition-colors shadow-sm active:scale-[0.98]">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-100 p-3 rounded-lg"><i class="ph ph-users text-emerald-600 text-2xl"></i></div>
+                            <div class="text-left"><div class="font-bold text-gray-800 text-lg">8 年級 檢錄</div><div class="text-sm text-gray-500">掌握報到出席狀態</div></div>
+                        </div>
+                        <i class="ph ph-caret-right text-gray-400"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 原有：評分系統 -->
+            <h2 class="text-xl font-bold text-gray-800">競賽評分系統</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div onclick="switchView('view-grade7')" class="bg-white rounded-2xl shadow-sm p-6 border-l-8 border-blue-500 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]">
                     <i class="ph ph-game-controller text-5xl text-blue-500 mb-4"></i>
@@ -92,12 +117,64 @@
                     <p class="text-gray-500">登錄兩次測驗成績，系統自動計算正確率並擷取最優成績。</p>
                 </div>
             </div>
+            
+            <!-- 行政報表 -->
             <div class="mt-8 text-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="text-lg font-bold mb-2">行政總表生成 (自動平均評審分數)</h3>
                 <p class="text-sm text-gray-500 mb-4">點擊下方按鈕，系統將抓取所有評審的最新分數，自動計算平均並排列名次。</p>
                 <button onclick="generateRanking()" class="bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 px-6 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 mx-auto">
                     <i class="ph ph-trophy text-xl"></i> 產生本次評分名次報表 (特優/優等/佳作)
                 </button>
+            </div>
+        </section>
+
+        <!-- [新增視圖: 檢錄中心 - 7年級] -->
+        <section id="view-checkin7" class="view-section max-w-5xl mx-auto space-y-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
+                    <h2 class="text-2xl font-bold text-blue-700">7 年級 檢錄報到</h2>
+                </div>
+                <button onclick="refreshCheckinData('7')" class="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-bold hover:bg-blue-200 transition-colors">
+                    <i id="sync-icon-7" class="ph ph-arrows-clockwise text-xl"></i> 更新名單
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+                <div id="checkin-stats-7" class="grid grid-cols-3 gap-4 mb-6 border-b border-gray-100 pb-6">
+                    <!-- 統計數據會自動渲染在此 -->
+                </div>
+                
+                <input type="text" id="search-checkin-7" placeholder="🔍 輸入班級、座號或姓名快速篩選..." class="w-full p-4 border-2 border-blue-100 rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-lg" oninput="renderCheckinGrid('7', this.value)">
+                
+                <div id="checkin-grid-7" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[60vh] overflow-y-auto p-1 custom-scrollbar">
+                    <!-- 檢錄卡片網格 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- [新增視圖: 檢錄中心 - 8年級] -->
+        <section id="view-checkin8" class="view-section max-w-5xl mx-auto space-y-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
+                    <h2 class="text-2xl font-bold text-emerald-700">8 年級 檢錄報到</h2>
+                </div>
+                <button onclick="refreshCheckinData('8')" class="flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-bold hover:bg-emerald-200 transition-colors">
+                    <i id="sync-icon-8" class="ph ph-arrows-clockwise text-xl"></i> 更新名單
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+                <div id="checkin-stats-8" class="grid grid-cols-3 gap-4 mb-6 border-b border-gray-100 pb-6">
+                    <!-- 統計數據會自動渲染在此 -->
+                </div>
+                
+                <input type="text" id="search-checkin-8" placeholder="🔍 輸入班級、座號或姓名快速篩選..." class="w-full p-4 border-2 border-emerald-100 rounded-xl mb-4 focus:ring-2 focus:ring-emerald-500 outline-none text-lg" oninput="renderCheckinGrid('8', this.value)">
+                
+                <div id="checkin-grid-8" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[60vh] overflow-y-auto p-1 custom-scrollbar">
+                    <!-- 檢錄卡片網格 -->
+                </div>
             </div>
         </section>
 
@@ -227,23 +304,27 @@
     </main>
 
     <script>
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-p6qtX8arCMbUxRCM35CNeoM3jq8KCMyF_l4Pm1jCeEbAoYh3tYYIvIgJpshHx37v/exec"; // 請替換成您最新部署的 GAS URL
+        // 請確保替換為您更新過 GAS 後端代碼後，重新部署所產生的網址！
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-p6qtX8arCMbUxRCM35CNeoM3jq8KCMyF_l4Pm1jCeEbAoYh3tYYIvIgJpshHx37v/exec"; 
+        
         const URL_ACCOUNTS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuC_GSmUR45l7GZfIptNOXU8ywgHg3t8IrlJ1MY_sb-iMFrykzRO2SCtkGUbhdEjHbbQcR_WUfOwyC/pub?gid=1211019722&single=true&output=csv";
         const URL_STUDENTS_7 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuC_GSmUR45l7GZfIptNOXU8ywgHg3t8IrlJ1MY_sb-iMFrykzRO2SCtkGUbhdEjHbbQcR_WUfOwyC/pub?gid=0&single=true&output=csv";
         const URL_STUDENTS_8 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuC_GSmUR45l7GZfIptNOXU8ywgHg3t8IrlJ1MY_sb-iMFrykzRO2SCtkGUbhdEjHbbQcR_WUfOwyC/pub?gid=1281361910&single=true&output=csv";
 
-        let currentUser = ""; // 儲存當前登入的評審帳號
+        let currentUser = ""; 
         let studentsData7 = [];
         let studentsData8 = [];
         
-        // 分別儲存全域所有評審的資料，以及當前登入使用者的個人資料
         let allRecords7 = {}; 
         let allRecords8 = {};
         let localRecords7 = {}; 
         let localRecords8 = {};
-        
         let currentStudentIdx7 = ""; 
         let currentStudentIdx8 = "";
+
+        // 新增：檢錄狀態字典 (Key: class-seat-name, Value: boolean)
+        let checkinData7 = {};
+        let checkinData8 = {};
 
         const g7ScoreItems = ["計分變數", "分身", "隨機取數", "定位鼠標", "定位 X、Y 軸", "轉場", "繪圖", "音效", "角色文字顯示", "停止遊戲邏輯判斷"];
 
@@ -278,7 +359,7 @@
             return new Promise((resolve, reject) => Papa.parse(url, { download: true, header: false, skipEmptyLines: true, complete: res => resolve(res.data), error: err => reject(err) }));
         }
 
-        // 從 GAS 抓取所有評審的歷史成績，並過濾出當前評審的成績供表單修改用
+        // 修改：讀取成績與檢錄資料
         async function fetchHistoryData() {
             try {
                 const response = await fetch(GAS_API_URL, {
@@ -288,8 +369,9 @@
                 if (result.status === "success") {
                     allRecords7 = result.data.grade7 || {};
                     allRecords8 = result.data.grade8 || {};
+                    checkinData7 = result.data.checkin7 || {}; // 載入七年級檢錄
+                    checkinData8 = result.data.checkin8 || {}; // 載入八年級檢錄
 
-                    // 過濾出專屬於登入者的個人紀錄
                     localRecords7 = {}; localRecords8 = {};
                     for (let key in allRecords7) {
                         if (allRecords7[key][currentUser]) localRecords7[key] = allRecords7[key][currentUser];
@@ -298,7 +380,7 @@
                         if (allRecords8[key][currentUser]) localRecords8[key] = allRecords8[key][currentUser];
                     }
                 }
-            } catch (error) { console.log("抓取歷史成績失敗", error); }
+            } catch (error) { console.log("抓取歷史成績與檢錄資料失敗", error); }
         }
 
         async function handleLogin() {
@@ -312,7 +394,7 @@
                 const isValid = accounts.some(row => row[0] === user && row[1] === pass);
 
                 if (isValid) {
-                    currentUser = user; // 綁定使用者帳號
+                    currentUser = user; 
                     document.getElementById('nav-logout').classList.remove('hidden');
                     document.getElementById('user-badge').classList.remove('hidden');
                     document.getElementById('display-user').innerText = currentUser;
@@ -328,6 +410,7 @@
 
         function logout() {
             currentUser = "";
+            checkinData7 = {}; checkinData8 = {}; // 登出清空檢錄資料快取
             document.getElementById('login-username').value = ''; document.getElementById('login-password').value = '';
             document.getElementById('nav-logout').classList.add('hidden');
             document.getElementById('user-badge').classList.add('hidden');
@@ -343,6 +426,110 @@
             } catch (error) { console.error("載入名單失敗", error); }
         }
 
+        /* ==========================================
+           新增：檢錄功能相關邏輯
+           ========================================== */
+        function openCheckinView(grade) {
+            document.getElementById(`search-checkin-${grade}`).value = "";
+            renderCheckinGrid(grade, "");
+            switchView(`view-checkin${grade}`);
+        }
+
+        function renderCheckinGrid(grade, filterText = "") {
+            const data = grade === '7' ? studentsData7 : studentsData8;
+            const container = document.getElementById(`checkin-grid-${grade}`);
+            const cData = grade === '7' ? checkinData7 : checkinData8;
+            const filterLower = filterText.trim().toLowerCase();
+
+            container.innerHTML = "";
+            let totalCount = 0;
+            let checkedCount = 0;
+
+            data.forEach((s, index) => {
+                if(!s.name) return;
+                totalCount++;
+                const key = `${s.cls}-${s.seat}-${s.name}`;
+                const isChecked = cData[key] === true;
+                if (isChecked) checkedCount++;
+
+                if (`${s.cls} ${s.seat} ${s.name}`.toLowerCase().includes(filterLower)) {
+                    // UI 動態樣式
+                    const baseClass = "p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center text-center shadow-sm select-none active:scale-95";
+                    const stateClass = isChecked
+                        ? "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200"
+                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300";
+                    const iconHTML = isChecked
+                        ? `<i class="ph ph-check-circle text-4xl mb-2 text-white"></i>`
+                        : `<i class="ph ph-user text-4xl mb-2 text-gray-300"></i>`;
+
+                    container.innerHTML += `
+                        <div onclick="toggleCheckin('${grade}', ${index})" class="${baseClass} ${stateClass}">
+                            ${iconHTML}
+                            <div class="text-sm font-medium opacity-90">${s.cls}班 ${s.seat}號</div>
+                            <div class="text-xl font-bold">${s.name}</div>
+                        </div>`;
+                }
+            });
+
+            // 更新上方的統計數據
+            const rate = totalCount === 0 ? 0 : Math.round((checkedCount / totalCount) * 100);
+            document.getElementById(`checkin-stats-${grade}`).innerHTML = `
+                <div class="text-center"><div class="text-sm text-gray-500 mb-1">應到人數</div><div class="text-3xl font-bold text-gray-700">${totalCount}</div></div>
+                <div class="text-center"><div class="text-sm text-gray-500 mb-1">實到人數</div><div class="text-4xl font-black text-emerald-600">${checkedCount}</div></div>
+                <div class="text-center"><div class="text-sm text-gray-500 mb-1">報到率</div><div class="text-3xl font-bold text-blue-600">${rate}%</div></div>
+            `;
+        }
+
+        // 樂觀更新 (Optimistic UI) 切換狀態
+        async function toggleCheckin(grade, index) {
+            const student = (grade === '7' ? studentsData7 : studentsData8)[index];
+            const key = `${student.cls}-${student.seat}-${student.name}`;
+            const cData = grade === '7' ? checkinData7 : checkinData8;
+
+            const oldStatus = cData[key] === true;
+            const newStatus = !oldStatus;
+
+            // 1. 瞬間改變前端畫面 (不等待伺服器，讓體驗最滑順)
+            cData[key] = newStatus;
+            renderCheckinGrid(grade, document.getElementById(`search-checkin-${grade}`).value);
+
+            // 2. 背景非同步寫入 Google 試算表
+            try {
+                const payload = {
+                    action: 'toggleCheckin',
+                    grade: grade,
+                    data: { className: student.cls, seatNumber: student.seat, studentName: student.name, status: newStatus }
+                };
+                const res = await fetch(GAS_API_URL, {
+                    method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await res.json();
+                
+                if (result.status !== "success") throw new Error(result.message);
+                // 成功則無須做任何事，因為畫面已經預先更新了
+            } catch (error) {
+                // 如果網路斷線或寫入失敗，再彈回舊狀態並警告使用者
+                cData[key] = oldStatus;
+                renderCheckinGrid(grade, document.getElementById(`search-checkin-${grade}`).value);
+                Swal.fire({
+                    icon: 'error', title: '同步失敗', text: '無法寫入雲端，請檢查網路狀態並重試',
+                    toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000
+                });
+            }
+        }
+
+        // 手動更新名單 (多機台檢錄時可用)
+        async function refreshCheckinData(grade) {
+            const icon = document.getElementById(`sync-icon-${grade}`);
+            icon.classList.add('animate-spin'); // 讓 icon 旋轉
+            await fetchHistoryData();
+            icon.classList.remove('animate-spin');
+            renderCheckinGrid(grade, document.getElementById(`search-checkin-${grade}`).value);
+        }
+
+        /* ==========================================
+           原有：評分邏輯 (保留不動)
+           ========================================== */
         function renderStudentGrid(grade, filterText = "") {
             const data = grade === '7' ? studentsData7 : studentsData8;
             const container = document.getElementById(`student-grid-${grade}`);
@@ -485,7 +672,6 @@
                 } else payloadData = { className: student.cls, seatNumber: student.seat, studentName: student.name, judgeAccount: currentUser, bestSpeed: currentG8Final.speed, accuracy: currentG8Final.acc, wrongCount: currentG8Final.wrong, correctCount: currentG8Final.correct, t1t2Data };
             }
 
-            // 更新本地快取，讓 UI 反應更快
             localRecords7[key] = { ...payloadData }; 
             if(grade==='7') { if(!allRecords7[key]) allRecords7[key]={}; allRecords7[key][currentUser] = payloadData; } 
             else { if(!allRecords8[key]) allRecords8[key]={}; allRecords8[key][currentUser] = payloadData; }
@@ -501,29 +687,21 @@
             } catch (error) { Swal.fire('錯誤', '網路連線失敗', 'error'); }
         }
 
-        // ==========================================
-        // 核心計算：前端抓取最新資料並計算平均分數
-        // ==========================================
         async function generateRanking() {
             showLoading("正在向伺服器拉取所有評審的最新分數...");
-            await fetchHistoryData(); // 強制更新抓取最新資料
+            await fetchHistoryData(); 
             
             const arr7 = [], arr8 = [];
 
-            // 7年級：計算各評審平均分
             for (const key in allRecords7) {
                 const judgesData = Object.values(allRecords7[key]);
                 if (judgesData.length === 0) continue;
                 let sum = 0;
                 judgesData.forEach(j => sum += (j.totalScore || 0));
-                arr7.push({
-                    className: judgesData[0].className, seatNumber: judgesData[0].seatNumber, studentName: judgesData[0].studentName,
-                    avgScore: parseFloat((sum / judgesData.length).toFixed(2)), judgeCount: judgesData.length
-                });
+                arr7.push({ className: judgesData[0].className, seatNumber: judgesData[0].seatNumber, studentName: judgesData[0].studentName, avgScore: parseFloat((sum / judgesData.length).toFixed(2)), judgeCount: judgesData.length });
             }
             arr7.sort((a, b) => b.avgScore - a.avgScore);
 
-            // 8年級：多評審取最佳速度 (英打屬客觀分數，通常取所有紀錄中最高)
             for (const key in allRecords8) {
                 const judgesData = Object.values(allRecords8[key]);
                 if (judgesData.length === 0) continue;
@@ -532,10 +710,7 @@
                     if (j.bestSpeed > bestEntry.bestSpeed) bestEntry = j;
                     else if (j.bestSpeed === bestEntry.bestSpeed && j.accuracy > bestEntry.accuracy) bestEntry = j;
                 });
-                arr8.push({
-                    className: bestEntry.className, seatNumber: bestEntry.seatNumber, studentName: bestEntry.studentName,
-                    bestSpeed: bestEntry.bestSpeed, judgeCount: judgesData.length
-                });
+                arr8.push({ className: bestEntry.className, seatNumber: bestEntry.seatNumber, studentName: bestEntry.studentName, bestSpeed: bestEntry.bestSpeed, judgeCount: judgesData.length });
             }
             arr8.sort((a, b) => b.bestSpeed - a.bestSpeed);
 
