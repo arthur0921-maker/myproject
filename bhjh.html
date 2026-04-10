@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>新北市立碧華國中115年 資訊競賽評分系統</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
+    <!-- Firebase SDK (Compat version for simplicity) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
@@ -19,13 +22,13 @@
         .view-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .disabled-card { opacity: 0.5; filter: grayscale(100%); transition: all 0.3s; }
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col">
 
+    <!-- 頂部導航欄 -->
     <header class="bg-blue-700 text-white shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center gap-2">
             <i class="ph ph-desktop text-2xl"></i>
@@ -41,6 +44,7 @@
 
     <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
         
+        <!-- 登入與上傳區塊 -->
         <section id="view-home" class="view-section active max-w-2xl mx-auto space-y-6">
             <div class="bg-white rounded-2xl shadow-sm p-8 text-center border border-gray-100">
                 <i class="ph ph-shield-check text-6xl text-blue-500 mb-4 inline-block"></i>
@@ -53,7 +57,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">密碼</label>
-                        <input type="password" id="login-password" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg" placeholder="請輸入密碼">
+                        <input type="password" id="login-password" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg" placeholder="請輸入密碼" onkeypress="if(event.key === 'Enter') handleLogin()">
                     </div>
                     <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg shadow-md transition-transform active:scale-95 flex justify-center items-center gap-2">
                         <i class="ph ph-sign-in"></i> 登入系統
@@ -79,6 +83,7 @@
             </div>
         </section>
 
+        <!-- 管理儀表板 -->
         <section id="view-dashboard" class="view-section max-w-4xl mx-auto space-y-6">
             <div class="bg-indigo-50 rounded-2xl border border-indigo-100 p-6 shadow-sm">
                 <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
@@ -125,13 +130,14 @@
             </div>
         </section>
 
+        <!-- 七年級檢錄 -->
         <section id="view-checkin7" class="view-section max-w-5xl mx-auto space-y-4">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-4">
                     <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
                     <h2 class="text-2xl font-bold text-blue-700">7 年級 檢錄報到</h2>
                 </div>
-                <span class="text-sm text-green-600 font-bold bg-green-100 px-3 py-1 rounded-full flex items-center gap-1"><span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> 雲端即時同步中</span>
+                <span class="text-sm text-green-600 font-bold bg-green-100 px-3 py-1 rounded-full flex items-center gap-1"><span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> 雲端同步中</span>
             </div>
             <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
                 <div id="checkin-stats-7" class="grid grid-cols-3 gap-4 mb-6 border-b border-gray-100 pb-6"></div>
@@ -140,13 +146,14 @@
             </div>
         </section>
 
+        <!-- 八年級檢錄 -->
         <section id="view-checkin8" class="view-section max-w-5xl mx-auto space-y-4">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-4">
                     <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
                     <h2 class="text-2xl font-bold text-emerald-700">8 年級 檢錄報到</h2>
                 </div>
-                <span class="text-sm text-green-600 font-bold bg-green-100 px-3 py-1 rounded-full flex items-center gap-1"><span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> 雲端即時同步中</span>
+                <span class="text-sm text-green-600 font-bold bg-green-100 px-3 py-1 rounded-full flex items-center gap-1"><span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> 雲端同步中</span>
             </div>
             <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
                 <div id="checkin-stats-8" class="grid grid-cols-3 gap-4 mb-6 border-b border-gray-100 pb-6"></div>
@@ -155,6 +162,7 @@
             </div>
         </section>
 
+        <!-- 七年級評分 -->
         <section id="view-grade7" class="view-section max-w-4xl mx-auto space-y-4">
             <div class="flex items-center gap-4 mb-6">
                 <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
@@ -200,6 +208,7 @@
             </div>
         </section>
 
+        <!-- 八年級評分 -->
         <section id="view-grade8" class="view-section max-w-4xl mx-auto space-y-4">
             <div class="flex items-center gap-4 mb-6">
                 <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
@@ -267,29 +276,26 @@
 
     <script>
         // ==========================================
-        // 1. Firebase 核心設定與匿名登入
+        // 1. Firebase 核心設定與初始化 (已更新為您的新專案)
         // ==========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyBc4gnb12X2tmLPXs_yFHfgTxPUpucRO0g",
-            authDomain: "bhjhtest.firebaseapp.com",
-            projectId: "bhjhtest",
-            storageBucket: "bhjhtest.firebasestorage.app",
-            messagingSenderId: "993350224594",
-            appId: "1:993350224594:web:eaf961d5911cc3456bfb0b",
-            databaseURL: "https://bhjhtest-default-rtdb.asia-southeast1.firebasedatabase.app" 
+            apiKey: "AIzaSyAHV1mqIbsWkdYlp528wKw9EMTS3sSOcOk",
+            authDomain: "bhjh-contest-115.firebaseapp.com",
+            databaseURL: "https://bhjh-contest-115-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bhjh-contest-115",
+            storageBucket: "bhjh-contest-115.firebasestorage.app",
+            messagingSenderId: "899629707826",
+            appId: "1:899629707826:web:40bb393989b8d6fc8c822b",
+            measurementId: "G-L3HPKEGCZT"
         };
         
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const auth = firebase.auth();
 
-        // 檔案上傳維持 GAS
+        // ⚠️ 若您已重新部署上傳檔案用的 GAS，請將此處網址替換為「新的網頁應用程式網址」
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-p6qtX8arCMbUxRCM35CNeoM3jq8KCMyF_l4Pm1jCeEbAoYh3tYYIvIgJpshHx37v/exec"; 
         
-        const URL_ACCOUNTS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuC_GSmUR45l7GZfIptNOXU8ywgHg3t8IrlJ1MY_sb-iMFrykzRO2SCtkGUbhdEjHbbQcR_WUfOwyC/pub?gid=1211019722&single=true&output=csv";
-        const URL_STUDENTS_7 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuC_GSmUR45l7GZfIptNOXU8ywgHg3t8IrlJ1MY_sb-iMFrykzRO2SCtkGUbhdEjHbbQcR_WUfOwyC/pub?gid=0&single=true&output=csv";
-        const URL_STUDENTS_8 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuC_GSmUR45l7GZfIptNOXU8ywgHg3t8IrlJ1MY_sb-iMFrykzRO2SCtkGUbhdEjHbbQcR_WUfOwyC/pub?gid=1281361910&single=true&output=csv";
-
         let currentUser = ""; 
         let studentsData7 = [];
         let studentsData8 = [];
@@ -329,11 +335,22 @@
         }
 
         function showLoading(text = "處理中...") { Swal.fire({ title: text, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); }
-        async function fetchCSV(url) { return new Promise((resolve, reject) => Papa.parse(url, { download: true, header: false, skipEmptyLines: true, complete: res => resolve(res.data), error: err => reject(err) })); }
 
         // ==========================================
-        // 2. Firebase 實時資料綁定
+        // 2. Firebase 資料拉取與登入邏輯
         // ==========================================
+        
+        // 新增：直接從 Firebase 獲取由 Excel 同步過來的系統資料
+        async function fetchSystemData() {
+            return new Promise((resolve, reject) => {
+                database.ref('systemData').once('value', snap => {
+                    const data = snap.val();
+                    if (data) resolve(data);
+                    else reject("尚未建立資料庫名單，請先至 Google 試算表執行「同步名單與帳號至 Firebase」。");
+                });
+            });
+        }
+
         function initFirebaseListeners() {
             database.ref('checkin/7').on('value', snap => { checkinData7 = snap.val() || {}; if(document.getElementById('view-checkin7').classList.contains('active')) renderCheckinGrid('7', document.getElementById('search-checkin-7').value); });
             database.ref('checkin/8').on('value', snap => { checkinData8 = snap.val() || {}; if(document.getElementById('view-checkin8').classList.contains('active')) renderCheckinGrid('8', document.getElementById('search-checkin-8').value); });
@@ -356,28 +373,49 @@
             const pass = document.getElementById('login-password').value.trim();
             if (!user || !pass) return Swal.fire('錯誤', '請輸入帳號與密碼', 'warning');
 
-            showLoading('驗證身分並載入名單...');
+            showLoading('正在連接資料庫...');
             try {
-                const accounts = await fetchCSV(URL_ACCOUNTS);
-                const isValid = accounts.some(row => row[0] === user && row[1] === pass);
+                // 從 Firebase 獲取帳號與名單 (取代原本的 fetchCSV)
+                const sysData = await fetchSystemData();
+                const accounts = sysData.accounts || [];
+                const isValid = accounts.some(row => row.user === user && row.pass === pass);
 
                 if (isValid) {
-                    await auth.signInAnonymously();
+                    try {
+                        // 嘗試進行匿名登入
+                        await auth.signInAnonymously();
+                    } catch (authErr) {
+                        console.error("Auth Error:", authErr);
+                        // 攔截並處理 auth/configuration-not-found 錯誤
+                        if (authErr.code === 'auth/configuration-not-found' || authErr.code === 'auth/operation-not-allowed') {
+                            return Swal.fire({
+                                icon: 'error',
+                                title: 'Firebase 設定提示',
+                                html: '<div class="text-left">您尚未在新的 Firebase 專案啟用登入功能！<br><br>請至 Firebase 控制台：<br>1. 左側選單點擊 <b>Authentication</b><br>2. 點擊 <b>開始使用 (Get Started)</b><br>3. 切換到 <b>Sign-in method</b> 頁籤<br>4. 找到並啟用 <b>匿名 (Anonymous)</b> 登入</div>',
+                            });
+                        }
+                        throw authErr;
+                    }
 
                     currentUser = user; 
                     document.getElementById('nav-logout').classList.remove('hidden');
                     document.getElementById('user-badge').classList.remove('hidden');
                     document.getElementById('display-user').innerText = currentUser;
 
-                    await loadAllStudents();
+                    // 載入名單
+                    studentsData7 = sysData.students ? (sysData.students['7'] || []) : [];
+                    studentsData8 = sysData.students ? (sysData.students['8'] || []) : [];
+
                     initFirebaseListeners();
                     
                     Swal.fire({ icon: 'success', title: '登入成功', timer: 1000, showConfirmButton: false });
                     switchView('view-dashboard');
-                } else Swal.fire('登入失敗', '帳號或密碼錯誤', 'error');
+                } else {
+                    Swal.fire('登入失敗', '帳號或密碼錯誤', 'error');
+                }
             } catch (error) { 
                 console.error(error);
-                Swal.fire('網路錯誤', '無法登入，請檢查您的網路或 Firebase 權限設定', 'error'); 
+                Swal.fire('系統提示', typeof error === 'string' ? error : '網路錯誤，無法連線至 Firebase 資料庫', 'error'); 
             }
         }
 
@@ -390,15 +428,6 @@
             document.getElementById('nav-logout').classList.add('hidden');
             document.getElementById('user-badge').classList.add('hidden');
             switchView('view-home');
-        }
-
-        async function loadAllStudents() {
-            try {
-                const s7 = await fetchCSV(URL_STUDENTS_7);
-                const s8 = await fetchCSV(URL_STUDENTS_8);
-                studentsData7 = s7.filter((_, i) => i > 0).map(r => ({ cls: r[0], seat: r[1], name: r[2] }));
-                studentsData8 = s8.filter((_, i) => i > 0).map(r => ({ cls: r[0], seat: r[1], name: r[2] }));
-            } catch (error) { console.error("載入名單失敗", error); }
         }
 
         // ==========================================
@@ -448,7 +477,7 @@
             const cData = grade === '7' ? checkinData7 : checkinData8;
             const newStatus = !(cData[key] === true);
             database.ref(`checkin/${grade}/${key}`).set(newStatus).catch(err => {
-                Swal.fire({ icon: 'error', title: '同步失敗', text: '請檢查網路狀態或權限', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+                Swal.fire({ icon: 'error', title: '權限不足', text: '伺服器拒絕寫入，請確認您已登入。', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
             });
         }
 
@@ -614,7 +643,7 @@
                 
                 database.ref(`grades/7/${key}/${currentUser}`).set(payloadData).then(() => {
                     Swal.fire({ icon: 'success', title: '儲存成功！', timer: 1000, showConfirmButton: false });
-                }).catch(e => Swal.fire('錯誤', '資料庫寫入失敗', 'error'));
+                }).catch(e => Swal.fire('寫入失敗', '資料庫拒絕存取，請確認您已登入系統', 'error'));
 
             } else {
                 calcG8Result(); 
@@ -628,7 +657,7 @@
                 database.ref(`grades/8/${key}`).set(payloadData).then(() => {
                     Swal.fire({ icon: 'success', title: '儲存成功！', timer: 1000, showConfirmButton: false });
                     renderStudentGrid('8', document.getElementById('search-student-8').value); 
-                }).catch(e => Swal.fire('錯誤', '資料庫寫入失敗', 'error'));
+                }).catch(e => Swal.fire('寫入失敗', '資料庫拒絕存取，請確認您已登入系統', 'error'));
             }
         }
 
@@ -647,21 +676,14 @@
             arr7.sort((a, b) => b.avgScore - a.avgScore);
 
             for (const key in allRecords8) {
-                // 拔除 if(item.isValid)，只要有成績就全部納入陣列參與排序
                 arr8.push(allRecords8[key]);
             }
             
             // 智能遞補排序法
             arr8.sort((a, b) => {
-                // 1. 達標者絕對優先排在前面
-                if (a.isValid !== b.isValid) {
-                    return a.isValid ? -1 : 1; 
-                }
-                // 2. 兩者同為達標 或 同為未達標時，開始比速度
+                if (a.isValid !== b.isValid) return a.isValid ? -1 : 1; 
                 if (b.bestSpeed !== a.bestSpeed) return b.bestSpeed - a.bestSpeed;
-                // 3. 速度相同，比正確率
                 if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-                // 4. 正確率也相同，比錯字數 (越少越好)
                 return a.wrongCount - b.wrongCount; 
             });
 
@@ -688,7 +710,9 @@
             Swal.fire({ title: '最新排名總表', html: html, width: 600, confirmButtonText: '關閉' });
         }
 
-        // 檔案上傳相關
+        // ==========================================
+        // 6. 檔案上傳
+        // ==========================================
         function triggerFileInput(grade) { document.getElementById(`file-input-${grade}`).click(); }
         async function handleFileSelect(event, grade) { const file = event.target.files[0]; if (file) await processUpload(file, grade); event.target.value = ''; }
 
