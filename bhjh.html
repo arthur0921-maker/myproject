@@ -661,54 +661,116 @@
             }
         }
 
-        // ==========================================
-        // 5. 報表生成 (從 Firebase 數據直接智能遞補排序)
-        // ==========================================
-        function generateRanking() {
-            const arr7 = [], arr8 = [];
-
-            for (const key in allRecords7) {
-                const judgesData = Object.values(allRecords7[key]);
-                if (judgesData.length === 0) continue;
-                let sum = 0; judgesData.forEach(j => sum += (j.totalScore || 0));
-                arr7.push({ className: judgesData[0].className, seatNumber: judgesData[0].seatNumber, studentName: judgesData[0].studentName, avgScore: parseFloat((sum / judgesData.length).toFixed(2)), judgeCount: judgesData.length });
-            }
-            arr7.sort((a, b) => b.avgScore - a.avgScore);
-
-            for (const key in allRecords8) {
-                arr8.push(allRecords8[key]);
-            }
-            
-            // 智能遞補排序法
-            arr8.sort((a, b) => {
-                if (a.isValid !== b.isValid) return a.isValid ? -1 : 1; 
-                if (b.bestSpeed !== a.bestSpeed) return b.bestSpeed - a.bestSpeed;
-                if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-                return a.wrongCount - b.wrongCount; 
-            });
-
-            if (arr7.length === 0 && arr8.length === 0) return Swal.fire('無資料', '目前尚未有任何成績。', 'info');
-
-            let html = `<div class="text-left text-sm max-h-[60vh] overflow-y-auto">`;
-            if(arr7.length > 0) {
-                html += `<h4 class="font-bold text-lg text-blue-700 mt-2 mb-2 border-b pb-1">七年級 SCRATCH (平均計分)</h4>`;
-                arr7.forEach((item, idx) => {
-                    let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
-                    html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}</div><div class="text-right"><div class="font-bold text-blue-600 text-base">${item.avgScore} 分</div><div class="text-xs text-gray-400">來自 ${item.judgeCount} 位評審</div></div></div>`;
-                });
-            }
-            if(arr8.length > 0) {
-                html += `<h4 class="font-bold text-lg text-emerald-700 mt-6 mb-2 border-b pb-1">八年級 英打 (綜合排名)</h4>`;
-                arr8.forEach((item, idx) => {
-                    let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
-                    let validTag = item.isValid ? '' : '<span class="text-red-500 text-xs ml-1">(未達90%)</span>';
-                    
-                    html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}${validTag}</div><div class="text-right"><div class="font-bold text-emerald-600 text-base">${item.bestSpeed} 字/分</div><div class="text-xs text-gray-400">紀錄者: ${item.lastJudge}</div></div></div>`;
-                });
-            }
-            html += `</div>`;
-            Swal.fire({ title: '最新排名總表', html: html, width: 600, confirmButtonText: '關閉' });
+// ==========================================
+// 5. 報表生成 (從 Firebase 數據直接智能遞補排序與 T分數計算)
+// ==========================================
+function generateRanking() {
+    // --- 1. 計算七年級的 T 分數與排名 ---
+    const arr7 = [];
+    
+    // 步驟 A：收集每位評審給出的所有原始總分，以便計算各評審的平均與標準差
+    const judgeScores = {};
+    for (const key in allRecords7) {
+        const judgesData = allRecords7[key];
+        for (const judge in judgesData) {
+            if (!judgeScores[judge]) judgeScores[judge] = [];
+            judgeScores[judge].push(judgesData[judge].totalScore || 0);
         }
+    }
+
+    // 步驟 B：計算每位評審的平均數 (mean) 與標準差 (stdDev)
+    const judgeStats = {};
+    for (const judge in judgeScores) {
+        const scores = judgeScores[judge];
+        const n = scores.length;
+        if (n === 0) continue;
+        
+        // 計算平均
+        const mean = scores.reduce((a, b) => a + b, 0) / n;
+        // 計算變異數與標準差 (母體標準差)
+        const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+        const stdDev = Math.sqrt(variance);
+        
+        judgeStats[judge] = { mean, stdDev };
+    }
+
+    // 步驟 C：計算每位學生的平均 T 分數
+    for (const key in allRecords7) {
+        const judgesData = allRecords7[key];
+        const judgeKeys = Object.keys(judgesData);
+        if (judgeKeys.length === 0) continue;
+
+        let totalTScore = 0;
+        judgeKeys.forEach(judge => {
+            const rawScore = judgesData[judge].totalScore || 0;
+            const stats = judgeStats[judge];
+            
+            // 預設 T 分數為 50 (對應標準差為 0 或尚未有足夠資料的情境)
+            let tScore = 50; 
+            if (stats && stats.stdDev > 0) {
+                tScore = 50 + 10 * ((rawScore - stats.mean) / stats.stdDev);
+            }
+            totalTScore += tScore;
+        });
+
+        // 計算多位評審的 T 分數平均，取到小數點後兩位
+        const avgTScore = parseFloat((totalTScore / judgeKeys.length).toFixed(2));
+        const firstJudgeData = judgesData[judgeKeys[0]]; // 取得學生基本資料
+
+        arr7.push({
+            className: firstJudgeData.className,
+            seatNumber: firstJudgeData.seatNumber,
+            studentName: firstJudgeData.studentName,
+            avgScore: avgTScore, // 這裡的 avgScore 已正式替換為「平均 T 分數」
+            judgeCount: judgeKeys.length
+        });
+    }
+
+    // 依照 T 分數由高到低排序
+    arr7.sort((a, b) => b.avgScore - a.avgScore);
+
+    // --- 2. 處理八年級成績 (維持原有的智能遞補排序) ---
+    const arr8 = [];
+    for (const key in allRecords8) {
+        arr8.push(allRecords8[key]);
+    }
+    
+    // 智能遞補排序法
+    arr8.sort((a, b) => {
+        if (a.isValid !== b.isValid) return a.isValid ? -1 : 1; 
+        if (b.bestSpeed !== a.bestSpeed) return b.bestSpeed - a.bestSpeed;
+        if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+        return a.wrongCount - b.wrongCount; 
+    });
+
+    if (arr7.length === 0 && arr8.length === 0) return Swal.fire('無資料', '目前尚未有任何成績。', 'info');
+
+    // --- 3. 渲染報表畫面 ---
+    let html = `<div class="text-left text-sm max-h-[60vh] overflow-y-auto">`;
+    
+    if(arr7.length > 0) {
+        // 更新了標題文字
+        html += `<h4 class="font-bold text-lg text-blue-700 mt-2 mb-2 border-b pb-1">七年級 SCRATCH (T分數綜合排名)</h4>`;
+        arr7.forEach((item, idx) => {
+            let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
+            
+            // 更新了分數的顯示格式 (改為 T分數: XX.XX)
+            html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}</div><div class="text-right"><div class="font-bold text-blue-600 text-base">T分數: ${item.avgScore}</div><div class="text-xs text-gray-400">來自 ${item.judgeCount} 位評審</div></div></div>`;
+        });
+    }
+    
+    if(arr8.length > 0) {
+        html += `<h4 class="font-bold text-lg text-emerald-700 mt-6 mb-2 border-b pb-1">八年級 英打 (綜合排名)</h4>`;
+        arr8.forEach((item, idx) => {
+            let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
+            let validTag = item.isValid ? '' : '<span class="text-red-500 text-xs ml-1">(未達90%)</span>';
+            html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}${validTag}</div><div class="text-right"><div class="font-bold text-emerald-600 text-base">${item.bestSpeed} 字/分</div><div class="text-xs text-gray-400">紀錄者: ${item.lastJudge}</div></div></div>`;
+        });
+    }
+    html += `</div>`;
+    
+    Swal.fire({ title: '最新排名總表', html: html, width: 600, confirmButtonText: '關閉' });
+}
 
         // ==========================================
         // 6. 檔案上傳
