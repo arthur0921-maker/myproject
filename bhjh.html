@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>新北市立碧華國中115年 資訊競賽評分系統</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
-    <!-- Firebase SDK (Compat version for simplicity) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
@@ -28,7 +24,6 @@
 </head>
 <body class="text-gray-800 h-screen flex flex-col">
 
-    <!-- 頂部導航欄 -->
     <header class="bg-blue-700 text-white shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center gap-2">
             <i class="ph ph-desktop text-2xl"></i>
@@ -44,7 +39,6 @@
 
     <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
         
-        <!-- 登入與上傳區塊 -->
         <section id="view-home" class="view-section active max-w-2xl mx-auto space-y-6">
             <div class="bg-white rounded-2xl shadow-sm p-8 text-center border border-gray-100">
                 <i class="ph ph-shield-check text-6xl text-blue-500 mb-4 inline-block"></i>
@@ -83,7 +77,6 @@
             </div>
         </section>
 
-        <!-- 管理儀表板 -->
         <section id="view-dashboard" class="view-section max-w-4xl mx-auto space-y-6">
             <div class="bg-indigo-50 rounded-2xl border border-indigo-100 p-6 shadow-sm">
                 <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
@@ -130,7 +123,6 @@
             </div>
         </section>
 
-        <!-- 七年級檢錄 -->
         <section id="view-checkin7" class="view-section max-w-5xl mx-auto space-y-4">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-4">
@@ -146,7 +138,6 @@
             </div>
         </section>
 
-        <!-- 八年級檢錄 -->
         <section id="view-checkin8" class="view-section max-w-5xl mx-auto space-y-4">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-4">
@@ -162,7 +153,6 @@
             </div>
         </section>
 
-        <!-- 七年級評分 -->
         <section id="view-grade7" class="view-section max-w-4xl mx-auto space-y-4">
             <div class="flex items-center gap-4 mb-6">
                 <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
@@ -208,7 +198,6 @@
             </div>
         </section>
 
-        <!-- 八年級評分 -->
         <section id="view-grade8" class="view-section max-w-4xl mx-auto space-y-4">
             <div class="flex items-center gap-4 mb-6">
                 <button onclick="switchView('view-dashboard')" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300"><i class="ph ph-arrow-left text-xl"></i></button>
@@ -276,7 +265,7 @@
 
     <script>
         // ==========================================
-        // 1. Firebase 核心設定與初始化 (已更新為您的新專案)
+        // 1. Firebase 核心設定與初始化
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyAHV1mqIbsWkdYlp528wKw9EMTS3sSOcOk",
@@ -292,25 +281,21 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const auth = firebase.auth();
-
-        // ⚠️ 若您已重新部署上傳檔案用的 GAS，請將此處網址替換為「新的網頁應用程式網址」
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-p6qtX8arCMbUxRCM35CNeoM3jq8KCMyF_l4Pm1jCeEbAoYh3tYYIvIgJpshHx37v/exec"; 
         
-        let currentUser = ""; 
+        let currentUser = "";
         let studentsData7 = [];
         let studentsData8 = [];
         
         let allRecords7 = {}; 
         let allRecords8 = {}; 
-        let localRecords7 = {}; 
-        
+        let localRecords7 = {};
         let checkinData7 = {};
         let checkinData8 = {};
         let currentStudentIdx7 = ""; 
         let currentStudentIdx8 = "";
-
         const g7ScoreItems = ["計分變數", "分身", "隨機取數", "定位鼠標", "定位 X、Y 軸", "轉場", "繪圖", "音效", "角色文字顯示", "停止遊戲邏輯判斷"];
-
+        
         function initG7ScoreItems() {
             const container = document.getElementById('g7-score-items');
             container.innerHTML = g7ScoreItems.map((item, index) => `
@@ -339,8 +324,6 @@
         // ==========================================
         // 2. Firebase 資料拉取與登入邏輯
         // ==========================================
-        
-        // 新增：直接從 Firebase 獲取由 Excel 同步過來的系統資料
         async function fetchSystemData() {
             return new Promise((resolve, reject) => {
                 database.ref('systemData').once('value', snap => {
@@ -354,7 +337,6 @@
         function initFirebaseListeners() {
             database.ref('checkin/7').on('value', snap => { checkinData7 = snap.val() || {}; if(document.getElementById('view-checkin7').classList.contains('active')) renderCheckinGrid('7', document.getElementById('search-checkin-7').value); });
             database.ref('checkin/8').on('value', snap => { checkinData8 = snap.val() || {}; if(document.getElementById('view-checkin8').classList.contains('active')) renderCheckinGrid('8', document.getElementById('search-checkin-8').value); });
-            
             database.ref('grades/7').on('value', snap => { 
                 allRecords7 = snap.val() || {};
                 localRecords7 = {};
@@ -375,18 +357,14 @@
 
             showLoading('正在連接資料庫...');
             try {
-                // 從 Firebase 獲取帳號與名單 (取代原本的 fetchCSV)
                 const sysData = await fetchSystemData();
                 const accounts = sysData.accounts || [];
                 const isValid = accounts.some(row => row.user === user && row.pass === pass);
-
                 if (isValid) {
                     try {
-                        // 嘗試進行匿名登入
                         await auth.signInAnonymously();
                     } catch (authErr) {
                         console.error("Auth Error:", authErr);
-                        // 攔截並處理 auth/configuration-not-found 錯誤
                         if (authErr.code === 'auth/configuration-not-found' || authErr.code === 'auth/operation-not-allowed') {
                             return Swal.fire({
                                 icon: 'error',
@@ -397,17 +375,15 @@
                         throw authErr;
                     }
 
-                    currentUser = user; 
+                    currentUser = user;
                     document.getElementById('nav-logout').classList.remove('hidden');
                     document.getElementById('user-badge').classList.remove('hidden');
                     document.getElementById('display-user').innerText = currentUser;
 
-                    // 載入名單
                     studentsData7 = sysData.students ? (sysData.students['7'] || []) : [];
                     studentsData8 = sysData.students ? (sysData.students['8'] || []) : [];
 
                     initFirebaseListeners();
-                    
                     Swal.fire({ icon: 'success', title: '登入成功', timer: 1000, showConfirmButton: false });
                     switchView('view-dashboard');
                 } else {
@@ -415,16 +391,18 @@
                 }
             } catch (error) { 
                 console.error(error);
-                Swal.fire('系統提示', typeof error === 'string' ? error : '網路錯誤，無法連線至 Firebase 資料庫', 'error'); 
+                Swal.fire('系統提示', typeof error === 'string' ? error : '網路錯誤，無法連線至 Firebase 資料庫', 'error');
             }
         }
 
         async function logout() {
-            currentUser = ""; checkinData7 = {}; checkinData8 = {}; allRecords7 = {}; allRecords8 = {};
+            currentUser = "";
+            checkinData7 = {}; checkinData8 = {}; allRecords7 = {}; allRecords8 = {};
             database.ref().off(); 
             try { await auth.signOut(); } catch(e) {} 
             
-            document.getElementById('login-username').value = ''; document.getElementById('login-password').value = '';
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
             document.getElementById('nav-logout').classList.add('hidden');
             document.getElementById('user-badge').classList.add('hidden');
             switchView('view-home');
@@ -447,7 +425,6 @@
 
             container.innerHTML = "";
             let totalCount = 0, checkedCount = 0;
-
             data.forEach((s, index) => {
                 if(!s.name) return;
                 totalCount++;
@@ -492,7 +469,6 @@
             container.innerHTML = "";
             const filterLower = filterText.trim().toLowerCase();
             if (filterLower === "") { container.style.display = "none"; return; } else container.style.display = "grid";
-
             data.forEach((s, index) => {
                 if(!s.name) return;
                 if (`${s.cls} ${s.seat} ${s.name}`.toLowerCase().includes(filterLower)) {
@@ -522,14 +498,12 @@
             const record = grade === '7' ? localRecords7[key] : allRecords8[key];
             const btn = document.getElementById(`btn-save-${grade}`);
 
-            clearForm(grade); 
-
+            clearForm(grade);
             if (record) {
                 const judgeHint = grade === '8' ? ` <span class="text-xs ml-2 opacity-80">(上次修改: ${record.lastJudge || '未知'})</span>` : '';
                 btn.innerHTML = `<i class="ph ph-pencil-simple mr-2"></i>修改成績${judgeHint}`;
                 btn.classList.replace(grade==='7'?'bg-blue-600':'bg-emerald-600', 'bg-orange-500');
                 btn.classList.replace(grade==='7'?'hover:bg-blue-700':'hover:bg-emerald-700', 'hover:bg-orange-600');
-                
                 if (grade === '7') {
                     document.getElementById('g7-score-1').value = record.scoreCreativity;
                     document.getElementById('g7-score-2').value = record.scoreContent;
@@ -552,7 +526,8 @@
 
         function clearForm(grade) {
             if (grade === '7') {
-                document.getElementById('g7-score-1').value = ''; document.getElementById('g7-score-2').value = '';
+                document.getElementById('g7-score-1').value = '';
+                document.getElementById('g7-score-2').value = '';
                 for(let i=0; i<10; i++) { let r = document.querySelector(`input[name="g7_prog_${i}"][value="0"]`); if(r) r.checked = true; }
                 calcG7Total();
             } else {
@@ -562,13 +537,17 @@
         }
 
         function calcG7Total() {
-            let s1 = parseInt(document.getElementById('g7-score-1').value) || 0; let s2 = parseInt(document.getElementById('g7-score-2').value) || 0;
-            if(s1 > 20) document.getElementById('g7-score-1').value = s1 = 20; if(s2 > 30) document.getElementById('g7-score-2').value = s2 = 30;
-            let s3 = 0; for(let i=0; i<10; i++) { const r = document.querySelector(`input[name="g7_prog_${i}"]:checked`); if(r) s3 += parseInt(r.value); }
-            let total = s1 + s2 + s3; document.getElementById('g7-total-display').innerText = total; return total;
+            let s1 = parseInt(document.getElementById('g7-score-1').value) || 0; 
+            let s2 = parseInt(document.getElementById('g7-score-2').value) || 0;
+            if(s1 > 20) document.getElementById('g7-score-1').value = s1 = 20;
+            if(s2 > 30) document.getElementById('g7-score-2').value = s2 = 30;
+            let s3 = 0;
+            for(let i=0; i<10; i++) { const r = document.querySelector(`input[name="g7_prog_${i}"]:checked`); if(r) s3 += parseInt(r.value); }
+            let total = s1 + s2 + s3;
+            document.getElementById('g7-total-display').innerText = total; return total;
         }
 
-        let currentG8Final = null; 
+        let currentG8Final = null;
         let isG8Valid = false;
 
         function getG8TestData(prefix) {
@@ -583,8 +562,11 @@
             const display = document.getElementById(`g8-${prefix}-acc-display`);
             const isBlank = document.getElementById(`g8-${prefix}-correct`).value === "" && document.getElementById(`g8-${prefix}-wrong`).value === "";
             
-            if (isBlank) { display.innerHTML = "--%"; display.className = "text-lg font-bold text-gray-400"; } 
-            else { display.innerHTML = `${acc.toFixed(1)}%`; display.className = acc >= 90 ? "text-xl font-black text-green-600" : "text-xl font-black text-red-500"; }
+            if (isBlank) { display.innerHTML = "--%";
+            display.className = "text-lg font-bold text-gray-400"; } 
+            else { display.innerHTML = `${acc.toFixed(1)}%`;
+            display.className = acc >= 90 ? "text-xl font-black text-green-600" : "text-xl font-black text-red-500";
+            }
             return { speed, acc, correct, wrong, missed, time: isNaNToZero(v('time')), isBlank };
         }
 
@@ -593,7 +575,6 @@
             const c1 = document.getElementById('g8-t1-card'), c2 = document.getElementById('g8-t2-card');
             
             let bestTest = 0; currentG8Final = null; isG8Valid = false;
-            
             if (t1.isBlank && t2.isBlank) {
                 bestTest = 0;
             } else if (!t1.isBlank && t2.isBlank) {
@@ -636,24 +617,20 @@
             let payloadData = {};
 
             showLoading('資料儲存中...');
-
             if (grade === '7') {
-                const progScores = []; for(let i=0; i<10; i++) { const r = document.querySelector(`input[name="g7_prog_${i}"]:checked`); progScores.push(r ? parseInt(r.value) : 0); }
+                const progScores = [];
+                for(let i=0; i<10; i++) { const r = document.querySelector(`input[name="g7_prog_${i}"]:checked`); progScores.push(r ? parseInt(r.value) : 0); }
                 payloadData = { className: student.cls, seatNumber: student.seat, studentName: student.name, judgeAccount: currentUser, scoreCreativity: parseInt(document.getElementById('g7-score-1').value)||0, scoreContent: parseInt(document.getElementById('g7-score-2').value)||0, scoreProgramming: progScores.reduce((a,b)=>a+b,0), totalScore: calcG7Total(), rawProgScores: progScores };
-                
                 database.ref(`grades/7/${key}/${currentUser}`).set(payloadData).then(() => {
                     Swal.fire({ icon: 'success', title: '儲存成功！', timer: 1000, showConfirmButton: false });
                 }).catch(e => Swal.fire('寫入失敗', '資料庫拒絕存取，請確認您已登入系統', 'error'));
-
             } else {
-                calcG8Result(); 
+                calcG8Result();
                 const v = (id) => parseFloat(document.getElementById(`g8-${id}`).value);
                 const t1t2Data = { t1_speed: v('t1-speed'), t1_correct: v('t1-correct'), t1_wrong: v('t1-wrong'), t1_missed: v('t1-missed'), t1_time: v('t1-time'), t2_speed: v('t2-speed'), t2_correct: v('t2-correct'), t2_wrong: v('t2-wrong'), t2_missed: v('t2-missed'), t2_time: v('t2-time') };
-                
                 if (!currentG8Final) return Swal.fire('警告', '請至少輸入一次測驗成績', 'warning');
                 
                 payloadData = { className: student.cls, seatNumber: student.seat, studentName: student.name, lastJudge: currentUser, bestSpeed: currentG8Final.speed, accuracy: currentG8Final.acc, wrongCount: currentG8Final.wrong, correctCount: currentG8Final.correct, missedCount: currentG8Final.missed, isValid: isG8Valid, t1t2Data };
-                
                 database.ref(`grades/8/${key}`).set(payloadData).then(() => {
                     Swal.fire({ icon: 'success', title: '儲存成功！', timer: 1000, showConfirmButton: false });
                     renderStudentGrid('8', document.getElementById('search-student-8').value); 
@@ -661,116 +638,122 @@
             }
         }
 
-// ==========================================
-// 5. 報表生成 (從 Firebase 數據直接智能遞補排序與 T分數計算)
-// ==========================================
-function generateRanking() {
-    // --- 1. 計算七年級的 T 分數與排名 ---
-    const arr7 = [];
-    
-    // 步驟 A：收集每位評審給出的所有原始總分，以便計算各評審的平均與標準差
-    const judgeScores = {};
-    for (const key in allRecords7) {
-        const judgesData = allRecords7[key];
-        for (const judge in judgesData) {
-            if (!judgeScores[judge]) judgeScores[judge] = [];
-            judgeScores[judge].push(judgesData[judge].totalScore || 0);
-        }
-    }
-
-    // 步驟 B：計算每位評審的平均數 (mean) 與標準差 (stdDev)
-    const judgeStats = {};
-    for (const judge in judgeScores) {
-        const scores = judgeScores[judge];
-        const n = scores.length;
-        if (n === 0) continue;
-        
-        // 計算平均
-        const mean = scores.reduce((a, b) => a + b, 0) / n;
-        // 計算變異數與標準差 (母體標準差)
-        const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
-        const stdDev = Math.sqrt(variance);
-        
-        judgeStats[judge] = { mean, stdDev };
-    }
-
-    // 步驟 C：計算每位學生的平均 T 分數
-    for (const key in allRecords7) {
-        const judgesData = allRecords7[key];
-        const judgeKeys = Object.keys(judgesData);
-        if (judgeKeys.length === 0) continue;
-
-        let totalTScore = 0;
-        judgeKeys.forEach(judge => {
-            const rawScore = judgesData[judge].totalScore || 0;
-            const stats = judgeStats[judge];
-            
-            // 預設 T 分數為 50 (對應標準差為 0 或尚未有足夠資料的情境)
-            let tScore = 50; 
-            if (stats && stats.stdDev > 0) {
-                tScore = 50 + 10 * ((rawScore - stats.mean) / stats.stdDev);
+        // ==========================================
+        // 5. 報表生成 (從 Firebase 數據直接智能遞補排序與 T分數計算)
+        // ==========================================
+        function generateRanking() {
+            // --- 1. 計算七年級的 T 分數與排名 ---
+            const arr7 = [];
+            const judgeScores = {};
+            for (const key in allRecords7) {
+                const judgesData = allRecords7[key];
+                for (const judge in judgesData) {
+                    if (!judgeScores[judge]) judgeScores[judge] = [];
+                    judgeScores[judge].push(judgesData[judge].totalScore || 0);
+                }
             }
-            totalTScore += tScore;
-        });
 
-        // 計算多位評審的 T 分數平均，取到小數點後兩位
-        const avgTScore = parseFloat((totalTScore / judgeKeys.length).toFixed(2));
-        const firstJudgeData = judgesData[judgeKeys[0]]; // 取得學生基本資料
+            const judgeStats = {};
+            for (const judge in judgeScores) {
+                const scores = judgeScores[judge];
+                const n = scores.length;
+                if (n === 0) continue;
+                
+                const mean = scores.reduce((a, b) => a + b, 0) / n;
+                const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+                const stdDev = Math.sqrt(variance);
+                
+                judgeStats[judge] = { mean, stdDev };
+            }
 
-        arr7.push({
-            className: firstJudgeData.className,
-            seatNumber: firstJudgeData.seatNumber,
-            studentName: firstJudgeData.studentName,
-            avgScore: avgTScore, // 這裡的 avgScore 已正式替換為「平均 T 分數」
-            judgeCount: judgeKeys.length
-        });
-    }
+            for (const key in allRecords7) {
+                const judgesData = allRecords7[key];
+                const judgeKeys = Object.keys(judgesData);
+                if (judgeKeys.length === 0) continue;
 
-    // 依照 T 分數由高到低排序
-    arr7.sort((a, b) => b.avgScore - a.avgScore);
+                let totalTScore = 0;
+                judgeKeys.forEach(judge => {
+                    const rawScore = judgesData[judge].totalScore || 0;
+                    const stats = judgeStats[judge];
+                    
+                    let tScore = 50; 
+                    if (stats && stats.stdDev > 0) {
+                        tScore = 50 + 10 * ((rawScore - stats.mean) / stats.stdDev);
+                    }
+                    totalTScore += tScore;
+                });
+                const avgTScore = parseFloat((totalTScore / judgeKeys.length).toFixed(2));
+                const firstJudgeData = judgesData[judgeKeys[0]];
 
-    // --- 2. 處理八年級成績 (維持原有的智能遞補排序) ---
-    const arr8 = [];
-    for (const key in allRecords8) {
-        arr8.push(allRecords8[key]);
-    }
-    
-    // 智能遞補排序法
-    arr8.sort((a, b) => {
-        if (a.isValid !== b.isValid) return a.isValid ? -1 : 1; 
-        if (b.bestSpeed !== a.bestSpeed) return b.bestSpeed - a.bestSpeed;
-        if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-        return a.wrongCount - b.wrongCount; 
-    });
+                arr7.push({
+                    className: firstJudgeData.className,
+                    seatNumber: firstJudgeData.seatNumber,
+                    studentName: firstJudgeData.studentName,
+                    avgScore: avgTScore, 
+                    judgeCount: judgeKeys.length
+                });
+            }
 
-    if (arr7.length === 0 && arr8.length === 0) return Swal.fire('無資料', '目前尚未有任何成績。', 'info');
+            arr7.sort((a, b) => b.avgScore - a.avgScore);
 
-    // --- 3. 渲染報表畫面 ---
-    let html = `<div class="text-left text-sm max-h-[60vh] overflow-y-auto">`;
-    
-    if(arr7.length > 0) {
-        // 更新了標題文字
-        html += `<h4 class="font-bold text-lg text-blue-700 mt-2 mb-2 border-b pb-1">七年級 SCRATCH (T分數綜合排名)</h4>`;
-        arr7.forEach((item, idx) => {
-            let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
+            // --- 2. 處理八年級成績 (更新後的智能遞補排序法) ---
+            const arr8 = [];
+            for (const key in allRecords8) {
+                arr8.push(allRecords8[key]);
+            }
             
-            // 更新了分數的顯示格式 (改為 T分數: XX.XX)
-            html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}</div><div class="text-right"><div class="font-bold text-blue-600 text-base">T分數: ${item.avgScore}</div><div class="text-xs text-gray-400">來自 ${item.judgeCount} 位評審</div></div></div>`;
-        });
-    }
-    
-    if(arr8.length > 0) {
-        html += `<h4 class="font-bold text-lg text-emerald-700 mt-6 mb-2 border-b pb-1">八年級 英打 (綜合排名)</h4>`;
-        arr8.forEach((item, idx) => {
-            let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
-            let validTag = item.isValid ? '' : '<span class="text-red-500 text-xs ml-1">(未達90%)</span>';
-            html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}${validTag}</div><div class="text-right"><div class="font-bold text-emerald-600 text-base">${item.bestSpeed} 字/分</div><div class="text-xs text-gray-400">紀錄者: ${item.lastJudge}</div></div></div>`;
-        });
-    }
-    html += `</div>`;
-    
-    Swal.fire({ title: '最新排名總表', html: html, width: 600, confirmButtonText: '關閉' });
-}
+            arr8.sort((a, b) => {
+                // 第一層：達標門檻優先 (達標 > 未達標)
+                if (a.isValid !== b.isValid) {
+                    return a.isValid ? -1 : 1;
+                }
+
+                if (a.isValid) {
+                    // 第二層 (雙方皆達標)：優先比打字速度 (快至慢)
+                    if (b.bestSpeed !== a.bestSpeed) {
+                        return b.bestSpeed - a.bestSpeed;
+                    }
+                    // 最終防線：打錯字數 (少至多)
+                    return a.wrongCount - b.wrongCount;
+                } else {
+                    // 第三層 (雙方皆未達標)：優先比正確率 (高至低)
+                    if (b.accuracy !== a.accuracy) {
+                        return b.accuracy - a.accuracy;
+                    }
+                    // 正確率相同時，再比打字速度 (快至慢)
+                    if (b.bestSpeed !== a.bestSpeed) {
+                        return b.bestSpeed - a.bestSpeed;
+                    }
+                    // 最終防線：打錯字數 (少至多)
+                    return a.wrongCount - b.wrongCount;
+                }
+            });
+
+            if (arr7.length === 0 && arr8.length === 0) return Swal.fire('無資料', '目前尚未有任何成績。', 'info');
+            
+            // --- 3. 渲染報表畫面 ---
+            let html = `<div class="text-left text-sm max-h-[60vh] overflow-y-auto">`;
+            if(arr7.length > 0) {
+                html += `<h4 class="font-bold text-lg text-blue-700 mt-2 mb-2 border-b pb-1">七年級 SCRATCH (T分數綜合排名)</h4>`;
+                arr7.forEach((item, idx) => {
+                    let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
+                    
+                    html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}</div><div class="text-right"><div class="font-bold text-blue-600 text-base">T分數: ${item.avgScore}</div><div class="text-xs text-gray-400">來自 ${item.judgeCount} 位評審</div></div></div>`;
+                });
+            }
+            
+            if(arr8.length > 0) {
+                html += `<h4 class="font-bold text-lg text-emerald-700 mt-6 mb-2 border-b pb-1">八年級 英打 (綜合排名)</h4>`;
+                arr8.forEach((item, idx) => {
+                    let rLabel = idx === 0 ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs ml-2">特優 1</span>' : (idx===1||idx===2) ? `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs ml-2">優等 ${idx+1}</span>` : (idx>=3&&idx<=5) ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">佳作</span>` : '';
+                    let validTag = item.isValid ? '' : '<span class="text-red-500 text-xs ml-1">(未達90%)</span>';
+                    html += `<div class="py-2 border-b border-gray-100 flex justify-between items-center"><div>${idx+1}. ${item.className}班 ${item.seatNumber}號 ${item.studentName} ${rLabel}${validTag}</div><div class="text-right"><div class="font-bold text-emerald-600 text-base">${item.bestSpeed} 字/分</div><div class="text-xs text-gray-400">紀錄者: ${item.lastJudge}</div></div></div>`;
+                });
+            }
+            html += `</div>`;
+            
+            Swal.fire({ title: '最新排名總表', html: html, width: 600, confirmButtonText: '關閉' });
+        }
 
         // ==========================================
         // 6. 檔案上傳
