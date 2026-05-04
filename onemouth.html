@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>一嘴鍋燒麵 - 線上點餐系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, 'LiHei Pro', '微軟正黑體', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #f43f5e; }
+    
+    .modal-overlay { animation: fadeIn 0.2s ease-out forwards; }
+    .modal-content { animation: scaleIn 0.2s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  </style>
+</head>
+<body class="bg-rose-50 text-slate-800 pb-20 min-h-screen">
+
+  <header class="bg-rose-800 text-white p-4 shadow-md sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-rose-800 font-bold text-xl border-2 border-rose-200">嘴</div>
+        <h1 class="text-2xl font-bold tracking-wider">一嘴鍋燒麵 <span class="text-sm font-normal text-rose-200">單位專屬 8 折優惠</span></h1>
+      </div>
+      
+      <div id="clock-container" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-rose-100 transition-all duration-300">
+        <i data-lucide="clock" class="w-5 h-5"></i>
+        <span id="current-time" class="tracking-widest font-mono text-lg">--:--:--</span>
+        <span id="time-warning" class="hidden text-xs ml-1 bg-white text-rose-700 px-1.5 py-0.5 rounded animate-pulse font-bold">已截止</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="w-full text-center py-2 bg-rose-700 text-white font-bold text-sm shadow-inner">
+    📢 今日優惠：結帳金額自動打 8 折！
+  </div>
+
+  <main class="max-w-6xl mx-auto p-4 mt-4">
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border-l-4 border-rose-600 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+      <div>
+        <h2 id="today-date" class="text-lg font-bold text-rose-800 mb-2">📅 載入中...</h2>
+        <div class="flex flex-col gap-1 text-sm text-slate-600">
+          <a href="tel:0282867113" class="flex items-center gap-2 hover:text-rose-600 w-fit">
+            <i data-lucide="phone" class="w-4 h-4"></i> (02) 8286-7113
+          </a>
+          <div class="flex items-center gap-2">
+            <i data-lucide="map-pin" class="w-4 h-4"></i> 蘆洲區民族路 446-1 號
+          </div>
+        </div>
+      </div>
+      <div class="text-sm bg-rose-50 text-rose-700 p-3 rounded-lg border border-rose-100">
+        <p>💡 截止時間：每日 <strong class="text-red-500 text-base">10:00</strong></p>
+        <p>💡 提示：主餐需選擇麵體，價格已含 8 折優惠計算。</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-7 space-y-6">
+        <div class="bg-white rounded-xl shadow p-5 border border-slate-100">
+          <h3 id="form-title" class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2 text-rose-800">
+            <i data-lucide="utensils-crosses" class="w-5 h-5"></i> 選擇餐點
+          </h3>
+  
+          <div class="mb-6">
+            <label class="block text-sm font-bold text-slate-700 mb-1">點餐者姓名 <span class="text-red-500">*</span></label>
+            <input type="text" id="user-name-input" placeholder="請輸入姓名..." class="w-full p-3 border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+          </div>
+
+          <div id="menu-sections" class="space-y-8">
+            </div>
+
+          <div class="mt-8 bg-rose-50 p-4 rounded-xl border border-rose-100">
+            <h4 class="font-bold text-rose-800 mb-3 flex items-center gap-2">
+               <i data-lucide="shopping-cart" class="w-5 h-5"></i> 待送出清單
+            </h4>
+            <div id="cart-items-container" class="space-y-2">
+              <p class="text-rose-400 text-sm text-center py-4">請從上方選擇餐點</p>
+            </div>
+            <div class="flex justify-between items-center pt-3 border-t border-rose-200 mt-3 text-sm">
+              <span class="text-slate-500">原價總計</span>
+              <span class="line-through text-slate-400">$<span id="cart-original-total">0</span></span>
+            </div>
+            <div class="flex justify-between items-center mt-1">
+              <span class="font-bold text-rose-800 text-lg">8 折優惠後金額</span>
+              <span class="text-3xl font-bold text-rose-600">$<span id="cart-discount-total">0</span></span>
+            </div>
+          </div>
+
+          <button id="submit-order-btn" class="w-full mt-6 bg-rose-700 hover:bg-rose-800 text-white font-bold text-lg py-3 rounded-lg shadow-lg flex justify-center items-center gap-2 transition-all">
+            <i data-lucide="send" class="w-5 h-5"></i>
+            <span id="submit-btn-text">確認送出訂單</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="lg:col-span-5">
+        <div class="bg-white rounded-xl shadow p-5 sticky top-24 border border-rose-100">
+          <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 class="text-xl font-bold text-rose-800">今日已訂購 (<span id="orders-count">0</span>)</h3>
+            <button id="clear-all-btn" class="text-xs bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 清除全部
+            </button>
+          </div>
+
+          <div id="orders-container" class="max-h-[500px] overflow-y-auto pr-1 space-y-3 custom-scrollbar text-sm">
+            <p class="text-slate-400 text-center py-10">資料載入中...</p>
+          </div>
+
+          <div class="mt-4 pt-4 border-t-2 border-rose-100 bg-rose-50 p-3 rounded-lg">
+            <div class="flex justify-between items-center mb-1 text-xs text-slate-500">
+              <span>今日累計原價:</span>
+              <span>$<span id="orders-grand-original">0</span></span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-lg font-bold text-rose-800">今日應收總金額</span>
+              <span class="text-3xl font-bold text-rose-600">$<span id="orders-grand-discount">0</span></span>
+            </div>
+          </div>
+
+          <button id="copy-orders-btn" class="w-full mt-4 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+            <i data-lucide="copy" class="w-4 h-4"></i> 複製給店家的統計清單
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="option-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 p-4 modal-overlay">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden modal-content">
+      <div class="p-4 bg-rose-700 text-white flex justify-between items-center">
+        <h3 id="opt-title" class="font-bold text-lg">餐點選項</h3>
+        <button onclick="closeOptionModal()" class="text-white/80 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+      <div class="p-5 space-y-5">
+        <div id="noodle-options-group">
+          <label class="block text-sm font-bold text-slate-700 mb-2">選擇麵體 <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-rose-50 transition border-slate-200 has-[:checked]:border-rose-600 has-[:checked]:bg-rose-50 has-[:checked]:text-rose-700">
+              <input type="radio" name="noodle" value="烏龍" class="hidden"> 烏龍麵
+            </label>
+            <label class="flex items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-rose-50 transition border-slate-200 has-[:checked]:border-rose-600 has-[:checked]:bg-rose-50 has-[:checked]:text-rose-700">
+              <input type="radio" name="noodle" value="意麵" class="hidden"> 意麵
+            </label>
+          </div>
+        </div>
+        <div id="addon-options-group">
+          <label class="block text-sm font-bold text-slate-700 mb-2">口味加購</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer text-slate-600"><input type="checkbox" id="opt-spicy" class="w-4 h-4 accent-rose-600"> 加辣</label>
+            <label class="flex items-center gap-2 cursor-pointer text-slate-600"><input type="checkbox" id="opt-extra" class="w-4 h-4 accent-rose-600"> 加麵 (+10元)</label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1">其他備註</label>
+          <input type="text" id="opt-remark" placeholder="例：不要蔥、不要海鮮..." class="w-full p-2 border border-slate-200 rounded focus:ring-1 focus:ring-rose-500 outline-none">
+        </div>
+      </div>
+      <div class="p-4 bg-slate-50 flex gap-3 border-t">
+        <button onclick="closeOptionModal()" class="flex-1 py-2 text-slate-500 font-bold">取消</button>
+        <button id="add-to-cart-confirm" class="flex-[2] bg-rose-600 text-white py-2 rounded-lg font-bold shadow hover:bg-rose-700">加入清單</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="status-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-slate-900/60 p-4 modal-overlay">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-xs overflow-hidden modal-content">
+      <div id="status-header" class="p-4 text-center text-white bg-rose-600 font-bold">提示</div>
+      <div id="status-message" class="p-6 text-center text-slate-700">內容</div>
+      <div class="p-3 bg-slate-50 flex justify-center">
+        <button id="status-close-btn" class="px-8 py-2 bg-slate-800 text-white rounded font-bold">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBnWJzwGs7v0y-4TZBak1gNbDSzZp601_k",
+      authDomain: "myorder-86db9.firebaseapp.com",
+      projectId: "myorder-86db9",
+      storageBucket: "myorder-86db9.firebasestorage.app",
+      messagingSenderId: "472751421979",
+      appId: "1:472751421979:web:a286c3bc4ad419ed1f16be",
+      measurementId: "G-ZNRJJ4JQPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const FIREBASE_APP_ID = "myorder-86db9";
+
+    const DISCOUNT_RATE = 0.8;
+    const state = { user: null, orders: [], cart: [], isPastCutoff: false, currentSelectingItem: null };
+
+    const MENU_DATA = [
+      { category: '柴魚系列', type: 'main', items: [
+        { id: 'c1', name: '柴魚原味', price: 100 },
+        { id: 'c2', name: '柴魚豬肉', price: 130 },
+        { id: 'c3', name: '柴魚牛肉', price: 130 },
+        { id: 'c4', name: '柴魚海鮮', price: 130 },
+        { id: 'c5', name: '柴魚蝦多多', price: 160 },
+        { id: 'c6', name: '柴魚蛤多多', price: 160 },
+        { id: 'c7', name: '柴魚海陸(牛/豬)', price: 180 }
+      ]},
+      { category: '泡菜系列', type: 'main', items: [
+        { id: 'p1', name: '泡菜豬肉', price: 130 },
+        { id: 'p2', name: '泡菜牛肉', price: 130 },
+        { id: 'p3', name: '泡菜海鮮', price: 150 },
+        { id: 'p4', name: '泡菜蝦多多', price: 170 },
+        { id: 'p5', name: '泡菜蛤多多', price: 170 },
+        { id: 'p6', name: '泡菜海陸(牛/豬)', price: 190 }
+      ]},
+      { category: '味噌系列', type: 'main', items: [
+        { id: 'm1', name: '味噌豬肉', price: 130 },
+        { id: 'm2', name: '味噌牛肉', price: 130 },
+        { id: 'm3', name: '味噌海鮮', price: 150 },
+        { id: 'm4', name: '味噌蝦多多', price: 170 },
+        { id: 'm5', name: '味噌蛤多多', price: 170 },
+        { id: 'm6', name: '味噌海陸(牛/豬)', price: 190 }
+      ]},
+      { category: '加料/小菜/飲料', type: 'side', items: [
+        { id: 's1', name: '加料-牛肉(2包)', price: 50 },
+        { id: 's2', name: '加料-豬肉(2包)', price: 50 },
+        { id: 's3', name: '加料-蝦子(5隻)', price: 50 },
+        { id: 's4', name: '加料-蛤蠣(5顆)', price: 50 },
+        { id: 's5', name: '雞蛋', price: 15 },
+        { id: 'x1', name: '滷蛋', price: 15 },
+        { id: 'x2', name: '豆干/油豆腐/海帶/素雞', price: 20 },
+        { id: 'x3', name: '泡菜(小菜)', price: 40 },
+        { id: 'd1', name: '紅茶/綠茶/烏龍茶', price: 30 },
+        { id: 'd2', name: '可樂/雪碧', price: 30 }
+      ]}
+    ];
+
+    lucide.createIcons();
+
+    // UI 渲染
+    const renderMenu = () => {
+      const container = document.getElementById('menu-sections');
+      container.innerHTML = MENU_DATA.map(group => `
+        <div>
+          <h4 class="font-bold text-rose-700 mb-3 border-l-4 border-rose-700 pl-2">${group.category}</h4>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            ${group.items.map(item => `
+              <button onclick="handleItemClick('${item.id}')" class="flex flex-col p-3 border border-slate-200 rounded-lg hover:border-rose-500 hover:bg-rose-50 transition text-left group relative">
+                <span class="font-bold text-slate-800">${item.name}</span>
+                <span class="text-rose-600 font-semibold mt-1">$${item.price}</span>
+                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100"><i data-lucide="plus-circle" class="w-5 h-5 text-rose-400"></i></div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    };
+
+    window.handleItemClick = (itemId) => {
+      let foundItem = null;
+      let groupType = 'side';
+      MENU_DATA.forEach(g => {
+        const item = g.items.find(i => i.id === itemId);
+        if (item) { foundItem = item; groupType = g.type; }
+      });
+
+      if (groupType === 'main') {
+        state.currentSelectingItem = foundItem;
+        document.getElementById('opt-title').textContent = foundItem.name;
+        document.getElementById('noodle-options-group').classList.remove('hidden');
+        document.getElementById('addon-options-group').classList.remove('hidden');
+        document.getElementById('option-modal').classList.remove('hidden');
+      } else {
+        addToCart(foundItem, '', false, false, '');
+      }
+    };
+
+    window.closeOptionModal = () => {
+      document.getElementById('option-modal').classList.add('hidden');
+      // 重置欄位
+      document.querySelectorAll('input[name="noodle"]').forEach(i => i.checked = false);
+      document.getElementById('opt-spicy').checked = false;
+      document.getElementById('opt-extra').checked = false;
+      document.getElementById('opt-remark').value = '';
+    };
+
+    document.getElementById('add-to-cart-confirm').addEventListener('click', () => {
+      const noodle = document.querySelector('input[name="noodle"]:checked')?.value;
+      if (!noodle) return alert('請選擇麵體！');
+      
+      const spicy = document.getElementById('opt-spicy').checked;
+      const extra = document.getElementById('opt-extra').checked;
+      const remark = document.getElementById('opt-remark').value.trim();
+      
+      addToCart(state.currentSelectingItem, noodle, spicy, extra, remark);
+      closeOptionModal();
+    });
+
+    const addToCart = (item, noodle, spicy, extra, remark) => {
+      const cartId = Date.now().toString();
+      let finalPrice = item.price;
+      if (extra) finalPrice += 10;
+      
+      state.cart.push({
+        ...item,
+        cartId,
+        noodle,
+        spicy,
+        extra,
+        remark,
+        qty: 1,
+        finalPrice // 此為原價
+      });
+      renderCart();
+    };
+
+    window.removeFromCart = (cartId) => {
+      state.cart = state.cart.filter(i => i.cartId !== cartId);
+      renderCart();
+    };
+
+    const renderCart = () => {
+      const container = document.getElementById('cart-items-container');
+      if (state.cart.length === 0) {
+        container.innerHTML = '<p class="text-rose-400 text-sm text-center py-4">請從上方選擇餐點</p>';
+        document.getElementById('cart-original-total').textContent = '0';
+        document.getElementById('cart-discount-total').textContent = '0';
+        return;
+      }
+
+      container.innerHTML = state.cart.map(item => `
+        <div class="bg-white p-3 rounded-lg shadow-sm border border-rose-100 flex justify-between items-center text-sm">
+          <div>
+            <div class="font-bold text-slate-800">
+              ${item.name} ${item.noodle ? `(${item.noodle})` : ''}
+              ${item.spicy ? '<span class="text-red-500 ml-1">加辣</span>' : ''}
+              ${item.extra ? '<span class="text-orange-600 ml-1">加麵</span>' : ''}
+            </div>
+            ${item.remark ? `<div class="text-xs text-slate-500 italic">備註: ${item.remark}</div>` : ''}
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-rose-700">$${item.finalPrice}</span>
+            <button onclick="removeFromCart('${item.cartId}')" class="text-rose-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+      `).join('');
+
+      const originalTotal = state.cart.reduce((sum, i) => sum + i.finalPrice, 0);
+      document.getElementById('cart-original-total').textContent = originalTotal;
+      document.getElementById('cart-discount-total').textContent = Math.round(originalTotal * DISCOUNT_RATE);
+      lucide.createIcons();
+    };
+
+    // Firebase 核心邏輯
+    const getTodayStr = () => {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    };
+
+    const showStatus = (title, msg, isError = false) => {
+      const header = document.getElementById('status-header');
+      header.textContent = title;
+      header.className = `p-4 text-center text-white font-bold ${isError ? 'bg-red-600' : 'bg-rose-600'}`;
+      document.getElementById('status-message').textContent = msg;
+      document.getElementById('status-modal').classList.remove('hidden');
+    };
+    document.getElementById('status-close-btn').addEventListener('click', () => {
+      document.getElementById('status-modal').classList.add('hidden');
+    });
+
+    signInAnonymously(auth);
+    onAuthStateChanged(auth, (user) => {
+      state.user = user;
+      if (user) {
+        const todayStr = getTodayStr();
+        const ordersRef = collection(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', `orders_${todayStr}`);
+        onSnapshot(ordersRef, (snapshot) => {
+          state.orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+          renderOrdersList();
+        });
+      }
+    });
+
+    const renderOrdersList = () => {
+      const container = document.getElementById('orders-container');
+      document.getElementById('orders-count').textContent = state.orders.length;
+      
+      const grandOriginal = state.orders.reduce((sum, o) => sum + o.originalTotal, 0);
+      const grandDiscount = state.orders.reduce((sum, o) => sum + o.discountTotal, 0);
+      document.getElementById('orders-grand-original').textContent = grandOriginal;
+      document.getElementById('orders-grand-discount').textContent = grandDiscount;
+
+      if (state.orders.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-center py-10">目前尚無訂單</p>';
+        return;
+      }
+
+      container.innerHTML = state.orders.map(order => `
+        <div class="border border-rose-100 rounded-lg p-3 bg-white relative">
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-bold text-rose-800">👤 ${order.userName}</span>
+            <button onclick="deleteOrder('${order.id}')" class="text-red-400 p-1 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div class="text-xs space-y-1">
+            ${order.items.map(i => `
+              <div class="flex justify-between">
+                <span>- ${i.name}${i.noodle ? `(${i.noodle})` : ''}${i.spicy ? ' 加辣' : ''}${i.extra ? ' 加麵' : ''}</span>
+                <span class="text-slate-400">$${i.finalPrice}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="mt-2 text-right font-bold text-rose-600 border-t border-rose-50 pt-1">
+            優惠小計: $${order.discountTotal}
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    };
+
+    window.deleteOrder = (id) => {
+      if (confirm('確定要刪除這筆訂單嗎？')) {
+        const todayStr = getTodayStr();
+        deleteDoc(doc(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', `orders_${todayStr}`, id));
+      }
+    };
+
+    document.getElementById('submit-order-btn').addEventListener('click', async () => {
+      const userName = document.getElementById('user-name-input').value.trim();
+      if (!userName) return showStatus('提醒', '請輸入您的姓名', true);
+      if (state.cart.length === 0) return showStatus('提醒', '購物車是空的', true);
+
+      try {
+        const todayStr = getTodayStr();
+        const ordersRef = collection(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', `orders_${todayStr}`);
+        const originalTotal = state.cart.reduce((sum, i) => sum + i.finalPrice, 0);
+        
+        await addDoc(ordersRef, {
+          userName,
+          items: state.cart,
+          originalTotal,
+          discountTotal: Math.round(originalTotal * DISCOUNT_RATE),
+          createdAt: serverTimestamp(),
+          userId: state.user.uid
+        });
+
+        document.getElementById('user-name-input').value = '';
+        state.cart = [];
+        renderCart();
+        showStatus('成功', '訂單已成功送出！');
+      } catch (e) {
+        showStatus('錯誤', '送出失敗，請重試', true);
+      }
+    });
+
+    // 複製統計邏輯
+    document.getElementById('copy-orders-btn').addEventListener('click', () => {
+      if (state.orders.length === 0) return alert('目前沒有訂單');
+      
+      let text = `📅 一嘴鍋燒麵 ${getTodayStr()} 訂餐統計\n`;
+      text += `--------------------------------\n`;
+      text += `【個人收款明細 (已打 8 折)】\n`;
+      
+      let storeSummary = {};
+      
+      state.orders.forEach(o => {
+        text += `👤 ${o.userName}: $${o.discountTotal}\n`;
+        o.items.forEach(i => {
+          // 彙整鍵值：品項名稱 + 麵體 + 辣度 + 加麵
+          const key = `${i.name}(${i.noodle || '無'})${i.spicy ? '+辣' : ''}${i.extra ? '+加麵' : ''}`;
+          storeSummary[key] = (storeSummary[key] || 0) + 1;
+        });
+      });
+
+      text += `\n--------------------------------\n`;
+      text += `【📢 給店家的總訂單匯整】\n`;
+      Object.entries(storeSummary).forEach(([item, count]) => {
+        text += `- ${item}: ${count} 份\n`;
+      });
+      text += `\n💰 總應付金額: $${state.orders.reduce((sum, o) => sum + o.discountTotal, 0)}\n`;
+
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showStatus('完成', '統計資料已複製，可直接貼到 LINE！');
+    });
+
+    // 時間更新
+    const updateTime = () => {
+      const now = new Date();
+      document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-TW', { hour12: false });
+      const isPast = now.getHours() >= 10;
+      state.isPastCutoff = isPast;
+      if (isPast) document.getElementById('time-warning').classList.remove('hidden');
+    };
+    setInterval(updateTime, 1000);
+    updateTime();
+    document.getElementById('today-date').textContent = `📅 ${new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}`;
+    
+    renderMenu();
+  </script>
+</body>
+</html>
