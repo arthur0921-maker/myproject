@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>團隊專屬訂餐平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { 
+      font-family: 'Helvetica Neue', Arial, 'LiHei Pro', '微軟正黑體', sans-serif; 
+      background-color: #f8fafc; 
+    }
+    
+    /* 隱藏捲軸但可滾動 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* 卡片點擊動畫 */
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+    .card-hover:active { transform: translateY(0) scale(0.98); }
+
+    /* 隨機抽取高亮動畫 */
+    .highlight-card {
+      border: 2px solid #3b82f6 !important;
+      background-color: #eff6ff !important;
+      transform: scale(1.02);
+      transition: all 0.1s;
+    }
+
+    /* 彈出視窗動畫 */
+    .modal-overlay { animation: fadeIn 0.3s ease-out forwards; }
+    .modal-content { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  </style>
+</head>
+<body class="text-slate-800 pb-24 min-h-screen">
+
+  <!-- 頂部導航 -->
+  <header class="bg-white px-4 py-4 shadow-sm sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md transform -rotate-3">
+          <i data-lucide="utensils" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-black text-slate-800 tracking-tight">午餐吃什麼</h1>
+          <p class="text-xs text-slate-500 font-medium">Team Lunch Portal</p>
+        </div>
+      </div>
+      
+      <!-- 隨機按鈕 -->
+      <button onclick="startRandomPicker()" class="flex items-center gap-2 bg-slate-100 hover:bg-blue-50 text-blue-600 px-4 py-2 rounded-full font-bold transition-colors shadow-sm active:bg-blue-100">
+        <i data-lucide="dices" class="w-5 h-5"></i>
+        <span class="hidden sm:inline">抽籤</span>
+      </button>
+    </div>
+
+    <!-- 搜尋列 -->
+    <div class="max-w-5xl mx-auto mt-4 relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+      </div>
+      <input 
+        type="text" 
+        id="search-input"
+        placeholder="想吃什麼？(例如：便當、麵、燒肉)" 
+        class="w-full pl-10 pr-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-2xl outline-none transition-all font-medium text-slate-700"
+      >
+      <button id="clear-search" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden text-slate-400 hover:text-slate-600">
+        <i data-lucide="x-circle" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主要內容區 -->
+  <main class="max-w-5xl mx-auto p-4 mt-2">
+    
+    <!-- 分類標籤 (可滑動) -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar py-2 mb-4">
+      <button onclick="filterByCategory('全部')" class="filter-btn active bg-slate-800 text-white px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition">全部</button>
+      <button onclick="filterByCategory('便當')" class="filter-btn bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition">🍱 便當</button>
+      <button onclick="filterByCategory('麵食')" class="filter-btn bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition">🍜 麵食</button>
+      <button onclick="filterByCategory('燒肉燒臘')" class="filter-btn bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition">🍖 燒肉燒臘</button>
+      <button onclick="filterByCategory('其他')" class="filter-btn bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition">🍛 其他</button>
+    </div>
+
+    <!-- 餐廳列表 Grid -->
+    <div id="restaurant-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- JS 動態渲染 -->
+    </div>
+
+    <!-- 無搜尋結果提示 -->
+    <div id="no-results" class="hidden flex-col items-center justify-center py-20 text-slate-400">
+      <i data-lucide="frown" class="w-16 h-16 mb-4 opacity-50"></i>
+      <p class="text-lg font-medium">找不到相關的餐廳</p>
+      <button onclick="resetSearch()" class="mt-4 text-blue-500 font-bold hover:underline">清除搜尋條件</button>
+    </div>
+  </main>
+
+  <!-- 抽籤結果 Modal -->
+  <div id="winner-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 p-4 modal-overlay backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden modal-content relative">
+      <!-- 慶祝背景圖案 -->
+      <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-50 pointer-events-none"></div>
+      
+      <div class="relative p-8 text-center">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 mb-4 shadow-inner">
+          <span id="winner-emoji" class="text-4xl">🎉</span>
+        </div>
+        <h3 class="text-slate-500 font-bold mb-1">天意幫你選了：</h3>
+        <h2 id="winner-name" class="text-3xl font-black text-slate-800 mb-6">餐廳名稱</h2>
+        
+        <div class="flex flex-col gap-3">
+          <a id="winner-link" href="#" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-3 rounded-xl shadow-md transition flex justify-center items-center gap-2">
+            前往點餐 <i data-lucide="external-link" class="w-5 h-5"></i>
+          </a>
+          <button onclick="closeWinnerModal()" class="w-full text-slate-500 hover:text-slate-800 font-bold py-3 rounded-xl transition">
+            重新選擇
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 餐廳資料庫 (整理自您的清單)
+    const RESTAURANTS = [
+      { id: 1, name: '陳家飯担', url: 'https://arthur0921-maker.github.io/myproject/chen.html', category: '便當', tags: ['台式便當', '家常菜'], emoji: '🍱', color: 'bg-red-50 text-red-600' },
+      { id: 2, name: '根藤好好吃咖哩', url: 'https://arthur0921-maker.github.io/myproject/curry.html', category: '其他', tags: ['咖哩飯', '特餐'], emoji: '🍛', color: 'bg-orange-50 text-orange-600' },
+      { id: 3, name: '一嘴鍋燒麵', url: 'https://arthur0921-maker.github.io/myproject/onemouth.html', category: '麵食', tags: ['鍋燒意麵', '熱湯'], emoji: '🍜', color: 'bg-amber-50 text-amber-600' },
+      { id: 4, name: '洪昇燒臘', url: 'https://arthur0921-maker.github.io/myproject/hong.html', category: '燒肉燒臘', tags: ['港式燒臘', '便當'], emoji: '🦆', color: 'bg-rose-50 text-rose-600' },
+      { id: 5, name: '偶鵝嚐嚐', url: 'https://arthur0921-maker.github.io/myproject/o2.html', category: '便當', tags: ['鵝肉', '特色便當'], emoji: '🦢', color: 'bg-stone-100 text-stone-600' },
+      { id: 6, name: '布爺食堂', url: 'https://arthur0921-maker.github.io/myproject/myorder.html', category: '便當', tags: ['綜合便當', '食堂'], emoji: '🥢', color: 'bg-emerald-50 text-emerald-600' },
+      { id: 7, name: '高田食堂', url: 'https://arthur0921-maker.github.io/myproject/Takana.html', category: '便當', tags: ['日式便當', '定食'], emoji: '🍤', color: 'bg-cyan-50 text-cyan-600' },
+      { id: 8, name: '立利炒飯', url: 'https://arthur0921-maker.github.io/myproject/Lili.html', category: '其他', tags: ['炒飯', '熱炒'], emoji: '🍳', color: 'bg-yellow-50 text-yellow-600' },
+      { id: 9, name: '吉野烤肉便當', url: 'https://arthur0921-maker.github.io/myproject/GiYa.html', category: '燒肉燒臘', tags: ['烤肉飯', '便當'], emoji: '🥓', color: 'bg-orange-50 text-orange-600' },
+      { id: 10, name: '粥師傅', url: 'https://arthur0921-maker.github.io/myproject/porridge.html', category: '其他', tags: ['廣東粥', '清淡'], emoji: '🥣', color: 'bg-teal-50 text-teal-600' },
+      { id: 11, name: '福餉飯包', url: 'https://arthur0921-maker.github.io/myproject/lucky.html', category: '便當', tags: ['傳統便當', '經典'], emoji: '🥡', color: 'bg-indigo-50 text-indigo-600' },
+      { id: 12, name: '黑木燒肉', url: 'https://arthur0921-maker.github.io/myproject/kuroki.html', category: '燒肉燒臘', tags: ['燒肉', '精緻套餐'], emoji: '🥩', color: 'bg-zinc-800 text-yellow-500' }
+    ];
+
+    let currentCategory = '全部';
+    let currentSearchTerm = '';
+
+    // 初始化 Lucide Icons
+    lucide.createIcons();
+
+    // 渲染卡片
+    const renderCards = (data) => {
+      const grid = document.getElementById('restaurant-grid');
+      const noResults = document.getElementById('no-results');
+      
+      if (data.length === 0) {
+        grid.innerHTML = '';
+        noResults.classList.remove('hidden');
+        noResults.classList.add('flex');
+        return;
+      }
+
+      noResults.classList.add('hidden');
+      noResults.classList.remove('flex');
+
+      grid.innerHTML = data.map(rest => `
+        <a href="${rest.url}" target="_blank" id="card-${rest.id}" class="card-hover bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group relative overflow-hidden">
+          
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-slate-50 ${rest.color} transition-transform group-hover:scale-110 group-hover:rotate-3 z-10">
+            ${rest.emoji}
+          </div>
+          
+          <div class="flex-1 z-10">
+            <h3 class="font-bold text-slate-800 text-lg leading-tight group-hover:text-blue-600 transition-colors">${rest.name}</h3>
+            <div class="flex gap-1 mt-1 flex-wrap">
+              ${rest.tags.map(tag => `<span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md font-medium">#${tag}</span>`).join('')}
+            </div>
+          </div>
+          
+          <div class="absolute right-4 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all z-10 text-blue-500">
+            <i data-lucide="chevron-right"></i>
+          </div>
+        </a>
+      `).join('');
+      
+      lucide.createIcons();
+    };
+
+    // 執行過濾邏輯
+    const applyFilters = () => {
+      let filtered = RESTAURANTS;
+      
+      // 分類過濾
+      if (currentCategory !== '全部') {
+        filtered = filtered.filter(r => r.category === currentCategory);
+      }
+      
+      // 關鍵字過濾
+      if (currentSearchTerm) {
+        const term = currentSearchTerm.toLowerCase();
+        filtered = filtered.filter(r => 
+          r.name.toLowerCase().includes(term) || 
+          r.tags.some(tag => tag.toLowerCase().includes(term))
+        );
+      }
+      
+      renderCards(filtered);
+    };
+
+    // 分類按鈕點擊
+    window.filterByCategory = (category) => {
+      currentCategory = category;
+      
+      // 更新按鈕樣式
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.innerText.includes(category)) {
+          btn.className = 'filter-btn active bg-slate-800 text-white px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition shadow-md';
+        } else {
+          btn.className = 'filter-btn bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition';
+        }
+      });
+      
+      applyFilters();
+    };
+
+    // 搜尋框輸入事件
+    const searchInput = document.getElementById('search-input');
+    const clearSearchBtn = document.getElementById('clear-search');
+
+    searchInput.addEventListener('input', (e) => {
+      currentSearchTerm = e.target.value.trim();
+      
+      if (currentSearchTerm.length > 0) {
+        clearSearchBtn.classList.remove('hidden');
+      } else {
+        clearSearchBtn.classList.add('hidden');
+      }
+      
+      applyFilters();
+    });
+
+    // 清除搜尋
+    clearSearchBtn.addEventListener('click', () => {
+      resetSearch();
+    });
+
+    window.resetSearch = () => {
+      searchInput.value = '';
+      currentSearchTerm = '';
+      clearSearchBtn.classList.add('hidden');
+      filterByCategory('全部'); // 順便重置分類
+    };
+
+    // --- 隨機抽籤功能 (跑馬燈效果) ---
+    let isPicking = false;
+
+    window.startRandomPicker = () => {
+      if (isPicking) return;
+      
+      // 使用當前過濾後的陣列來抽籤 (如果正在搜尋，就只抽搜尋結果)
+      const currentCardsList = Array.from(document.querySelectorAll('[id^="card-"]')).map(el => el.id.split('-')[1]);
+      const availableRestaurants = RESTAURANTS.filter(r => currentCardsList.includes(r.id.toString()));
+
+      if (availableRestaurants.length === 0) {
+        alert("目前沒有餐廳可以抽籤喔！請先清除搜尋條件。");
+        return;
+      }
+
+      isPicking = true;
+      let times = 0;
+      const maxTimes = 20; // 跑動次數
+      const speed = 100; // 跑動速度 ms
+
+      // 清除之前的高亮
+      document.querySelectorAll('[id^="card-"]').forEach(el => el.classList.remove('highlight-card'));
+
+      // 捲動到頂部以便看清楚
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      const interval = setInterval(() => {
+        // 移除所有高亮
+        document.querySelectorAll('[id^="card-"]').forEach(el => el.classList.remove('highlight-card'));
+        
+        // 隨機選一個
+        const randomIndex = Math.floor(Math.random() * availableRestaurants.length);
+        const randomId = availableRestaurants[randomIndex].id;
+        const targetCard = document.getElementById(`card-${randomId}`);
+        
+        if(targetCard) targetCard.classList.add('highlight-card');
+
+        times++;
+        
+        // 結束動畫
+        if (times >= maxTimes) {
+          clearInterval(interval);
+          isPicking = false;
+          
+          // 選出最終結果
+          const winner = availableRestaurants[randomIndex];
+          
+          // 延遲一點點跳出 Modal，讓視覺有停頓感
+          setTimeout(() => {
+            showWinnerModal(winner);
+          }, 300);
+        }
+      }, speed);
+    };
+
+    // 顯示結果 Modal
+    const showWinnerModal = (restaurant) => {
+      document.getElementById('winner-emoji').textContent = restaurant.emoji;
+      document.getElementById('winner-name').textContent = restaurant.name;
+      document.getElementById('winner-link').href = restaurant.url;
+      document.getElementById('winner-modal').classList.remove('hidden');
+    };
+
+    // 關閉 Modal
+    window.closeWinnerModal = () => {
+      document.getElementById('winner-modal').classList.add('hidden');
+      document.querySelectorAll('[id^="card-"]').forEach(el => el.classList.remove('highlight-card'));
+    };
+
+    // 初始渲染
+    renderCards(RESTAURANTS);
+
+  </script>
+</body>
+</html>
