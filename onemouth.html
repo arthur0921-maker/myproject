@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>一嘴鍋燒麵 - 線上點餐系統</title>
+  <title>一嘴鍋燒麵 - 線上點餐系統V1.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -72,7 +72,7 @@
           </div>
 
           <div id="menu-sections" class="space-y-8">
-            </div>
+          </div>
 
           <div class="mt-8 bg-rose-50 p-4 rounded-xl border border-rose-100">
             <h4 class="font-bold text-rose-800 mb-3 flex items-center gap-2">
@@ -91,10 +91,16 @@
             </div>
           </div>
 
-          <button id="submit-order-btn" class="w-full mt-6 bg-rose-700 hover:bg-rose-800 text-white font-bold text-lg py-3 rounded-lg shadow-lg flex justify-center items-center gap-2 transition-all">
-            <i data-lucide="send" class="w-5 h-5"></i>
-            <span id="submit-btn-text">確認送出訂單</span>
-          </button>
+          <div class="flex gap-3 mt-6">
+            <button id="cancel-edit-btn" class="hidden w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-base md:text-lg py-3 rounded-lg shadow transition-all">
+              取消編輯
+            </button>
+            <button id="submit-order-btn" class="flex-1 bg-rose-700 hover:bg-rose-800 text-white font-bold text-lg py-3 rounded-lg shadow-lg flex justify-center items-center gap-2 transition-all">
+              <i data-lucide="send" class="w-5 h-5" id="submit-btn-icon"></i>
+              <span id="submit-btn-text">確認送出訂單</span>
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -198,7 +204,8 @@
     const FIREBASE_APP_ID = "myorder-86db9";
 
     const DISCOUNT_RATE = 0.8;
-    const state = { user: null, orders: [], cart: [], isPastCutoff: false, currentSelectingItem: null };
+    // 新增 editingOrderId 狀態
+    const state = { user: null, orders: [], cart: [], isPastCutoff: false, currentSelectingItem: null, editingOrderId: null };
 
     const MENU_DATA = [
       { category: '柴魚系列', type: 'main', items: [
@@ -415,11 +422,15 @@
         return;
       }
 
+      // 新增：加入編輯按鈕
       container.innerHTML = state.orders.map(order => `
         <div class="border border-rose-100 rounded-lg p-3 bg-white relative">
           <div class="flex justify-between items-center mb-1">
             <span class="font-bold text-rose-800">👤 ${order.userName}</span>
-            <button onclick="deleteOrder('${order.id}')" class="text-red-400 p-1 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            <div class="flex gap-1">
+              <button onclick="editOrder('${order.id}')" class="text-blue-500 p-1 hover:bg-blue-50 rounded" title="修改訂單"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+              <button onclick="deleteOrder('${order.id}')" class="text-red-400 p-1 hover:bg-red-50 rounded" title="刪除訂單"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
           </div>
           <div class="text-xs space-y-1">
             ${order.items.map(i => `
@@ -444,6 +455,65 @@
       }
     };
 
+    // 新增：清除全部訂單功能
+    document.getElementById('clear-all-btn').addEventListener('click', () => {
+      if (state.orders.length === 0) {
+        return alert('目前沒有訂單可清除');
+      }
+      if (confirm('⚠️ 確定要清除今日「所有」訂單嗎？此動作無法復原。')) {
+        const todayStr = getTodayStr();
+        state.orders.forEach(order => {
+          deleteDoc(doc(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', `orders_${todayStr}`, order.id));
+        });
+        showStatus('成功', '今日訂單已全部清除！');
+      }
+    });
+
+    // 新增：編輯訂單模式
+    window.editOrder = (id) => {
+      const order = state.orders.find(o => o.id === id);
+      if (!order) return;
+
+      // 1. 設定狀態並複製資料，避免連動到原本的物件
+      state.editingOrderId = id;
+      state.cart = JSON.parse(JSON.stringify(order.items));
+      
+      // 2. 將資料帶回 UI
+      document.getElementById('user-name-input').value = order.userName;
+      renderCart();
+      
+      // 3. 變更送出按鈕的樣式與文字 (變藍色)
+      const submitBtn = document.getElementById('submit-order-btn');
+      submitBtn.classList.remove('bg-rose-700', 'hover:bg-rose-800');
+      submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+      document.getElementById('submit-btn-text').textContent = '儲存修改的訂單';
+      
+      // 4. 顯示取消編輯按鈕
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      
+      // 5. 畫面滾動到最上方方便修改
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // 新增：退出編輯模式重置表單
+    const resetForm = () => {
+      state.editingOrderId = null;
+      state.cart = [];
+      document.getElementById('user-name-input').value = '';
+      renderCart();
+      
+      const submitBtn = document.getElementById('submit-order-btn');
+      submitBtn.classList.add('bg-rose-700', 'hover:bg-rose-800');
+      submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+      document.getElementById('submit-btn-text').textContent = '確認送出訂單';
+      
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+    };
+
+    // 新增：取消編輯按鈕事件
+    document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
+
+    // 修改：送出訂單，支援「新增」與「更新」
     document.getElementById('submit-order-btn').addEventListener('click', async () => {
       const userName = document.getElementById('user-name-input').value.trim();
       if (!userName) return showStatus('提醒', '請輸入您的姓名', true);
@@ -451,24 +521,37 @@
 
       try {
         const todayStr = getTodayStr();
-        const ordersRef = collection(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', `orders_${todayStr}`);
         const originalTotal = state.cart.reduce((sum, i) => sum + i.finalPrice, 0);
+        const discountTotal = Math.round(originalTotal * DISCOUNT_RATE);
         
-        await addDoc(ordersRef, {
-          userName,
-          items: state.cart,
-          originalTotal,
-          discountTotal: Math.round(originalTotal * DISCOUNT_RATE),
-          createdAt: serverTimestamp(),
-          userId: state.user.uid
-        });
-
-        document.getElementById('user-name-input').value = '';
-        state.cart = [];
-        renderCart();
-        showStatus('成功', '訂單已成功送出！');
+        if (state.editingOrderId) {
+          // 修改模式：使用 updateDoc
+          const orderRef = doc(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', `orders_${todayStr}`, state.editingOrderId);
+          await updateDoc(orderRef, {
+            userName,
+            items: state.cart,
+            originalTotal,
+            discountTotal
+          });
+          showStatus('成功', '訂單已成功修改！');
+        } else {
+          // 新增模式：使用 addDoc
+          const ordersRef = collection(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', `orders_${todayStr}`);
+          await addDoc(ordersRef, {
+            userName,
+            items: state.cart,
+            originalTotal,
+            discountTotal,
+            createdAt: serverTimestamp(),
+            userId: state.user.uid
+          });
+          showStatus('成功', '訂單已成功送出！');
+        }
+        
+        resetForm();
       } catch (e) {
-        showStatus('錯誤', '送出失敗，請重試', true);
+        showStatus('錯誤', '操作失敗，請重試', true);
+        console.error(e);
       }
     });
 
