@@ -3,19 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>教師資格與甄試雲端題庫系統V2.7</title>
+  <title>教師資格與甄試雲端題庫系統V3.0</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js"></script>
 </head>
 <body class="bg-slate-50">
   <div id="root"></div>
 
   <script type="text/babel">
-  /** @jsx React.createElement */
-  /** @jsxFrag React.Fragment */
     const { useState, useEffect } = React;
 
     // --- 共用邏輯：多選與送分解析器 ---
@@ -308,13 +306,11 @@
         }
       };
 
-      // ✨ 計分邏輯更新：支援多選題與送分機制
       const calculateScore = () => {
         let currentScore = 0;
         currentQuestions.forEach((q, index) => {
           const correctAnsArr = parseCorrectAnswers(q.answer);
           const userAnswer = userAnswers[index];
-          // 只要有選中其中一個正確答案，或是該題送分，即獲得滿分
           if (correctAnsArr.includes('送分') || correctAnsArr.includes(userAnswer)) {
             currentScore += 100 / currentQuestions.length; 
           }
@@ -328,8 +324,6 @@
         setDatabase([]);
         setAppState('select_subject');
       };
-
-      // --- 畫面渲染組件 ---
 
       const renderSelectSubject = () => {
         const filteredSubjects = SUBJECTS.filter(s => s.category === activeTab);
@@ -747,7 +741,6 @@
         );
       };
 
-      // ✨ 測驗回顧畫面更新：4種狀態與送分標示
       const renderResult = () => (
         <section className="max-w-4xl mx-auto w-full px-4 animate-fade-in pb-12">
           <div className="bg-white rounded-3xl shadow-sm p-8 text-center mb-8 border border-gray-100 relative overflow-hidden">
