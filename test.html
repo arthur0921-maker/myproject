@@ -13,7 +13,8 @@
 <body class="bg-slate-50">
   <div id="root"></div>
 
-  <script type="text/babel">
+  <script type="text/babel" data-type="module">
+    {% raw %}
     const { useState, useEffect } = React;
 
     // --- 共用邏輯：多選與送分解析器 ---
@@ -88,7 +89,7 @@
 
     function App() {
       const [activeTab, setActiveTab] = useState('cert');
-      const [appState, setAppState] = useState('select_subject'); 
+      const [appState, setAppState] = useState('select_subject');
       const [selectedSubject, setSelectedSubject] = useState(null);
       const [database, setDatabase] = useState([]);
       const [currentQuestions, setCurrentQuestions] = useState([]);
@@ -96,7 +97,7 @@
       const [userAnswers, setUserAnswers] = useState({});
       const [score, setScore] = useState(0);
       const [errorMsg, setErrorMsg] = useState('');
-      const [quizLength, setQuizLength] = useState(10); 
+      const [quizLength, setQuizLength] = useState(10);
       const [selectedYear, setSelectedYear] = useState('');
 
       useEffect(() => {
@@ -523,7 +524,6 @@
               {reviewQuestions.map((q, index) => {
                 const correctAnsArr = parseCorrectAnswers(q.answer);
                 const isQuestionFree = correctAnsArr.includes('送分');
-
                 return (
                   <div key={q.id} className={`bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100`}>
                     
@@ -563,10 +563,10 @@
                         <div className="flex justify-between items-start mb-6">
                           <span className={`text-sm font-extrabold text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-4 py-1.5 rounded-lg`}>
                             第 {index + 1} 題
-                          </span>
+                           </span>
                           {isQuestionFree && (
                             <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1.5 rounded-md font-bold border border-blue-200">
-                              🎁 送分題
+                               🎁 送分題
                             </span>
                           )}
                         </div>
@@ -586,7 +586,7 @@
                                    ? 'bg-green-50 border-green-400 text-green-900 shadow-sm' 
                                    : 'bg-white border-gray-100 text-gray-500'
                                }`}>
-                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                                    <div className="flex items-start">
                                      <span className={`font-bold mr-3 text-lg flex-shrink-0 ${isCorrectOption ? 'text-green-600' : 'text-gray-400'}`}>
                                        {opt}.
@@ -613,7 +613,7 @@
                           </div>
                           {q.explanation && (
                             <div className="mt-2 text-sm text-gray-800 bg-amber-50 p-5 rounded-xl border border-amber-200 leading-relaxed shadow-inner">
-                              <span className="font-bold text-amber-800 block mb-2 flex items-center text-base">
+                               <span className="font-bold text-amber-800 block mb-2 flex items-center text-base">
                                 <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 解析說明
                               </span>
@@ -648,7 +648,7 @@
                 首頁考科列表
               </button>
             </div>
-          </section>
+           </section>
         );
       };
 
@@ -656,7 +656,6 @@
         const question = currentQuestions[currentIndex];
         const isAnswered = !!userAnswers[currentIndex];
         const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
-        
         return (
           <article className="max-w-3xl mx-auto w-full px-4 animate-fade-in">
             <div className="mb-8">
@@ -669,13 +668,13 @@
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
-                <div className={`bg-${selectedSubject.color}-600 h-2.5 rounded-full transition-all duration-300`} style={{ width: `${progress}%` }}></div>
+                 <div className={`bg-${selectedSubject.color}-600 h-2.5 rounded-full transition-all duration-300`} style={{ width: `${progress}%` }}></div>
               </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm p-6 md:p-8 mb-6 border border-gray-100">
               <div className="flex justify-between items-center mb-6">
-                <div className="flex gap-2">
+                 <div className="flex gap-2">
                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-md font-medium">
                      考點：{question.concept}
                    </span>
@@ -684,7 +683,7 @@
                        {question.year}
                      </span>
                    )}
-                </div>
+                 </div>
               </div>
               <h2 className="text-xl md:text-2xl font-semibold text-gray-800 leading-relaxed mb-8 whitespace-pre-wrap">
                 {question.question}
@@ -717,7 +716,7 @@
                   )
                 })}
               </div>
-            </div>
+             </div>
 
             <div className="flex justify-between mt-8">
               <button
@@ -795,7 +794,6 @@
               const correctAnsArr = parseCorrectAnswers(q.answer);
               const isQuestionFree = correctAnsArr.includes('送分');
               const isQuestionCorrect = isQuestionFree || correctAnsArr.includes(userAnswer);
-              
               return (
                 <div key={index} className={`bg-white rounded-2xl p-6 shadow-sm border-l-[6px] ${isQuestionCorrect ? 'border-green-500' : 'border-red-500'}`}>
                   <div className="flex justify-between items-start mb-4">
@@ -828,7 +826,6 @@
                   <div className="grid grid-cols-1 gap-3 text-sm mb-6">
                     {['A', 'B', 'C', 'D'].map(opt => {
                       if (!q.options[opt]) return null;
-                      
                       const isSelected = userAnswer === opt;
                       const isCorrectOption = isQuestionFree || correctAnsArr.includes(opt);
                       
@@ -867,22 +864,22 @@
                         📍 考點：{q.concept}
                       </span>
                       {q.year && (
-                        <span className={`text-sm text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-3 py-1.5 rounded-md border border-${selectedSubject.color}-200 font-medium`}>
+                         <span className={`text-sm text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-3 py-1.5 rounded-md border border-${selectedSubject.color}-200 font-medium`}>
                           📅 來源：{q.year}
                         </span>
                       )}
-                    </div>
+                     </div>
                     
                     {q.explanation && (
                       <div className="mt-2 text-sm text-gray-800 bg-amber-50 p-4 rounded-xl border border-amber-200 leading-relaxed shadow-inner">
-                        <span className="font-bold text-amber-800 block mb-1 flex items-center text-base">
+                         <span className="font-bold text-amber-800 block mb-1 flex items-center text-base">
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                           解析說明
-                        </span>
+                         </span>
                         <span className="whitespace-pre-wrap">{q.explanation}</span>
                       </div>
                     )}
-                  </div>
+                   </div>
 
                 </div>
               );
@@ -941,6 +938,7 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
+  {% endraw %}
   </script>
 </body>
 </html>
