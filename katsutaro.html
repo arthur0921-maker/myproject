@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>勝太郎日式蛋包飯專賣 訂餐系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, 'LiHei Pro', '微軟正黑體', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #292524; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #57534e; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #78716c; }
+    
+    /* 彈出視窗動畫 */
+    .modal-overlay { animation: fadeIn 0.2s ease-out forwards; }
+    @media (min-width: 641px) { .modal-content { animation: scaleIn 0.2s ease-out forwards; } }
+    @media (max-width: 640px) {
+      .modal-content { margin-top: auto; border-radius: 1.5rem 1.5rem 0 0 !important; animation: slideUp 0.3s ease-out forwards; }
+    }
+    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    /* 隱藏捲軸但可滑動 (用於分類標籤) */
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-stone-900 text-stone-200 pb-24 lg:pb-10 min-h-screen relative selection:bg-red-900 selection:text-white">
+
+  <header class="bg-red-800 text-stone-50 p-4 shadow-lg sticky top-0 z-30 border-b-4 border-red-950">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-stone-900 rounded-full flex items-center justify-center text-red-500 font-bold text-xl border-2 border-red-400 shadow-sm">勝</div>
+        <h1 class="text-2xl font-bold tracking-wider text-white">勝太郎 <span class="text-sm font-normal text-red-200">日式蛋包飯專賣 (三重五華店)</span></h1>
+      </div>
+      
+      <div id="clock-container" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/40 text-red-50 transition-all duration-300">
+        <i data-lucide="clock" class="w-5 h-5"></i>
+        <span id="current-time" class="tracking-widest font-mono text-lg">--:--:--</span>
+        <span id="time-warning" class="hidden text-xs ml-1 bg-amber-500 text-stone-900 px-2 py-0.5 rounded-full animate-pulse font-bold shadow-sm">已截止</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4 mt-2">
+    <div class="bg-stone-800 rounded-xl shadow-md p-4 mb-6 border-l-4 border-red-600 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+      <div>
+        <h2 id="today-date" class="text-lg font-bold text-stone-100 mb-2">📅 載入中...</h2>
+        <div class="flex flex-col gap-1.5 text-sm text-stone-400">
+          <a href="tel:0228575365" class="flex items-center gap-2 hover:text-red-400 w-fit font-medium transition-colors">
+            <i data-lucide="phone" class="w-4 h-4 text-red-500"></i> 02-2857-5365
+          </a>
+          <a href="https://maps.google.com/?q=新北市三重區碧華街317號" target="_blank" class="flex items-center gap-2 hover:text-red-400 w-fit font-medium transition-colors">
+            <i data-lucide="map-pin" class="w-4 h-4 text-red-500"></i> 三重區碧華街374號
+          </a>
+        </div>
+      </div>
+      <div class="text-sm bg-stone-900 text-stone-300 p-3 rounded-lg border border-stone-700 w-full md:w-auto">
+        <p class="mb-1">💡 點餐截止時間：每日 <strong class="text-amber-500 text-base">10:00</strong></p>
+        <p class="mb-1">🛵 外送門檻：滿 <strong class="text-red-400 font-bold text-base">700元</strong> 外送</p>
+        <p class="text-xs text-stone-500 mt-2 font-medium">✨ 日式特製醬汁・黃金酥脆炸物</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+      
+      <div id="tab-order-section" class="lg:col-span-7 space-y-6 block">
+        <div class="bg-stone-800 rounded-2xl shadow-lg p-5 border border-stone-700">
+          <h3 id="form-title" class="text-xl font-bold text-white mb-4 flex items-center gap-2 border-b pb-3 border-stone-700">
+            <span class="bg-red-900/50 text-red-400 p-1.5 rounded-lg"><i data-lucide="utensils" class="w-5 h-5"></i></span> 
+            我要點餐
+          </h3>
+          
+          <div class="mb-6">
+            <label class="block text-sm font-bold text-stone-400 mb-2">點餐者姓名 <span class="text-red-500">*</span></label>
+            <input type="text" id="user-name-input" placeholder="請輸入您的姓名..." class="w-full p-3.5 border-2 border-stone-600 rounded-xl focus:ring-0 focus:border-red-500 bg-stone-900 focus:bg-stone-950 text-white text-base outline-none transition-colors placeholder-stone-600">
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-bold text-stone-400 mb-3">選擇分類</label>
+            <div id="category-filters" class="flex gap-2 overflow-x-auto hide-scroll pb-2">
+              </div>
+          </div>
+
+          <div class="mb-6">
+            <div id="menu-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              </div>
+          </div>
+
+          <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 shadow-inner">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-white flex items-center gap-2">
+                 <i data-lucide="shopping-bag" class="w-5 h-5 text-amber-500"></i> 我的餐點清單
+              </h4>
+            </div>
+            
+            <div id="cart-items-container" class="space-y-3">
+              <p class="text-stone-500 text-sm text-center py-6">尚未選擇任何餐點</p>
+            </div>
+            
+            <div class="pt-4 border-t border-stone-700 mt-4">
+              <div class="flex justify-between items-center mb-2">
+                <span class="font-bold text-stone-400">當前小計</span>
+                <span class="text-3xl font-bold text-amber-500">$<span id="cart-total">0</span></span>
+              </div>
+              <div id="cart-delivery-status" class="text-right text-xs font-bold text-red-400">距離外送門檻 700 元，還差 $700</div>
+            </div>
+          </div>
+
+          <button id="submit-order-btn" class="w-full mt-6 bg-red-700 hover:bg-red-600 active:scale-[0.98] text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-transform flex justify-center items-center gap-2">
+            <i id="submit-btn-icon" data-lucide="check-circle" class="w-6 h-6"></i>
+            <span id="submit-btn-text">確認送出訂單</span>
+          </button>
+          
+          <button id="cancel-edit-btn" class="hidden w-full mt-3 text-stone-400 text-sm hover:text-red-400 hover:underline py-2 font-medium">
+            取消修改，回到新增模式
+          </button>
+        </div>
+      </div>
+
+      <div id="tab-list-section" class="lg:col-span-5 hidden lg:block">
+        <div class="bg-stone-800 rounded-2xl shadow-lg p-5 lg:sticky lg:top-24 border border-stone-700">
+          <div class="flex justify-between items-center mb-4 border-b pb-3 border-stone-700">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+              <span class="bg-stone-700 text-stone-300 p-1.5 rounded-lg"><i data-lucide="users" class="w-5 h-5"></i></span>
+              訂購總表 (<span id="orders-count" class="text-amber-500">0</span>)
+            </h3>
+            <button id="clear-all-btn" class="text-xs bg-stone-900 text-stone-400 hover:bg-red-900/30 hover:text-red-400 border border-stone-700 hover:border-red-800 px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-colors">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> 手動清除
+            </button>
+          </div>
+
+          <div id="orders-container" class="max-h-[500px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+            <p class="text-stone-500 text-center py-12">資料載入中...</p>
+          </div>
+
+          <div class="mt-5 pt-5 border-t-2 border-stone-700">
+             <div class="flex justify-between items-end mb-2">
+                <span class="text-lg font-bold text-stone-300">累積總金額</span>
+                <span class="text-4xl font-bold text-amber-500 tracking-tight">$<span id="orders-grand-total">0</span></span>
+             </div>
+             <div id="global-delivery-status" class="bg-red-900/30 border border-red-800 text-red-300 text-sm p-2 rounded-lg text-center font-bold">
+               計算中...
+             </div>
+          </div>
+
+          <button id="copy-orders-btn" class="w-full mt-5 bg-stone-700 hover:bg-stone-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-xl shadow-md transition-transform flex justify-center items-center gap-2 border border-stone-600">
+            <i data-lucide="copy" class="w-5 h-5"></i> 一鍵複製明細 (LINE專用)
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="fixed bottom-0 left-0 right-0 bg-stone-800 border-t border-stone-700 flex lg:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.3)] z-40 pb-safe">
+    <button id="nav-order-btn" class="flex-1 py-3 flex flex-col items-center justify-center gap-1 text-red-500 bg-stone-900 transition-colors border-t-2 border-red-600">
+      <i data-lucide="utensils" class="w-6 h-6"></i>
+      <span class="text-xs font-bold">我要點餐</span>
+    </button>
+    <button id="nav-list-btn" class="flex-1 py-3 flex flex-col items-center justify-center gap-1 text-stone-500 hover:text-stone-300 transition-colors border-t-2 border-transparent">
+      <div class="relative">
+        <i data-lucide="file-text" class="w-6 h-6"></i>
+        <span id="mobile-badge" class="absolute -top-1 -right-2 bg-amber-500 text-stone-900 text-[10px] font-black px-1.5 py-0.5 rounded-full hidden">0</span>
+      </div>
+      <span class="text-xs font-bold">訂單總表</span>
+    </button>
+  </div>
+
+  <div id="custom-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 lg:p-4 modal-overlay backdrop-blur-sm">
+    <div class="bg-stone-800 shadow-2xl w-full max-w-md overflow-hidden modal-content rounded-xl border border-stone-700">
+      <div id="modal-header" class="p-5 flex items-center gap-3 text-white bg-red-800">
+        <i id="modal-icon" data-lucide="info" class="w-6 h-6"></i>
+        <h3 id="modal-title" class="font-bold text-lg tracking-wide">標題</h3>
+      </div>
+      <div id="modal-message" class="p-6 text-stone-200 text-center font-medium leading-relaxed text-lg">
+        訊息內容
+      </div>
+      <div class="p-4 bg-stone-900 flex justify-end gap-3 border-t border-stone-700 rounded-b-xl lg:rounded-b-none">
+        <button id="modal-cancel-btn" class="hidden px-5 py-2.5 text-stone-400 hover:bg-stone-700 rounded-lg font-bold transition-colors">取消</button>
+        <button id="modal-confirm-btn" class="px-6 py-2.5 rounded-lg font-bold text-white shadow-md transition-colors bg-red-700 hover:bg-red-600">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Firebase 原始設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyBnWJzwGs7v0y-4TZBak1gNbDSzZp601_k",
+      authDomain: "myorder-86db9.firebaseapp.com",
+      projectId: "myorder-86db9",
+      storageBucket: "myorder-86db9.firebasestorage.app",
+      messagingSenderId: "472751421979",
+      appId: "1:472751421979:web:a286c3bc4ad419ed1f16be",
+      measurementId: "G-ZNRJJ4JQPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const FIREBASE_APP_ID = "myorder-86db9";
+
+    const state = {
+      user: null,
+      orders: [],
+      cart: [],
+      editingOrderId: null,
+      isPastCutoff: false,
+      activeCategory: '全部'
+    };
+
+    // 勝太郎 菜單資料
+    const MENU_DATA = [
+      // 人氣揚物
+      { id: 'a1', category: '揚物與小物', name: '南蠻炸雞', price: 140 },
+      { id: 'a2', category: '揚物與小物', name: '炸豬排沙拉', price: 120 },
+      { id: 'a3', category: '揚物與小物', name: '炸豬排咖哩', price: 120 },
+      { id: 'a4', category: '揚物與小物', name: '炸豬排和風', price: 120 },
+      { id: 'a5', category: '揚物與小物', name: '單片豬排', price: 70 },
+      // 單品小物
+      { id: 'm1', category: '揚物與小物', name: '薯條', price: 35 },
+      { id: 'm2', category: '揚物與小物', name: '可樂餅', price: 35 },
+      { id: 'm3', category: '揚物與小物', name: '咖哩醬(杯)', price: 15 },
+      { id: 'm4', category: '揚物與小物', name: '麻婆醬(杯)', price: 30 },
+      { id: 'm5', category: '揚物與小物', name: '味噌湯', price: 10 },
+      { id: 'm6', category: '揚物與小物', name: '白飯', price: 15 },
+      { id: 'm7', category: '揚物與小物', name: '可樂', price: 25 },
+      { id: 'm8', category: '揚物與小物', name: '雪碧', price: 25 },
+      // 清爽蔬食
+      { id: 'v1', category: '清爽蔬食', name: '鮮蝦蘆筍蜂蜜芥末沙拉', price: 90 },
+      { id: 'v2', category: '清爽蔬食', name: '洋芋沙拉', price: 40 },
+      { id: 'v3', category: '清爽蔬食', name: '洋芋(單)球', price: 15 },
+      { id: 'v4', category: '清爽蔬食', name: '蘆筍手卷', price: 50 },
+      { id: 'v5', category: '清爽蔬食', name: '鮮蝦手卷', price: 55 },
+      { id: 'v6', category: '清爽蔬食', name: '鮮蝦蘆筍手卷', price: 60 },
+      // 蛋包飯
+      { id: 'o1', category: '日式蛋包飯', name: '咖哩蛋包飯', price: 80 },
+      { id: 'o2', category: '日式蛋包飯', name: '辛辣麻婆蛋包飯', price: 85 },
+      { id: 'o3', category: '日式蛋包飯', name: '特製蛋包飯', price: 80 },
+      { id: 'o4', category: '日式蛋包飯', name: '炸豬排蛋包飯', price: 140 },
+      { id: 'o5', category: '日式蛋包飯', name: '炸豬排沙拉飯', price: 130 },
+      { id: 'o6', category: '日式蛋包飯', name: '南蠻炸雞飯', price: 150 },
+      { id: 'o7', category: '日式蛋包飯', name: '炸豬排咖哩飯', price: 130 },
+      // 勝膳 (丼飯)
+      { id: 'd1', category: '勝膳丼飯', name: '炸豬排丼', price: 120 },
+      { id: 'd2', category: '勝膳丼飯', name: '壽喜牛丼', price: 120 },
+      { id: 'd3', category: '勝膳丼飯', name: '滑嫩親子丼', price: 120 },
+      { id: 'd4', category: '勝膳丼飯', name: '唐揚炸雞丼', price: 135 },
+      { id: 'd5', category: '勝膳丼飯', name: '炸雞咖哩丼', price: 135 },
+      { id: 'd6', category: '勝膳丼飯', name: '鮮魚鮭魚丼', price: 155 },
+      { id: 'd7', category: '勝膳丼飯', name: '炸豬排和風飯', price: 130 },
+      // 鍋物與麵食
+      { id: 'n1', category: '鍋物與麵食', name: '鍋燒烏龍麵', price: 100 },
+      { id: 'n2', category: '鍋物與麵食', name: '麻辣肉片烏龍麵', price: 120 },
+      { id: 'n3', category: '鍋物與麵食', name: '麻辣鍋燒烏龍麵', price: 120 },
+      { id: 'n4', category: '鍋物與麵食', name: '咖哩海鮮烏龍麵', price: 120 },
+      { id: 'n5', category: '鍋物與麵食', name: '炸豬排咖哩烏龍麵', price: 130 },
+      { id: 'n6', category: '鍋物與麵食', name: '鍋燒風味拉麵', price: 110 },
+      { id: 'n7', category: '鍋物與麵食', name: '麻辣肉片拉麵', price: 130 },
+      { id: 'n8', category: '鍋物與麵食', name: '麻辣鍋燒拉麵', price: 130 },
+      { id: 'n9', category: '鍋物與麵食', name: '麻辣鍋燒意麵', price: 110 },
+      { id: 'n10', category: '鍋物與麵食', name: '鍋燒意麵', price: 90 },
+      { id: 'n11', category: '鍋物與麵食', name: '爆香雞絲麵', price: 50 },
+      // 組合餐
+      { id: 'c1', category: '組合餐', name: '和風洋食', price: 129 },
+      { id: 'c2', category: '組合餐', name: '輕食熱點', price: 159 },
+      { id: 'c3', category: '組合餐', name: '日系享食', price: 149 },
+      { id: 'c4', category: '組合餐', name: '組合餐', price: 179 }
+    ];
+
+    lucide.createIcons();
+
+    // 獨立集合名稱
+    const getCollectionName = () => `katsutaro_orders_live`;
+
+    // 產生分類按鈕
+    const categories = ['全部', ...new Set(MENU_DATA.map(i => i.category))];
+    const categoryFilters = document.getElementById('category-filters');
+    
+    const renderCategories = () => {
+      categoryFilters.innerHTML = categories.map(cat => {
+        const isActive = state.activeCategory === cat;
+        const baseClass = "whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold transition-colors cursor-pointer border";
+        const activeClass = isActive ? "bg-red-700 text-white border-red-600 shadow-md" : "bg-stone-800 text-stone-400 border-stone-600 hover:border-stone-400";
+        return `<button onclick="setCategory('${cat}')" class="${baseClass} ${activeClass}">${cat}</button>`;
+      }).join('');
+    };
+
+    window.setCategory = (cat) => {
+      state.activeCategory = cat;
+      renderCategories();
+      renderMenu();
+    };
+
+    // 渲染菜單
+    const renderMenu = () => {
+      const container = document.getElementById('menu-container');
+      const filteredMenu = state.activeCategory === '全部' ? MENU_DATA : MENU_DATA.filter(m => m.category === state.activeCategory);
+      
+      container.innerHTML = filteredMenu.map(item => {
+        return `
+        <button onclick="addToCart('${item.id}')" class="flex flex-col items-center justify-center p-4 border border-stone-700 rounded-xl hover:border-red-500 hover:shadow-lg hover:bg-stone-700 active:scale-95 transition-all text-sm text-left relative overflow-hidden group bg-stone-800 shadow-sm">
+          <span class="text-xs font-bold mb-1.5 text-stone-500">${item.category}</span>
+          <span class="font-bold text-stone-100 text-[15px] text-center leading-tight">${item.name}</span>
+          <span class="text-amber-500 font-bold mt-2 text-base">$${item.price}</span>
+          <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <i data-lucide="plus-circle" class="w-5 h-5 text-red-500"></i>
+          </div>
+        </button>
+      `}).join('');
+      lucide.createIcons();
+    };
+
+    // 購物車邏輯
+    window.addToCart = (menuId) => {
+      const menuItem = MENU_DATA.find(m => m.id === menuId);
+      const existingItem = state.cart.find(item => item.id === menuId && item.remark === '');
+      if (existingItem) existingItem.qty += 1;
+      else state.cart.push({ ...menuItem, cartId: Date.now().toString(), qty: 1, remark: '' });
+      renderCart();
+    };
+
+    window.updateCartQty = (cartId, delta) => {
+      const item = state.cart.find(i => i.cartId === cartId);
+      if (item) {
+        item.qty += delta;
+        if (item.qty < 1) item.qty = 1;
+        renderCart();
+      }
+    };
+
+    window.removeFromCart = (cartId) => {
+      state.cart = state.cart.filter(i => i.cartId !== cartId);
+      renderCart();
+    };
+
+    window.updateRemark = (cartId, value) => {
+      const item = state.cart.find(i => i.cartId === cartId);
+      if (item) item.remark = value;
+    };
+
+    const checkDeliveryThreshold = (total, elementId, isGlobal = false) => {
+      const el = document.getElementById(elementId);
+      const diff = 700 - total;
+      if (diff > 0) {
+        el.className = isGlobal ? "bg-red-900/30 border border-red-800 text-red-300 text-sm p-2 rounded-lg text-center font-bold" : "text-right text-xs font-bold text-red-400";
+        el.innerHTML = isGlobal ? `⚠️ 目前全團總額 $${total}，距離外送門檻 <strong class="text-white">還差 $${diff}</strong>` : `距離外送門檻 700 元，還差 $${diff}`;
+      } else {
+        el.className = isGlobal ? "bg-emerald-900/30 border border-emerald-800 text-emerald-300 text-sm p-2 rounded-lg text-center font-bold" : "text-right text-xs font-bold text-emerald-400";
+        el.innerHTML = isGlobal ? `✅ 全團已達外送門檻！` : `✅ 已達 $700 外送門檻！`;
+      }
+    };
+
+    const renderCart = () => {
+      const container = document.getElementById('cart-items-container');
+      const totalSpan = document.getElementById('cart-total');
+      
+      if (state.cart.length === 0) {
+        container.innerHTML = '<p class="text-stone-500 text-sm text-center py-6">尚未選擇任何餐點</p>';
+        totalSpan.textContent = '0';
+        document.getElementById('cart-delivery-status').innerHTML = '';
+        return;
+      }
+
+      let total = 0;
+      container.innerHTML = state.cart.map(item => {
+        total += item.price * item.qty;
+        return `
+          <div class="bg-stone-800 p-3.5 rounded-xl shadow-sm border border-stone-700 flex flex-col sm:flex-row gap-3 items-start sm:items-center relative">
+            <div class="flex-1 w-full">
+              <div class="font-bold text-stone-100 text-base">${item.name} <span class="text-amber-500 ml-1 text-sm">$${item.price}</span></div>
+              <input type="text" placeholder="備註 (例: 飯少)" value="${item.remark}" onchange="updateRemark('${item.cartId}', this.value)"
+                class="mt-2 w-full text-sm p-2 border border-stone-600 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-red-600 outline-none bg-stone-900 text-white placeholder-stone-500" />
+            </div>
+            <div class="flex items-center gap-3 self-end sm:self-auto bg-stone-900 p-1.5 rounded-lg border border-stone-700">
+              <button onclick="updateCartQty('${item.cartId}', -1)" class="p-1.5 bg-stone-800 shadow-sm rounded-md hover:bg-stone-700 text-stone-300 active:scale-90 transition-transform"><i data-lucide="minus" class="w-4 h-4"></i></button>
+              <span class="w-6 text-center font-bold text-white text-lg">${item.qty}</span>
+              <button onclick="updateCartQty('${item.cartId}', 1)" class="p-1.5 bg-stone-800 shadow-sm rounded-md hover:bg-stone-700 text-stone-300 active:scale-90 transition-transform"><i data-lucide="plus" class="w-4 h-4"></i></button>
+            </div>
+            <button onclick="removeFromCart('${item.cartId}')" class="absolute top-2 right-2 sm:static p-2 text-stone-500 hover:text-red-400 hover:bg-red-900/30 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+        `;
+      }).join('');
+      totalSpan.textContent = total;
+      checkDeliveryThreshold(total, 'cart-delivery-status', false);
+      lucide.createIcons();
+    };
+
+    // Firebase 連線與監聽
+    signInAnonymously(auth).catch(err => console.error("登入失敗:", err));
+    onAuthStateChanged(auth, (user) => {
+      state.user = user;
+      if (user) {
+        const ordersRef = collection(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', getCollectionName());
+        onSnapshot(ordersRef, (snapshot) => {
+          const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          ordersData.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+          state.orders = ordersData;
+          renderOrdersList();
+        });
+      }
+    });
+
+    const renderOrdersList = () => {
+      const container = document.getElementById('orders-container');
+      const count = state.orders.length;
+      document.getElementById('orders-count').textContent = count;
+      
+      const badge = document.getElementById('mobile-badge');
+      if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); } 
+      else { badge.classList.add('hidden'); }
+      
+      const grandTotal = state.orders.reduce((sum, order) => sum + order.total, 0);
+      document.getElementById('orders-grand-total').textContent = grandTotal;
+      checkDeliveryThreshold(grandTotal, 'global-delivery-status', true);
+      
+      if (count === 0) {
+        container.innerHTML = '<div class="text-center py-12"><i data-lucide="clipboard-list" class="w-12 h-12 mx-auto text-stone-600 mb-3"></i><p class="text-stone-500 font-medium">清單空空如也，趕快來點餐吧！</p></div>';
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = state.orders.map(order => `
+        <div class="border border-stone-700 rounded-xl p-4 hover:shadow-md transition-shadow bg-stone-800 relative overflow-hidden group">
+          <div class="flex justify-between items-center mb-3 border-b border-stone-700 pb-2">
+            <span class="font-bold text-stone-100 text-lg flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-red-400"></i> ${order.userName}</span>
+            <div class="flex gap-2 relative z-10">
+              <button onclick="editOrder('${order.id}')" class="p-2 text-stone-400 hover:text-amber-400 hover:bg-stone-700 rounded-lg transition-colors bg-stone-900" title="修改"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+              <button onclick="deleteOrder('${order.id}')" class="p-2 text-stone-400 hover:text-red-400 hover:bg-stone-700 rounded-lg transition-colors bg-stone-900" title="刪除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <ul class="text-[15px] space-y-2 mb-3">
+            ${order.items.map(item => `
+              <li class="flex justify-between items-start text-stone-300">
+                <span class="flex-1 pr-2">
+                  <span class="font-bold text-stone-100">${item.name}</span> 
+                  <span class="text-red-400 font-bold ml-1">x${item.qty}</span> 
+                  ${item.remark ? `<span class="block text-amber-500 bg-stone-900 px-2 py-0.5 rounded text-xs mt-1 w-fit border border-stone-700">備註: ${item.remark}</span>` : ''}
+                </span>
+                <span class="text-stone-400 font-medium whitespace-nowrap">$${item.price * item.qty}</span>
+              </li>
+            `).join('')}
+          </ul>
+          <div class="text-right font-black text-stone-200 border-t border-stone-700 pt-3 mt-1 bg-stone-900/50 -mx-4 -mb-4 px-4 pb-4">
+            小計: <span class="text-amber-500 text-xl ml-1">$${order.total}</span>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    };
+
+    // 安全的送出按鈕操作 (解決先前 Bug)
+    document.getElementById('submit-order-btn').addEventListener('click', () => {
+      const userNameInput = document.getElementById('user-name-input');
+      const userName = userNameInput.value.trim();
+      
+      if (!userName) return showModal('哎呀！忘了填名字', '請輸入點餐者姓名，這樣才知道餐點是誰的喔！', 'warning');
+      if (state.cart.length === 0) return showModal('購物車是空的', '請至少從菜單中選擇一項餐點！', 'warning');
+
+      const executeSubmit = async () => {
+        try {
+          // 精準定位節點，不破壞結構
+          const btnText = document.getElementById('submit-btn-text');
+          const btnIcon = document.getElementById('submit-btn-icon');
+          const originalText = btnText.textContent;
+          
+          btnText.textContent = '處理中...';
+          btnIcon.setAttribute('data-lucide', 'loader-2');
+          btnIcon.classList.add('animate-spin');
+          lucide.createIcons();
+          
+          const ordersRef = collection(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', getCollectionName());
+          const cartTotal = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+          
+          const orderData = { userName: userName, items: state.cart, total: cartTotal, createdAt: serverTimestamp(), userId: state.user.uid };
+
+          if (state.editingOrderId) {
+            await updateDoc(doc(ordersRef, state.editingOrderId), orderData);
+            showModal('修改成功', '您的訂單已經更新完畢！', 'success');
+          } else {
+            await addDoc(ordersRef, orderData);
+            showModal('訂餐成功', '太棒了！您的訂單已經成功送出。', 'success');
+          }
+
+          userNameInput.value = '';
+          state.cart = [];
+          cancelEditMode();
+          renderCart();
+          
+          // 復原按鈕狀態
+          btnText.textContent = originalText;
+          btnIcon.setAttribute('data-lucide', 'check-circle');
+          btnIcon.classList.remove('animate-spin');
+          lucide.createIcons();
+          
+          if (window.innerWidth < 1024) switchTab('list');
+        } catch (error) {
+          console.error("寫入失敗:", error);
+          showModal('連線異常', '訂單送出失敗，請檢查網路狀態後重試。', 'error');
+        }
+      };
+      
+      if (state.isPastCutoff) showModal('超過截單時間提醒', '目前已經超過 10:00 的訂購時間，強烈建議您送出後，親自與訂餐發起人確認，以免漏單喔！', 'confirm', executeSubmit);
+      else executeSubmit();
+    });
+
+    window.editOrder = (orderId) => {
+      const order = state.orders.find(o => o.id === orderId);
+      if (!order) return;
+      
+      document.getElementById('user-name-input').value = order.userName;
+      state.cart = JSON.parse(JSON.stringify(order.items)); 
+      state.editingOrderId = order.id;
+      
+      document.getElementById('form-title').innerHTML = '<span class="bg-amber-900/50 text-amber-500 p-1.5 rounded-lg"><i data-lucide="edit-3" class="w-5 h-5"></i></span> 正在修改訂單';
+      const btn = document.getElementById('submit-order-btn');
+      btn.classList.replace('bg-red-700', 'bg-amber-600');
+      btn.classList.replace('hover:bg-red-600', 'hover:bg-amber-500');
+      
+      document.getElementById('submit-btn-text').textContent = '確認更新這筆訂單';
+      document.getElementById('submit-btn-icon').setAttribute('data-lucide', 'refresh-cw');
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      
+      renderCart();
+      lucide.createIcons();
+      if (window.innerWidth < 1024) switchTab('order');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const cancelEditMode = () => {
+      state.editingOrderId = null;
+      document.getElementById('form-title').innerHTML = '<span class="bg-red-900/50 text-red-400 p-1.5 rounded-lg"><i data-lucide="utensils" class="w-5 h-5"></i></span> 我要點餐';
+      const btn = document.getElementById('submit-order-btn');
+      btn.classList.replace('bg-amber-600', 'bg-red-700');
+      btn.classList.replace('hover:bg-amber-500', 'hover:bg-red-600');
+      
+      document.getElementById('submit-btn-text').textContent = '確認送出訂單';
+      document.getElementById('submit-btn-icon').setAttribute('data-lucide', 'check-circle');
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+      lucide.createIcons();
+    };
+
+    document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+      document.getElementById('user-name-input').value = '';
+      state.cart = [];
+      cancelEditMode();
+      renderCart();
+    });
+
+    window.deleteOrder = (orderId) => {
+      showModal('確認刪除', '您確定要取消並刪除這筆訂單嗎？', 'confirm', async () => {
+        await deleteDoc(doc(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', getCollectionName(), orderId));
+      });
+    };
+
+    document.getElementById('clear-all-btn').addEventListener('click', () => {
+      if (state.orders.length === 0) return showModal('提示', '目前沒有任何訂購資料可以清除喔。', 'info');
+      showModal('危險操作警告！', '確定要徹底清除「所有」的訂購資料嗎？此動作將完全清空資料庫，並且無法復原！建議清除前先複製明細。', 'confirm', () => {
+        const ordersRef = collection(db, 'artifacts', FIREBASE_APP_ID, 'public', 'data', getCollectionName());
+        state.orders.forEach(async (order) => { await deleteDoc(doc(ordersRef, order.id)); });
+        showModal('清除完畢', '所有資料已成功歸零，準備迎接新的一輪訂餐！', 'success');
+      });
+    });
+
+    document.getElementById('copy-orders-btn').addEventListener('click', () => {
+      if (state.orders.length === 0) return showModal('無法複製', '目前還沒有任何訂單可以複製喔！', 'warning');
+
+      const dateStr = new Date().toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' });
+      let textToCopy = `🍱 【勝太郎日式蛋包飯】訂餐明細 (${dateStr})\n`;
+      textToCopy += `========================\n`;
+      
+      let grandTotal = 0;
+      let itemCounts = {};
+
+      state.orders.forEach(order => {
+        const itemsText = order.items.map(i => {
+          const remarkText = i.remark ? `(${i.remark})` : '';
+          const key = `${i.name}${remarkText}`;
+          itemCounts[key] = (itemCounts[key] || 0) + i.qty;
+          return `${i.name}x${i.qty}${remarkText}`;
+        }).join(', ');
+        textToCopy += `👤 ${order.userName}: ${itemsText} = $${order.total}\n`;
+        grandTotal += order.total;
+      });
+
+      textToCopy += `========================\n📝 品項總計：\n`;
+      Object.keys(itemCounts).sort().forEach(name => {
+        textToCopy += `▫️ ${name}: ${itemCounts[name]}份\n`;
+      });
+      textToCopy += `------------------------\n`;
+      textToCopy += `💰 總共收費金額: $${grandTotal}\n`;
+      if (grandTotal >= 700) textToCopy += `✅ (已達外送門檻)\n`;
+      else textToCopy += `⚠️ (未達外送門檻，差 $${700 - grandTotal})\n`;
+
+      const textArea = document.createElement("textarea");
+      textArea.value = textToCopy;
+      textArea.setAttribute('readonly', '');
+      textArea.style.position = 'absolute'; textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select(); textArea.setSelectionRange(0, 99999);
+      
+      try { document.execCommand('copy'); showModal('複製成功', '訂單明細已完美複製到剪貼簿！', 'success'); } 
+      catch (err) { showModal('複製失敗', '請手動選取文字複製。', 'error'); }
+      document.body.removeChild(textArea);
+    });
+
+    // 介面與時間輔助函數
+    const navOrderBtn = document.getElementById('nav-order-btn');
+    const navListBtn = document.getElementById('nav-list-btn');
+    const sectionOrder = document.getElementById('tab-order-section');
+    const sectionList = document.getElementById('tab-list-section');
+
+    const switchTab = (tab) => {
+      if (window.innerWidth >= 1024) return;
+      if (tab === 'order') {
+        sectionOrder.classList.remove('hidden'); sectionList.classList.add('hidden');
+        navOrderBtn.classList.replace('text-stone-500', 'text-red-500'); navOrderBtn.classList.replace('border-transparent', 'border-red-600'); navOrderBtn.classList.add('bg-stone-900');
+        navListBtn.classList.replace('text-red-500', 'text-stone-500'); navListBtn.classList.replace('border-red-600', 'border-transparent'); navListBtn.classList.remove('bg-stone-900');
+      } else {
+        sectionList.classList.remove('hidden'); sectionOrder.classList.add('hidden');
+        navListBtn.classList.replace('text-stone-500', 'text-red-500'); navListBtn.classList.replace('border-transparent', 'border-red-600'); navListBtn.classList.add('bg-stone-900');
+        navOrderBtn.classList.replace('text-red-500', 'text-stone-500'); navOrderBtn.classList.replace('border-red-600', 'border-transparent'); navOrderBtn.classList.remove('bg-stone-900');
+      }
+    };
+    navOrderBtn.addEventListener('click', () => switchTab('order'));
+    navListBtn.addEventListener('click', () => switchTab('list'));
+
+    const updateTime = () => {
+      const now = new Date();
+      document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-TW', { hour12: false });
+      state.isPastCutoff = now.getHours() >= 10;
+      const clockContainer = document.getElementById('clock-container');
+      const timeWarning = document.getElementById('time-warning');
+      if (state.isPastCutoff) { clockContainer.classList.add('scale-105', 'font-bold', 'bg-black/60'); timeWarning.classList.remove('hidden'); } 
+      else { clockContainer.classList.remove('scale-105', 'font-bold', 'bg-black/60'); timeWarning.classList.add('hidden'); }
+    };
+    document.getElementById('today-date').textContent = `📅 ${new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}`;
+    setInterval(updateTime, 1000); updateTime();
+
+    let modalConfirmCallback = null;
+    const modal = document.getElementById('custom-modal');
+    const showModal = (title, message, type = 'info', onConfirm = null) => {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-message').textContent = message;
+      const header = document.getElementById('modal-header');
+      const icon = document.getElementById('modal-icon');
+      const cancelBtn = document.getElementById('modal-cancel-btn');
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+      
+      header.className = 'p-5 flex items-center gap-3 text-white';
+      confirmBtn.className = 'px-6 py-2.5 rounded-lg font-bold text-white shadow-md transition-colors';
+      
+      if (type === 'error') { header.classList.add('bg-stone-950'); confirmBtn.classList.add('bg-stone-700', 'hover:bg-stone-600'); icon.setAttribute('data-lucide', 'alert-octagon'); } 
+      else if (type === 'warning') { header.classList.add('bg-amber-600'); confirmBtn.classList.add('bg-amber-700', 'hover:bg-amber-600'); icon.setAttribute('data-lucide', 'alert-triangle'); } 
+      else if (type === 'success') { header.classList.add('bg-emerald-700'); confirmBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500'); icon.setAttribute('data-lucide', 'check-circle'); } 
+      else if (type === 'confirm') { header.classList.add('bg-red-800'); confirmBtn.classList.add('bg-red-700', 'hover:bg-red-600'); icon.setAttribute('data-lucide', 'help-circle'); } 
+      else { header.classList.add('bg-stone-700'); confirmBtn.classList.add('bg-stone-600', 'hover:bg-stone-500'); icon.setAttribute('data-lucide', 'info'); }
+      
+      if (type === 'confirm') cancelBtn.classList.remove('hidden'); else cancelBtn.classList.add('hidden');
+      lucide.createIcons();
+      modalConfirmCallback = onConfirm; modal.classList.remove('hidden');
+    };
+    const closeModal = () => { modal.classList.add('hidden'); modalConfirmCallback = null; };
+    document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-confirm-btn').addEventListener('click', () => { if (modalConfirmCallback) modalConfirmCallback(); closeModal(); });
+
+    // 初始化執行
+    renderCategories();
+    renderMenu();
+  </script>
+</body>
+</html>
