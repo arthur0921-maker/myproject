@@ -496,10 +496,12 @@
           
           // 復原按鈕狀態
           btnText.textContent = originalText;
-          btnIcon.setAttribute('data-lucide', 'check-circle');
-          btnIcon.classList.remove('animate-spin');
+          const currentBtnIcon = document.getElementById('submit-btn-icon');
+          currentBtnIcon.setAttribute('data-lucide', 'check-circle');
+          currentBtnIcon.classList.remove('animate-spin');
           lucide.createIcons();
-          
+        
+          // 手機版自動切換到清單頁面看結果 
           if (window.innerWidth < 1024) switchTab('list');
         } catch (error) {
           console.error("寫入失敗:", error);
