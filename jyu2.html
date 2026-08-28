@@ -1,0 +1,4468 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>炬日式燒肉飯｜線上訂餐系統</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --ink: #231f1a;
+      --charcoal: #332c26;
+      --paper: #f7f1e8;
+      --paper-deep: #eee2d2;
+      --cream: #fffaf3;
+      --ember: #c94d2d;
+      --ember-dark: #9f351f;
+      --gold: #b9823d;
+      --gold-light: #e8c78d;
+      --line: #e3d5c2;
+      --green: #2f7d59;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family:
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        "PingFang TC",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(201, 77, 45, .08), transparent 28rem),
+        radial-gradient(circle at left bottom, rgba(185, 130, 61, .10), transparent 24rem),
+        var(--paper);
+      color: var(--ink);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1e7d9;
+      border-radius: 999px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c9b6a0;
+      border-radius: 999px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #a98d70;
+    }
+
+    .hide-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hide-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .paper-card {
+      background: rgba(255, 250, 243, .92);
+      border: 1px solid rgba(227, 213, 194, .95);
+      box-shadow:
+        0 12px 35px rgba(67, 44, 27, .08),
+        0 2px 8px rgba(67, 44, 27, .04);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-gradient {
+      background:
+        radial-gradient(circle at 80% 10%, rgba(255, 208, 133, .22), transparent 16rem),
+        linear-gradient(135deg, #241f1a 0%, #3b3027 48%, #7a3322 100%);
+    }
+
+    .ember-gradient {
+      background:
+        linear-gradient(135deg, #a63d26 0%, #c94d2d 45%, #d86d39 100%);
+    }
+
+    .gold-gradient {
+      background:
+        linear-gradient(135deg, #9c682e 0%, #c89a50 55%, #e0bd7b 100%);
+    }
+
+    .logo-seal {
+      position: relative;
+      background:
+        radial-gradient(circle, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: 5px 5px;
+      border: 2px solid rgba(232, 199, 141, .8);
+      box-shadow:
+        inset 0 0 0 5px rgba(201, 77, 45, .28),
+        0 8px 20px rgba(0,0,0,.22);
+    }
+
+    .menu-card {
+      position: relative;
+      overflow: hidden;
+      transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        border-color .2s ease;
+    }
+
+    .menu-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: linear-gradient(
+        180deg,
+        var(--ember),
+        var(--gold)
+      );
+      opacity: .9;
+    }
+
+    .menu-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(201, 77, 45, .55);
+      box-shadow:
+        0 18px 35px rgba(67, 44, 27, .13),
+        0 3px 8px rgba(67, 44, 27, .06);
+    }
+
+    .menu-card:active {
+      transform: scale(.98);
+    }
+
+    .category-btn {
+      transition: all .2s ease;
+    }
+
+    .category-btn.active {
+      color: white;
+      background:
+        linear-gradient(135deg, #9f351f, #c94d2d);
+      border-color: #9f351f;
+      box-shadow: 0 7px 18px rgba(201, 77, 45, .22);
+    }
+
+    .radio-option,
+    .check-option {
+      transition: all .18s ease;
+    }
+
+    .radio-option:hover,
+    .check-option:hover {
+      border-color: rgba(201, 77, 45, .6);
+      background: #fff7ef;
+    }
+
+    .radio-option.selected,
+    .check-option.selected {
+      border-color: var(--ember);
+      background: #fff1e8;
+      box-shadow: 0 0 0 3px rgba(201, 77, 45, .08);
+    }
+
+    .modal-overlay {
+      animation: fadeIn .2s ease-out forwards;
+    }
+
+    .modal-content {
+      animation: scaleIn .22s ease-out forwards;
+    }
+
+    @media (max-width: 640px) {
+      .modal-content.bottom-sheet {
+        margin-top: auto;
+        border-radius: 1.6rem 1.6rem 0 0 !important;
+        animation: slideUp .3s ease-out forwards;
+        max-height: 92vh;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes scaleIn {
+      from {
+        transform: scale(.96);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+      }
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    .float-ember {
+      animation: floatEmber 3.8s ease-in-out infinite;
+    }
+
+    @keyframes floatEmber {
+      0%, 100% {
+        transform: translateY(0);
+        opacity: .7;
+      }
+      50% {
+        transform: translateY(-6px);
+        opacity: 1;
+      }
+    }
+
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    input,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+    }
+
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .disabled-look {
+      opacity: .48;
+      pointer-events: none;
+      filter: grayscale(.15);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen pb-24 lg:pb-10">
+
+  <!-- =========================
+       Header
+  ========================== -->
+  <header class="brand-gradient sticky top-0 z-40 border-b border-black/20 shadow-xl">
+    <div class="max-w-7xl mx-auto px-4 py-3">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+        <div class="flex items-center gap-3">
+          <div class="logo-seal w-12 h-12 rounded-full flex items-center justify-center text-2xl font-black text-[#f5cf91]">
+            炬
+          </div>
+
+          <div>
+            <h1 class="text-white font-black tracking-[.15em] text-xl sm:text-2xl">
+              炬日式燒肉飯
+            </h1>
+            <p class="text-[#e8c78d] text-[10px] sm:text-xs tracking-[.22em] mt-0.5">
+              JYU JAPANESE YAKINIKU RICE
+            </p>
+          </div>
+        </div>
+
+        <div
+          id="clock-container"
+          class="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-full bg-black/25 border border-white/10 text-white backdrop-blur-md transition-all duration-300"
+        >
+          <i data-lucide="clock-3" class="w-4 h-4 text-[#e8c78d]"></i>
+          <span id="current-time" class="font-mono tracking-widest text-sm sm:text-base">
+            --:--:--
+          </span>
+          <span
+            id="time-warning"
+            class="hidden text-[10px] bg-[#d86d39] px-2 py-0.5 rounded-full font-black animate-pulse"
+          >
+            已截止
+          </span>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+
+  <!-- =========================
+       Main
+  ========================== -->
+  <main class="max-w-7xl mx-auto px-4 py-5 sm:py-7">
+
+    <!-- Store Information -->
+    <section class="paper-card rounded-3xl overflow-hidden mb-6">
+      <div class="grid md:grid-cols-[1.2fr_.8fr]">
+
+        <div class="p-5 sm:p-7">
+          <div class="flex items-start gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-[#fff0e6] text-[#c94d2d] flex items-center justify-center shrink-0">
+              <i data-lucide="flame" class="w-5 h-5"></i>
+            </div>
+
+            <div class="min-w-0">
+              <p class="text-xs font-black tracking-[.2em] text-[#b9823d] mb-1">
+                ONLINE ORDER
+              </p>
+
+              <h2
+                id="today-date"
+                class="font-black text-[#332c26] text-lg sm:text-xl"
+              >
+                📅 載入中...
+              </h2>
+
+              <div class="mt-4 grid gap-2 text-sm text-[#65584b]">
+
+                <a
+                  href="tel:0229762066"
+                  class="flex items-center gap-2 hover:text-[#c94d2d] transition-colors w-fit"
+                >
+                  <span class="w-8 h-8 rounded-xl bg-[#f6ece1] flex items-center justify-center">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                  </span>
+                  <span>訂購專線：02-2976-2066</span>
+                </a>
+
+                <a
+                  href="https://maps.google.com/?q=新北市三重區文化北路41之2號"
+                  target="_blank"
+                  rel="noopener"
+                  class="flex items-center gap-2 hover:text-[#c94d2d] transition-colors w-fit"
+                >
+                  <span class="w-8 h-8 rounded-xl bg-[#f6ece1] flex items-center justify-center">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                  </span>
+                  <span>新北市三重區文化北路41之2號</span>
+                </a>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-[#2b2520] p-5 sm:p-7 text-white flex items-center">
+          <div class="w-full space-y-3">
+
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+              <span class="text-sm text-white/65 flex items-center gap-2">
+                <i data-lucide="timer" class="w-4 h-4 text-[#e8c78d]"></i>
+                訂購截止時間
+              </span>
+              <strong class="text-[#e8c78d] text-xl">10:00</strong>
+            </div>
+
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+              <span class="text-sm text-white/65 flex items-center gap-2">
+                <i data-lucide="bike" class="w-4 h-4 text-[#e8c78d]"></i>
+                外送門檻
+              </span>
+              <strong class="text-[#e8c78d] text-xl">滿 $500</strong>
+            </div>
+
+            <p class="text-xs text-white/45 leading-relaxed">
+              主餐可依餐點選擇口味、肉量增購與套餐升級。<br>
+              套餐升級為飲品 5 選 1＋銅鑼燒 4 選 1。
+            </p>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =========================
+         Desktop Two-column Layout
+    ========================== -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+      <!-- Order Section -->
+      <section
+        id="tab-order-section"
+        class="xl:col-span-7 space-y-6"
+      >
+
+        <div class="paper-card rounded-3xl p-4 sm:p-6">
+
+          <!-- Section Title -->
+          <div class="flex items-center justify-between gap-3 border-b border-[#eadbca] pb-4 mb-5">
+            <div>
+              <p class="text-[10px] tracking-[.22em] font-black text-[#b9823d]">
+                MAKE YOUR ORDER
+              </p>
+
+              <h3
+                id="form-title"
+                class="mt-1 text-xl sm:text-2xl font-black text-[#332c26] flex items-center gap-2"
+              >
+                <span class="w-9 h-9 rounded-xl bg-[#fff0e6] text-[#c94d2d] flex items-center justify-center">
+                  <i data-lucide="utensils-crossed" class="w-5 h-5"></i>
+                </span>
+                我要點餐
+              </h3>
+            </div>
+
+            <div class="hidden sm:flex w-11 h-11 rounded-full bg-[#f7eee4] text-[#b9823d] items-center justify-center">
+              <i data-lucide="chef-hat" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+
+          <!-- Name -->
+          <div class="mb-6">
+            <label class="block text-sm font-black text-[#514538] mb-2">
+              點餐者姓名
+              <span class="text-[#c94d2d]">*</span>
+            </label>
+
+            <input
+              id="user-name-input"
+              type="text"
+              placeholder="請輸入您的姓名..."
+              autocomplete="name"
+              class="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e6d7c5] bg-[#fffdf9] text-[#332c26] placeholder-[#b7a796] focus:border-[#c94d2d] transition-colors"
+            >
+          </div>
+
+
+          <!-- Categories -->
+          <div class="mb-5">
+            <label class="block text-sm font-black text-[#514538] mb-3">
+              選擇分類
+            </label>
+
+            <div
+              id="category-filters"
+              class="flex gap-2 overflow-x-auto hide-scroll pb-2"
+            ></div>
+          </div>
+
+
+          <!-- Menu -->
+          <div class="mb-7">
+            <div
+              id="menu-container"
+              class="grid grid-cols-2 sm:grid-cols-3 gap-3"
+            ></div>
+          </div>
+
+
+          <!-- Cart -->
+          <div class="rounded-3xl border border-[#e3d5c2] bg-[#fdf8f1] overflow-hidden">
+
+            <div class="px-4 sm:px-5 py-4 border-b border-[#eadbca] flex items-center justify-between">
+              <div>
+                <p class="text-[10px] tracking-[.18em] font-black text-[#b9823d]">
+                  MY ORDER
+                </p>
+
+                <h4 class="font-black text-[#332c26] flex items-center gap-2 mt-1">
+                  <span class="w-8 h-8 rounded-xl bg-[#332c26] text-[#e8c78d] flex items-center justify-center">
+                    <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                  </span>
+                  我的餐點清單
+                </h4>
+              </div>
+
+              <span
+                id="cart-count-badge"
+                class="hidden min-w-8 h-8 px-2 rounded-full bg-[#c94d2d] text-white text-xs font-black flex items-center justify-center"
+              >
+                0
+              </span>
+            </div>
+
+            <div
+              id="cart-items-container"
+              class="p-4 space-y-3"
+            >
+              <div class="text-center py-8 text-[#aa9b8a]">
+                <i data-lucide="shopping-basket" class="w-10 h-10 mx-auto mb-3 opacity-60"></i>
+                <p class="text-sm font-bold">尚未選擇任何餐點</p>
+                <p class="text-xs mt-1">請從上方菜單開始點餐</p>
+              </div>
+            </div>
+
+            <div class="px-4 sm:px-5 py-4 bg-[#f7eee4] border-t border-[#e3d5c2]">
+
+              <div class="flex justify-between items-end gap-3">
+                <div>
+                  <p class="text-xs text-[#806f5e] font-bold">當前小計</p>
+                  <p
+                    id="cart-delivery-status"
+                    class="mt-1 text-xs font-bold text-[#c94d2d]"
+                  ></p>
+                </div>
+
+                <div class="text-right">
+                  <span class="text-xs text-[#806f5e] font-bold">NT$</span>
+                  <span
+                    id="cart-total"
+                    class="text-3xl sm:text-4xl font-black text-[#c94d2d]"
+                  >
+                    0
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+
+          <!-- Submit -->
+          <button
+            id="submit-order-btn"
+            class="ember-gradient w-full mt-6 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-[#c94d2d]/20 hover:brightness-105 active:scale-[.99] transition-all flex items-center justify-center gap-2"
+          >
+            <i
+              id="submit-btn-icon"
+              data-lucide="circle-check-big"
+              class="w-6 h-6"
+            ></i>
+
+            <span id="submit-btn-text">
+              確認送出訂單
+            </span>
+          </button>
+
+          <button
+            id="cancel-edit-btn"
+            class="hidden w-full mt-3 py-3 text-sm font-bold text-[#8b7763] hover:text-[#c94d2d] transition-colors"
+          >
+            取消修改，重新建立訂單
+          </button>
+
+        </div>
+      </section>
+
+
+      <!-- Orders Section -->
+      <section
+        id="tab-list-section"
+        class="xl:col-span-5 hidden xl:block"
+      >
+        <div class="paper-card rounded-3xl p-4 sm:p-6 xl:sticky xl:top-24">
+
+          <div class="flex items-center justify-between gap-3 border-b border-[#eadbca] pb-4 mb-4">
+
+            <div>
+              <p class="text-[10px] tracking-[.22em] font-black text-[#b9823d]">
+                LIVE ORDERS
+              </p>
+
+              <h3 class="mt-1 text-xl sm:text-2xl font-black text-[#332c26] flex items-center gap-2">
+                <span class="w-9 h-9 rounded-xl bg-[#332c26] text-[#e8c78d] flex items-center justify-center">
+                  <i data-lucide="users-round" class="w-5 h-5"></i>
+                </span>
+
+                訂購總表
+
+                <span
+                  id="orders-count"
+                  class="text-[#c94d2d]"
+                >
+                  0
+                </span>
+              </h3>
+            </div>
+
+            <button
+              id="clear-all-btn"
+              class="shrink-0 px-3 py-2 rounded-xl border border-[#e3d5c2] text-xs font-black text-[#8b7763] hover:text-[#c94d2d] hover:border-[#c94d2d] hover:bg-[#fff4ec] transition-all flex items-center gap-1.5"
+            >
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">手動清除</span>
+            </button>
+
+          </div>
+
+
+          <div
+            id="orders-container"
+            class="max-h-[540px] overflow-y-auto custom-scrollbar pr-1 sm:pr-2 space-y-3"
+          >
+            <div class="text-center py-12 text-[#aa9b8a]">
+              <i data-lucide="loader-circle" class="w-9 h-9 mx-auto mb-3 animate-spin"></i>
+              <p class="text-sm font-bold">訂單資料載入中...</p>
+            </div>
+          </div>
+
+
+          <!-- Grand Total -->
+          <div class="mt-5 pt-5 border-t-2 border-[#eadbca]">
+
+            <div class="flex items-end justify-between gap-3">
+              <span class="font-black text-[#65584b]">
+                累積總金額
+              </span>
+
+              <div class="text-right">
+                <span class="text-xs font-bold text-[#806f5e]">NT$</span>
+                <span
+                  id="orders-grand-total"
+                  class="text-4xl font-black text-[#c94d2d]"
+                >
+                  0
+                </span>
+              </div>
+            </div>
+
+            <div
+              id="global-delivery-status"
+              class="mt-3 rounded-2xl p-3 text-sm font-bold text-center bg-[#fff1e8] border border-[#f1c9b5] text-[#b94428]"
+            >
+              計算中...
+            </div>
+
+          </div>
+
+
+          <!-- Copy -->
+          <button
+            id="copy-orders-btn"
+            class="w-full mt-5 py-3.5 rounded-2xl bg-[#332c26] hover:bg-[#463a31] text-white font-black transition-all active:scale-[.99] flex items-center justify-center gap-2 shadow-lg"
+          >
+            <i data-lucide="copy" class="w-5 h-5 text-[#e8c78d]"></i>
+            一鍵複製明細（LINE專用）
+          </button>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+
+  <!-- =========================
+       Mobile Bottom Navigation
+  ========================== -->
+  <nav
+    class="fixed bottom-0 inset-x-0 z-50 xl:hidden bg-[#fffaf3]/95 backdrop-blur-xl border-t border-[#e3d5c2] shadow-[0_-8px_30px_rgba(67,44,27,.08)] safe-bottom"
+  >
+    <div class="grid grid-cols-2">
+
+      <button
+        id="nav-order-btn"
+        class="py-3.5 flex flex-col items-center justify-center gap-1 text-[#c94d2d] border-t-2 border-[#c94d2d] bg-[#fff7ef] transition-colors"
+      >
+        <i data-lucide="utensils-crossed" class="w-5 h-5"></i>
+        <span class="text-[11px] font-black">我要點餐</span>
+      </button>
+
+      <button
+        id="nav-list-btn"
+        class="relative py-3.5 flex flex-col items-center justify-center gap-1 text-[#8b7763] border-t-2 border-transparent transition-colors"
+      >
+        <div class="relative">
+          <i data-lucide="receipt-text" class="w-5 h-5"></i>
+
+          <span
+            id="mobile-badge"
+            class="hidden absolute -top-2 -right-3 min-w-5 h-5 px-1 rounded-full bg-[#c94d2d] text-white text-[9px] font-black flex items-center justify-center"
+          >
+            0
+          </span>
+        </div>
+
+        <span class="text-[11px] font-black">訂單總表</span>
+      </button>
+
+    </div>
+  </nav>
+
+
+  <!-- =========================
+       Alert / Confirm Modal
+  ========================== -->
+  <div
+    id="system-modal"
+    class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/55 backdrop-blur-sm p-4 modal-overlay"
+  >
+    <div
+      class="modal-content bg-[#fffaf3] rounded-3xl overflow-hidden w-full max-w-md shadow-2xl border border-white/50"
+    >
+
+      <div
+        id="system-modal-header"
+        class="p-5 text-white bg-[#332c26] flex items-center gap-3"
+      >
+        <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
+          <i
+            id="system-modal-icon"
+            data-lucide="info"
+            class="w-5 h-5"
+          ></i>
+        </div>
+
+        <h3
+          id="system-modal-title"
+          class="font-black text-lg"
+        >
+          提示
+        </h3>
+      </div>
+
+      <div
+        id="system-modal-message"
+        class="px-6 py-7 text-[#514538] leading-relaxed font-medium"
+      >
+        訊息內容
+      </div>
+
+      <div class="p-4 bg-[#f7eee4] border-t border-[#e3d5c2] flex justify-end gap-3">
+        <button
+          id="system-modal-cancel"
+          class="hidden px-5 py-2.5 rounded-xl text-[#806f5e] font-black hover:bg-white transition-colors"
+        >
+          取消
+        </button>
+
+        <button
+          id="system-modal-confirm"
+          class="px-6 py-2.5 rounded-xl bg-[#c94d2d] hover:bg-[#b94428] text-white font-black shadow-md transition-colors"
+        >
+          確定
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- =========================
+       Meal Customization Modal
+  ========================== -->
+  <div
+    id="meal-modal"
+    class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/55 backdrop-blur-sm p-0 sm:p-4 modal-overlay"
+  >
+    <div
+      class="modal-content bottom-sheet bg-[#fffaf3] rounded-3xl overflow-hidden w-full max-w-2xl shadow-2xl border border-white/50 flex flex-col max-h-[100vh] sm:max-h-[90vh]"
+    >
+
+      <!-- Header -->
+      <div class="brand-gradient p-5 text-white relative overflow-hidden shrink-0">
+        <div class="absolute right-4 top-2 text-[#e8c78d]/20 float-ember">
+          <i data-lucide="flame" class="w-20 h-20"></i>
+        </div>
+
+        <div class="relative flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[10px] tracking-[.2em] text-[#e8c78d] font-black">
+              CUSTOMIZE YOUR MEAL
+            </p>
+
+            <h3
+              id="meal-modal-title"
+              class="text-xl sm:text-2xl font-black mt-1"
+            >
+              餐點名稱
+            </h3>
+
+            <p
+              id="meal-modal-base-price"
+              class="text-sm text-white/70 mt-1"
+            >
+              基本價格 $0
+            </p>
+          </div>
+
+          <button
+            id="meal-modal-close"
+            class="relative w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0"
+          >
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+
+      <!-- Content -->
+      <div
+        id="meal-modal-body"
+        class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-6"
+      ></div>
+
+
+      <!-- Footer -->
+      <div class="p-4 sm:p-5 border-t border-[#e3d5c2] bg-[#fffdf9] shrink-0">
+
+        <div class="flex items-center justify-between gap-4 mb-3">
+
+          <div>
+            <p class="text-xs text-[#806f5e] font-bold">
+              餐點數量
+            </p>
+
+            <div class="flex items-center gap-3 mt-1.5">
+              <button
+                id="modal-qty-minus"
+                class="w-9 h-9 rounded-xl border border-[#dfcfbc] bg-white hover:bg-[#fff3ea] text-[#806f5e] flex items-center justify-center"
+              >
+                <i data-lucide="minus" class="w-4 h-4"></i>
+              </button>
+
+              <span
+                id="modal-qty"
+                class="w-7 text-center text-lg font-black text-[#332c26]"
+              >
+                1
+              </span>
+
+              <button
+                id="modal-qty-plus"
+                class="w-9 h-9 rounded-xl border border-[#dfcfbc] bg-white hover:bg-[#fff3ea] text-[#806f5e] flex items-center justify-center"
+              >
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+
+          <div class="text-right">
+            <p class="text-xs text-[#806f5e] font-bold">
+              目前合計
+            </p>
+
+            <p class="mt-1">
+              <span class="text-xs text-[#806f5e] font-bold">NT$</span>
+              <span
+                id="meal-modal-total"
+                class="text-3xl font-black text-[#c94d2d]"
+              >
+                0
+              </span>
+            </p>
+          </div>
+
+        </div>
+
+        <button
+          id="meal-modal-add-btn"
+          class="ember-gradient w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg shadow-[#c94d2d]/20 hover:brightness-105 active:scale-[.99] transition-all flex items-center justify-center gap-2"
+        >
+          <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+          加入餐點
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================
+       Firebase + Application
+  ========================== -->
+  <script type="module">
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+
+    import {
+      getAuth,
+      signInAnonymously,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      deleteDoc,
+      doc,
+      updateDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+
+    /* =========================================================
+       1. Store Configuration
+    ========================================================= */
+
+    const STORE_CONFIG = {
+      storeName: "炬日式燒肉飯",
+      phone: "02-2976-2066",
+      address: "新北市三重區文化北路41之2號",
+
+      cutoffHour: 10,
+      cutoffMinute: 0,
+
+      deliveryThreshold: 500,
+
+      collectionName: "jyu_yakiniku_orders_live"
+    };
+
+
+    /* =========================================================
+       2. Firebase Configuration
+    ========================================================= */
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBnWJzwGs7v0y-4TZBak1gNbDSzZp601_k",
+      authDomain: "myorder-86db9.firebaseapp.com",
+      projectId: "myorder-86db9",
+      storageBucket: "myorder-86db9.firebasestorage.app",
+      messagingSenderId: "472751421979",
+      appId: "1:472751421979:web:a286c3bc4ad419ed1f16be",
+      measurementId: "G-ZNRJJ4JQPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const FIREBASE_APP_ID = "myorder-86db9";
+
+
+    /* =========================================================
+       3. Menu Categories
+    ========================================================= */
+
+    const CATEGORY_ORDER = [
+      "全部",
+      "丼飯系列",
+      "精緻盒餐系列",
+      "超值雙拼飯系列",
+      "雙響丼系列",
+      "單點加購"
+    ];
+
+
+    /* =========================================================
+       4. Flavor Data
+    ========================================================= */
+
+    const FLAVORS_STANDARD = [
+      "原味",
+      "泡菜",
+      "泰式",
+      "麻辣",
+      "蝦味魚子"
+    ];
+
+    const FLAVORS_DONBURI = [
+      "鹽蔥",
+      "泡菜",
+      "泰式",
+      "麻辣",
+      "蝦味魚子"
+    ];
+
+    const FLAVORS_SECONDARY = [
+      "泡菜",
+      "泰式",
+      "麻辣",
+      "蝦味魚子"
+    ];
+
+    const COMBO_DRINKS = [
+      "味噌貢丸湯",
+      "冷香四季春茶",
+      "燒燻冬瓜露",
+      "可樂",
+      "雪碧"
+    ];
+
+    const DORAYAKI_FLAVORS = [
+      "卡士達奶油",
+      "老鷹紅豆",
+      "楓糖奶油",
+      "海鹽焦糖"
+    ];
+
+
+    /* =========================================================
+       5. Final Menu Data
+    ========================================================= */
+
+    const MENU_DATA = [
+
+      /* -------------------------
+         丼飯系列
+      -------------------------- */
+
+      {
+        id: "d1",
+        category: "丼飯系列",
+        name: "烤雞肉丼",
+        price: 79,
+        icon: "drumstick",
+        flavorMode: "single",
+        flavors: FLAVORS_DONBURI,
+        extraMeat: {
+          label: "烤雞肉增量",
+          price: 40
+        },
+        canAddCombo: true
+      },
+
+      {
+        id: "d2",
+        category: "丼飯系列",
+        name: "烤豬肉丼",
+        price: 89,
+        icon: "flame",
+        flavorMode: "single",
+        flavors: FLAVORS_DONBURI,
+        extraMeat: {
+          label: "燒肉增量",
+          price: 40
+        },
+        canAddCombo: true
+      },
+
+      {
+        id: "d3",
+        category: "丼飯系列",
+        name: "烤牛肉丼",
+        price: 99,
+        icon: "beef",
+        flavorMode: "single",
+        flavors: FLAVORS_DONBURI,
+        extraMeat: {
+          label: "牛肉增量",
+          price: 60
+        },
+        canAddCombo: true
+      },
+
+      {
+        id: "d4",
+        category: "丼飯系列",
+        name: "烤雞腿丼",
+        price: 99,
+        icon: "utensils",
+        flavorMode: "single",
+        flavors: FLAVORS_DONBURI,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+
+      /* -------------------------
+         精緻盒餐系列
+      -------------------------- */
+
+      {
+        id: "b1",
+        category: "精緻盒餐系列",
+        name: "烤雞肉飯",
+        price: 99,
+        icon: "drumstick",
+        flavorMode: "single",
+        flavors: FLAVORS_STANDARD,
+        extraMeat: {
+          label: "烤雞肉增量",
+          price: 40
+        },
+        canAddCombo: true
+      },
+
+      {
+        id: "b2",
+        category: "精緻盒餐系列",
+        name: "烤豬肉飯",
+        price: 109,
+        icon: "flame",
+        flavorMode: "single",
+        flavors: FLAVORS_STANDARD,
+        extraMeat: {
+          label: "燒肉增量",
+          price: 40
+        },
+        canAddCombo: true
+      },
+
+      {
+        id: "b3",
+        category: "精緻盒餐系列",
+        name: "烤牛肉飯",
+        price: 129,
+        icon: "beef",
+        flavorMode: "single",
+        flavors: FLAVORS_STANDARD,
+        extraMeat: {
+          label: "牛肉增量",
+          price: 60
+        },
+        canAddCombo: true
+      },
+
+      {
+        id: "b4",
+        category: "精緻盒餐系列",
+        name: "烤雞腿排飯",
+        price: 129,
+        icon: "drumstick",
+        flavorMode: "single",
+        flavors: FLAVORS_STANDARD,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "b5",
+        category: "精緻盒餐系列",
+        name: "鹽烤豬肉飯",
+        price: 129,
+        icon: "flame",
+        flavorMode: "single",
+        flavors: FLAVORS_STANDARD,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "b6",
+        category: "精緻盒餐系列",
+        name: "烤鯖魚飯",
+        price: 129,
+        icon: "fish",
+        flavorMode: "single",
+        flavors: FLAVORS_STANDARD,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "b7",
+        category: "精緻盒餐系列",
+        name: "戰斧豬排飯",
+        price: 129,
+        icon: "beef",
+        flavorMode: "single",
+        flavors: FLAVORS_STANDARD,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+
+      /* -------------------------
+         超值雙拼飯系列
+      -------------------------- */
+
+      {
+        id: "p1",
+        category: "超值雙拼飯系列",
+        name: "豚雞雙拼飯",
+        price: 139,
+        icon: "layers-3",
+        flavorMode: "dual-original",
+        fixedFlavor: "原味",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "p2",
+        category: "超值雙拼飯系列",
+        name: "豚牛雙拼飯",
+        price: 149,
+        icon: "layers-3",
+        flavorMode: "dual-original",
+        fixedFlavor: "原味",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "p3",
+        category: "超值雙拼飯系列",
+        name: "牛雞雙拼飯",
+        price: 149,
+        icon: "layers-3",
+        flavorMode: "dual-original",
+        fixedFlavor: "原味",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "p4",
+        category: "超值雙拼飯系列",
+        name: "炙燒腿豚雙拼飯",
+        price: 159,
+        icon: "layers-3",
+        flavorMode: "dual-original",
+        fixedFlavor: "原味",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "p5",
+        category: "超值雙拼飯系列",
+        name: "炙燒腿牛雙拼飯",
+        price: 169,
+        icon: "layers-3",
+        flavorMode: "dual-original",
+        fixedFlavor: "原味",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+
+      /* -------------------------
+         雙響丼系列
+      -------------------------- */
+
+      {
+        id: "s1",
+        category: "雙響丼系列",
+        name: "炙燒牛雞雙響丼",
+        price: 119,
+        icon: "flame",
+        flavorMode: "dual-scallion",
+        fixedFlavor: "鹽蔥",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "s2",
+        category: "雙響丼系列",
+        name: "炙燒腿牛雙響丼",
+        price: 149,
+        icon: "flame",
+        flavorMode: "dual-scallion",
+        fixedFlavor: "鹽蔥",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "s3",
+        category: "雙響丼系列",
+        name: "炙燒牛豚雙響丼",
+        price: 129,
+        icon: "flame",
+        flavorMode: "dual-scallion",
+        fixedFlavor: "鹽蔥",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+      {
+        id: "s4",
+        category: "雙響丼系列",
+        name: "炙燒腿豚雙響丼",
+        price: 139,
+        icon: "flame",
+        flavorMode: "dual-scallion",
+        fixedFlavor: "鹽蔥",
+        flavors: FLAVORS_SECONDARY,
+        extraMeat: null,
+        canAddCombo: true
+      },
+
+
+      /* -------------------------
+         單點加購
+      -------------------------- */
+
+      {
+        id: "a1",
+        category: "單點加購",
+        name: "炙烤牛肉",
+        price: 69,
+        icon: "beef",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a2",
+        category: "單點加購",
+        name: "戰斧豬排",
+        price: 69,
+        icon: "beef",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a3",
+        category: "單點加購",
+        name: "炙烤雞腿",
+        price: 59,
+        icon: "drumstick",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a4",
+        category: "單點加購",
+        name: "鹽烤豬肉",
+        price: 59,
+        icon: "flame",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a5",
+        category: "單點加購",
+        name: "炙燒雞肉",
+        price: 49,
+        icon: "drumstick",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a6",
+        category: "單點加購",
+        name: "烤鯖魚",
+        price: 49,
+        icon: "fish",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a7",
+        category: "單點加購",
+        name: "炙烤豬肉",
+        price: 49,
+        icon: "flame",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a8",
+        category: "單點加購",
+        name: "白飯",
+        price: 15,
+        icon: "rice-bowl",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a9",
+        category: "單點加購",
+        name: "銅鑼燒",
+        price: 15,
+        icon: "cake-slice",
+        flavorMode: "dorayaki",
+        flavors: DORAYAKI_FLAVORS,
+        canAddCombo: false
+      },
+
+      {
+        id: "a10",
+        category: "單點加購",
+        name: "可樂",
+        price: 30,
+        icon: "cup-soda",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a11",
+        category: "單點加購",
+        name: "雪碧",
+        price: 30,
+        icon: "cup-soda",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a12",
+        category: "單點加購",
+        name: "溏心蛋",
+        price: 30,
+        icon: "egg",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a13",
+        category: "單點加購",
+        name: "泡菜",
+        price: 30,
+        icon: "salad",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a14",
+        category: "單點加購",
+        name: "四季春茶",
+        price: 50,
+        icon: "glass-water",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a15",
+        category: "單點加購",
+        name: "燒燻冬瓜露",
+        price: 50,
+        icon: "glass-water",
+        flavorMode: "none",
+        canAddCombo: false
+      },
+
+      {
+        id: "a16",
+        category: "單點加購",
+        name: "貢丸味噌湯",
+        price: 50,
+        icon: "soup",
+        flavorMode: "none",
+        canAddCombo: false
+      }
+
+    ];
+
+
+    /* =========================================================
+       6. Application State
+    ========================================================= */
+
+    const state = {
+      user: null,
+      orders: [],
+      cart: [],
+      editingOrderId: null,
+
+      isPastCutoff: false,
+
+      activeCategory: "全部",
+
+      modalItem: null,
+
+      modalOptions: {
+        flavor: null,
+        fixedFlavor: null,
+        extraMeat: false,
+
+        combo: false,
+        comboDrink: null,
+        comboDorayaki: null,
+
+        dorayakiFlavor: null,
+
+        remark: ""
+      },
+
+      modalQty: 1
+    };
+
+
+    /* =========================================================
+       7. DOM Helpers
+       ★ 修正點：還原正確的跳脫字元，解決了破壞整個 JS 的語法錯誤
+    ========================================================= */
+
+    const $ = (id) => document.getElementById(id);
+
+    const money = (value) =>
+      Number(value || 0).toLocaleString("zh-TW");
+
+    const escapeHTML = (value = "") =>
+      String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+
+    const getOrdersRef = () =>
+      collection(
+        db,
+        "artifacts",
+        FIREBASE_APP_ID,
+        "public",
+        "data",
+        STORE_CONFIG.collectionName
+      );
+
+
+    /* =========================================================
+       8. System Modal
+    ========================================================= */
+
+    let systemModalCallback = null;
+
+    function showModal(
+      title,
+      message,
+      type = "info",
+      onConfirm = null
+    ) {
+      const modal = $("system-modal");
+      const header = $("system-modal-header");
+      const icon = $("system-modal-icon");
+      const titleEl = $("system-modal-title");
+      const messageEl = $("system-modal-message");
+      const cancelBtn = $("system-modal-cancel");
+      const confirmBtn = $("system-modal-confirm");
+
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+
+      header.className =
+        "p-5 text-white flex items-center gap-3";
+
+      confirmBtn.className =
+        "px-6 py-2.5 rounded-xl text-white font-black shadow-md transition-colors";
+
+      if (type === "success") {
+        header.classList.add("bg-[#2f7d59]");
+        confirmBtn.classList.add(
+          "bg-[#2f7d59]",
+          "hover:bg-[#256548]"
+        );
+        icon.setAttribute("data-lucide", "circle-check-big");
+      }
+
+      else if (type === "warning") {
+        header.classList.add("bg-[#b9823d]");
+        confirmBtn.classList.add(
+          "bg-[#b9823d]",
+          "hover:bg-[#9c682e]"
+        );
+        icon.setAttribute("data-lucide", "triangle-alert");
+      }
+
+      else if (type === "error") {
+        header.classList.add("bg-[#332c26]");
+        confirmBtn.classList.add(
+          "bg-[#332c26]",
+          "hover:bg-[#463a31]"
+        );
+        icon.setAttribute("data-lucide", "octagon-alert");
+      }
+
+      else if (type === "confirm") {
+        header.classList.add("bg-[#9f351f]");
+        confirmBtn.classList.add(
+          "bg-[#c94d2d]",
+          "hover:bg-[#b94428]"
+        );
+        icon.setAttribute("data-lucide", "circle-help");
+      }
+
+      else {
+        header.classList.add("bg-[#332c26]");
+        confirmBtn.classList.add(
+          "bg-[#c94d2d]",
+          "hover:bg-[#b94428]"
+        );
+        icon.setAttribute("data-lucide", "info");
+      }
+
+      if (type === "confirm") {
+        cancelBtn.classList.remove("hidden");
+      } else {
+        cancelBtn.classList.add("hidden");
+      }
+
+      systemModalCallback = onConfirm;
+
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+
+      lucide.createIcons();
+    }
+
+
+    function closeSystemModal() {
+      $("system-modal").classList.add("hidden");
+      $("system-modal").classList.remove("flex");
+      systemModalCallback = null;
+    }
+
+
+    $("system-modal-cancel").addEventListener(
+      "click",
+      closeSystemModal
+    );
+
+    $("system-modal-confirm").addEventListener(
+      "click",
+      async () => {
+        const callback = systemModalCallback;
+
+        closeSystemModal();
+
+        if (callback) {
+          try {
+            await callback();
+          } catch (error) {
+            console.error(error);
+            showModal(
+              "操作失敗",
+              "系統處理時發生問題，請稍後再試。",
+              "error"
+            );
+          }
+        }
+      }
+    );
+
+
+    /* =========================================================
+       9. Category Rendering
+    ========================================================= */
+
+    function renderCategories() {
+      $("category-filters").innerHTML =
+        CATEGORY_ORDER.map((category) => {
+          const active =
+            state.activeCategory === category;
+
+          return `
+            <button
+              onclick="setCategory('${category}')"
+              class="
+                category-btn
+                ${active ? "active" : ""}
+                whitespace-nowrap
+                px-4
+                py-2
+                rounded-full
+                border
+                ${active
+                  ? ""
+                  : "border-[#dfcfbc] bg-white text-[#806f5e] hover:border-[#c94d2d] hover:text-[#c94d2d]"
+                }
+                text-sm
+                font-black
+              "
+            >
+              ${category}
+            </button>
+          `;
+        }).join("");
+    }
+
+
+    window.setCategory = (category) => {
+      state.activeCategory = category;
+
+      renderCategories();
+      renderMenu();
+    };
+
+
+    /* =========================================================
+       10. Menu Rendering
+    ========================================================= */
+
+    function getFilteredMenu() {
+      if (state.activeCategory === "全部") {
+        return MENU_DATA;
+      }
+
+      return MENU_DATA.filter(
+        item => item.category === state.activeCategory
+      );
+    }
+
+
+    function getCategoryDescription(category) {
+      const descriptions = {
+        "丼飯系列": "炭火燒肉 × 個人風味選擇",
+        "精緻盒餐系列": "附三配菜＋半顆溏心蛋",
+        "超值雙拼飯系列": "原味＋任一風味",
+        "雙響丼系列": "鹽蔥＋任一風味",
+        "單點加購": "自由搭配，想吃什麼就加什麼"
+      };
+
+      return descriptions[category] || "";
+    }
+
+
+    function renderMenu() {
+      const container = $("menu-container");
+
+      const filtered = getFilteredMenu();
+
+      if (state.activeCategory === "全部") {
+
+        let html = "";
+
+        CATEGORY_ORDER
+          .filter(category => category !== "全部")
+          .forEach(category => {
+
+            const items =
+              MENU_DATA.filter(
+                item => item.category === category
+              );
+
+            if (!items.length) return;
+
+            html += `
+              <div class="col-span-full mt-1 first:mt-0">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <h4 class="font-black text-[#332c26]">
+                      ${category}
+                    </h4>
+
+                    <p class="text-[11px] text-[#9a8978] mt-0.5">
+                      ${getCategoryDescription(category)}
+                    </p>
+                  </div>
+
+                  <span class="w-10 h-px bg-gradient-to-r from-[#c94d2d] to-transparent"></span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  ${items.map(renderMenuCard).join("")}
+                </div>
+              </div>
+            `;
+          });
+
+        container.innerHTML = html;
+
+      } else {
+
+        container.innerHTML = `
+          <div class="col-span-full">
+            <div class="mb-3">
+              <h4 class="font-black text-[#332c26]">
+                ${state.activeCategory}
+              </h4>
+
+              <p class="text-[11px] text-[#9a8978] mt-0.5">
+                ${getCategoryDescription(state.activeCategory)}
+              </p>
+            </div>
+          </div>
+
+          ${filtered.map(renderMenuCard).join("")}
+        `;
+      }
+
+      lucide.createIcons();
+    }
+
+
+    function renderMenuCard(item) {
+
+      const isMainMeal =
+        item.category !== "單點加購";
+
+      return `
+        <button
+          onclick="openMealModal('${item.id}')"
+          class="
+            menu-card
+            text-left
+            bg-white
+            rounded-2xl
+            border
+            border-[#e6d7c5]
+            p-4
+            min-h-[145px]
+            flex
+            flex-col
+          "
+        >
+
+          <div class="flex items-start justify-between gap-2">
+            <span
+              class="
+                w-9
+                h-9
+                rounded-xl
+                bg-[#fff1e8]
+                text-[#c94d2d]
+                flex
+                items-center
+                justify-center
+                shrink-0
+              "
+            >
+              <i data-lucide="${item.icon || "utensils"}" class="w-4 h-4"></i>
+            </span>
+
+            ${
+              isMainMeal
+                ? `
+                  <span class="
+                    text-[9px]
+                    px-2
+                    py-1
+                    rounded-full
+                    bg-[#f7eee4]
+                    text-[#9c682e]
+                    font-black
+                    whitespace-nowrap
+                  ">
+                    可客製
+                  </span>
+                `
+                : `
+                  <span class="
+                    text-[9px]
+                    px-2
+                    py-1
+                    rounded-full
+                    bg-[#f4efe8]
+                    text-[#9a8978]
+                    font-black
+                    whitespace-nowrap
+                  ">
+                    單點
+                  </span>
+                `
+            }
+          </div>
+
+          <div class="mt-4 flex-1">
+            <h5 class="font-black text-[#332c26] leading-snug line-clamp-2">
+              ${item.name}
+            </h5>
+
+            ${
+              item.extraMeat
+                ? `
+                  <p class="text-[10px] text-[#b9823d] mt-2 font-bold">
+                    可肉增量 +$${item.extraMeat.price}
+                  </p>
+                `
+                : ""
+            }
+
+            ${
+              item.canAddCombo
+                ? `
+                  <p class="text-[10px] text-[#806f5e] mt-2">
+                    套餐升級 +$40
+                  </p>
+                `
+                : ""
+            }
+
+            ${
+              item.flavorMode === "dorayaki"
+                ? `
+                  <p class="text-[10px] text-[#806f5e] mt-2">
+                    4 種口味可選
+                  </p>
+                `
+                : ""
+            }
+          </div>
+
+          <div class="mt-3 flex items-end justify-between">
+            <div>
+              <span class="text-[10px] text-[#9a8978] font-bold">
+                NT$
+              </span>
+
+              <span class="text-2xl font-black text-[#c94d2d]">
+                ${money(item.price)}
+              </span>
+            </div>
+
+            <span class="text-[#b9823d]">
+              <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            </span>
+          </div>
+
+        </button>
+      `;
+    }
+
+
+    /* =========================================================
+       11. Meal Modal
+    ========================================================= */
+
+    window.openMealModal = (menuId) => {
+      const item =
+        MENU_DATA.find(
+          menu => menu.id === menuId
+        );
+
+      if (!item) return;
+
+      state.modalItem = item;
+
+      state.modalOptions = {
+        flavor: null,
+        fixedFlavor: item.fixedFlavor || null,
+        extraMeat: false,
+
+        combo: false,
+        comboDrink: null,
+        comboDorayaki: null,
+
+        dorayakiFlavor: null,
+
+        remark: ""
+      };
+
+      state.modalQty = 1;
+
+      $("meal-modal-title").textContent =
+        item.name;
+
+      $("meal-modal-base-price").textContent =
+        `基本價格 $${money(item.price)}`;
+
+      renderMealModalBody();
+
+      $("meal-modal").classList.remove("hidden");
+      $("meal-modal").classList.add("flex");
+
+      document.body.style.overflow = "hidden";
+
+      lucide.createIcons();
+    };
+
+
+    function closeMealModal() {
+      $("meal-modal").classList.add("hidden");
+      $("meal-modal").classList.remove("flex");
+
+      document.body.style.overflow = "";
+
+      state.modalItem = null;
+    }
+
+
+    $("meal-modal-close").addEventListener(
+      "click",
+      closeMealModal
+    );
+
+
+    $("meal-modal").addEventListener(
+      "click",
+      (event) => {
+        if (event.target === $("meal-modal")) {
+          closeMealModal();
+        }
+      }
+    );
+
+
+    function sectionTitle(number, title, required = false) {
+      return `
+        <div class="flex items-center gap-3 mb-3">
+          <span class="
+            w-7
+            h-7
+            rounded-full
+            bg-[#332c26]
+            text-[#e8c78d]
+            text-xs
+            font-black
+            flex
+            items-center
+            justify-center
+          ">
+            ${number}
+          </span>
+
+          <h4 class="font-black text-[#332c26]">
+            ${title}
+            ${
+              required
+                ? `<span class="text-[#c94d2d]">*</span>`
+                : ""
+            }
+          </h4>
+        </div>
+      `;
+    }
+
+
+    function renderRadioOptions(
+      options,
+      selectedValue,
+      onClickFunctionName
+    ) {
+      return `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          ${options.map(option => {
+
+            const selected =
+              selectedValue === option;
+
+            return `
+              <button
+                type="button"
+                onclick="${onClickFunctionName}('${option}')"
+                class="
+                  radio-option
+                  ${selected ? "selected" : ""}
+                  w-full
+                  text-left
+                  border
+                  border-[#e3d5c2]
+                  rounded-2xl
+                  px-4
+                  py-3
+                  flex
+                  items-center
+                  justify-between
+                  gap-3
+                "
+              >
+                <span class="font-bold text-sm text-[#514538]">
+                  ${option}
+                </span>
+
+                <span class="
+                  w-5
+                  h-5
+                  rounded-full
+                  border-2
+                  flex
+                  items-center
+                  justify-center
+                  ${
+                    selected
+                      ? "border-[#c94d2d]"
+                      : "border-[#cdbca9]"
+                  }
+                ">
+                  ${
+                    selected
+                      ? `
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#c94d2d]"></span>
+                      `
+                      : ""
+                  }
+                </span>
+              </button>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+
+    function renderMealModalBody() {
+      const item = state.modalItem;
+
+      if (!item) return;
+
+      let html = "";
+
+      let sectionNumber = 1;
+
+
+      /* -------------------------
+         Single Flavor
+      -------------------------- */
+
+      if (item.flavorMode === "single") {
+
+        html += `
+          <section>
+            ${sectionTitle(
+              sectionNumber++,
+              "選擇口味",
+              true
+            )}
+
+            ${renderRadioOptions(
+              item.flavors,
+              state.modalOptions.flavor,
+              "selectModalFlavor"
+            )}
+          </section>
+        `;
+      }
+
+
+      /* -------------------------
+         Dual Original
+      -------------------------- */
+
+      if (item.flavorMode === "dual-original") {
+
+        html += `
+          <section>
+            ${sectionTitle(
+              sectionNumber++,
+              "雙拼口味設定",
+              true
+            )}
+
+            <div class="rounded-2xl bg-[#f7eee4] border border-[#e3d5c2] p-4 mb-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-black text-[#332c26]">
+                    第一種肉品
+                  </p>
+
+                  <p class="text-xs text-[#806f5e] mt-1">
+                    固定口味
+                  </p>
+                </div>
+
+                <span class="px-3 py-1.5 rounded-full bg-[#332c26] text-[#e8c78d] text-sm font-black">
+                  原味
+                </span>
+              </div>
+            </div>
+
+            <p class="text-sm font-black text-[#514538] mb-2">
+              第二種肉品口味
+              <span class="text-[#c94d2d]">*</span>
+            </p>
+
+            ${renderRadioOptions(
+              item.flavors,
+              state.modalOptions.flavor,
+              "selectModalFlavor"
+            )}
+          </section>
+        `;
+      }
+
+
+      /* -------------------------
+         Dual Salt Scallion
+      -------------------------- */
+
+      if (item.flavorMode === "dual-scallion") {
+
+        html += `
+          <section>
+            ${sectionTitle(
+              sectionNumber++,
+              "雙響口味設定",
+              true
+            )}
+
+            <div class="rounded-2xl bg-[#f7eee4] border border-[#e3d5c2] p-4 mb-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-black text-[#332c26]">
+                    固定風味
+                  </p>
+
+                  <p class="text-xs text-[#806f5e] mt-1">
+                    其中一份固定使用
+                  </p>
+                </div>
+
+                <span class="px-3 py-1.5 rounded-full bg-[#332c26] text-[#e8c78d] text-sm font-black">
+                  鹽蔥
+                </span>
+              </div>
+            </div>
+
+            <p class="text-sm font-black text-[#514538] mb-2">
+              請選擇另一種口味
+              <span class="text-[#c94d2d]">*</span>
+            </p>
+
+            ${renderRadioOptions(
+              item.flavors,
+              state.modalOptions.flavor,
+              "selectModalFlavor"
+            )}
+          </section>
+        `;
+      }
+
+
+      /* -------------------------
+         Extra Meat
+      -------------------------- */
+
+      if (item.extraMeat) {
+
+        html += `
+          <section>
+            ${sectionTitle(
+              sectionNumber++,
+              "肉量升級"
+            )}
+
+            <button
+              type="button"
+              onclick="toggleExtraMeat()"
+              class="
+                check-option
+                ${state.modalOptions.extraMeat ? "selected" : ""}
+                w-full
+                border
+                border-[#e3d5c2]
+                rounded-2xl
+                p-4
+                flex
+                items-center
+                justify-between
+                gap-3
+                text-left
+              "
+            >
+
+              <div class="flex items-center gap-3">
+                <span class="
+                  w-6
+                  h-6
+                  rounded-lg
+                  border-2
+                  flex
+                  items-center
+                  justify-center
+                  ${
+                    state.modalOptions.extraMeat
+                      ? "border-[#c94d2d] bg-[#c94d2d] text-white"
+                      : "border-[#cdbca9] bg-white"
+                  }
+                ">
+                  ${
+                    state.modalOptions.extraMeat
+                      ? `<i data-lucide="check" class="w-4 h-4"></i>`
+                      : ""
+                  }
+                </span>
+
+                <div>
+                  <p class="font-black text-[#332c26]">
+                    ${item.extraMeat.label}
+                  </p>
+
+                  <p class="text-xs text-[#806f5e] mt-1">
+                    每份主餐最多加購 1 份
+                  </p>
+                </div>
+              </div>
+
+              <strong class="text-[#c94d2d] whitespace-nowrap">
+                +$${item.extraMeat.price}
+              </strong>
+
+            </button>
+          </section>
+        `;
+      }
+
+
+      /* -------------------------
+         Combo Upgrade
+      -------------------------- */
+
+      if (item.canAddCombo) {
+
+        html += `
+          <section>
+            ${sectionTitle(
+              sectionNumber++,
+              "套餐升級"
+            )}
+
+            <button
+              type="button"
+              onclick="toggleCombo()"
+              class="
+                check-option
+                ${state.modalOptions.combo ? "selected" : ""}
+                w-full
+                border
+                border-[#e3d5c2]
+                rounded-2xl
+                p-4
+                flex
+                items-center
+                justify-between
+                gap-3
+                text-left
+              "
+            >
+
+              <div class="flex items-center gap-3">
+                <span class="
+                  w-6
+                  h-6
+                  rounded-lg
+                  border-2
+                  flex
+                  items-center
+                  justify-center
+                  ${
+                    state.modalOptions.combo
+                      ? "border-[#c94d2d] bg-[#c94d2d] text-white"
+                      : "border-[#cdbca9] bg-white"
+                  }
+                ">
+                  ${
+                    state.modalOptions.combo
+                      ? `<i data-lucide="check" class="w-4 h-4"></i>`
+                      : ""
+                  }
+                </span>
+
+                <div>
+                  <p class="font-black text-[#332c26]">
+                    升級超值套餐
+                  </p>
+
+                  <p class="text-xs text-[#806f5e] mt-1">
+                    飲品 5 選 1 ＋ 銅鑼燒 4 選 1
+                  </p>
+                </div>
+              </div>
+
+              <strong class="text-[#c94d2d] whitespace-nowrap">
+                +$40
+              </strong>
+
+            </button>
+
+
+            <div
+              class="
+                mt-4
+                ${state.modalOptions.combo ? "" : "hidden"}
+              "
+            >
+
+              <div class="rounded-2xl bg-[#fff7ef] border border-[#f0d5c3] p-4 space-y-5">
+
+                <div>
+                  <p class="text-sm font-black text-[#514538] mb-2">
+                    飲品 5 選 1
+                    <span class="text-[#c94d2d]">*</span>
+                  </p>
+
+                  ${renderRadioOptions(
+                    COMBO_DRINKS,
+                    state.modalOptions.comboDrink,
+                    "selectComboDrink"
+                  )}
+                </div>
+
+
+                <div class="border-t border-[#efd8c7] pt-5">
+                  <p class="text-sm font-black text-[#514538] mb-2">
+                    銅鑼燒 4 選 1
+                    <span class="text-[#c94d2d]">*</span>
+                  </p>
+
+                  ${renderRadioOptions(
+                    DORAYAKI_FLAVORS,
+                    state.modalOptions.comboDorayaki,
+                    "selectComboDorayaki"
+                  )}
+                </div>
+
+              </div>
+            </div>
+
+          </section>
+        `;
+      }
+
+
+      /* -------------------------
+         Single Dorayaki
+      -------------------------- */
+
+      if (item.flavorMode === "dorayaki") {
+
+        html += `
+          <section>
+            ${sectionTitle(
+              sectionNumber++,
+              "選擇銅鑼燒口味",
+              true
+            )}
+
+            ${renderRadioOptions(
+              item.flavors,
+              state.modalOptions.dorayakiFlavor,
+              "selectDorayakiFlavor"
+            )}
+          </section>
+        `;
+      }
+
+
+      /* -------------------------
+         Remark
+      -------------------------- */
+
+      html += `
+        <section>
+          ${sectionTitle(
+            sectionNumber++,
+            "特殊備註"
+          )}
+
+          <textarea
+            id="modal-remark"
+            rows="3"
+            placeholder="例如：飯少、不要蔥..."
+            class="
+              w-full
+              rounded-2xl
+              border
+              border-[#e3d5c2]
+              bg-white
+              px-4
+              py-3
+              text-sm
+              text-[#332c26]
+              placeholder-[#b7a796]
+              focus:border-[#c94d2d]
+              resize-none
+            "
+          >${escapeHTML(state.modalOptions.remark)}</textarea>
+
+          <p class="text-[11px] text-[#aa9b8a] mt-2">
+            沒有特殊需求可以留白。
+          </p>
+        </section>
+      `;
+
+      $("meal-modal-body").innerHTML = html;
+
+      const remarkInput =
+        $("modal-remark");
+
+      if (remarkInput) {
+        remarkInput.addEventListener(
+          "input",
+          (event) => {
+            state.modalOptions.remark =
+              event.target.value;
+          }
+        );
+      }
+
+      updateMealModalTotal();
+
+      lucide.createIcons();
+    }
+
+
+    window.selectModalFlavor = (flavor) => {
+      state.modalOptions.flavor = flavor;
+      renderMealModalBody();
+    };
+
+
+    window.selectDorayakiFlavor = (flavor) => {
+      state.modalOptions.dorayakiFlavor = flavor;
+      renderMealModalBody();
+    };
+
+
+    window.selectComboDrink = (drink) => {
+      state.modalOptions.comboDrink = drink;
+      renderMealModalBody();
+    };
+
+
+    window.selectComboDorayaki = (dorayaki) => {
+      state.modalOptions.comboDorayaki = dorayaki;
+      renderMealModalBody();
+    };
+
+
+    window.toggleExtraMeat = () => {
+      state.modalOptions.extraMeat =
+        !state.modalOptions.extraMeat;
+
+      renderMealModalBody();
+    };
+
+
+    window.toggleCombo = () => {
+      state.modalOptions.combo =
+        !state.modalOptions.combo;
+
+      if (!state.modalOptions.combo) {
+        state.modalOptions.comboDrink = null;
+        state.modalOptions.comboDorayaki = null;
+      }
+
+      renderMealModalBody();
+    };
+
+
+    function getModalUnitPrice() {
+      const item = state.modalItem;
+
+      if (!item) return 0;
+
+      let price = item.price;
+
+      if (
+        state.modalOptions.extraMeat &&
+        item.extraMeat
+      ) {
+        price += item.extraMeat.price;
+      }
+
+      if (
+        state.modalOptions.combo &&
+        item.canAddCombo
+      ) {
+        price += 40;
+      }
+
+      return price;
+    }
+
+
+    function updateMealModalTotal() {
+      $("modal-qty").textContent =
+        state.modalQty;
+
+      $("meal-modal-total").textContent =
+        money(
+          getModalUnitPrice() *
+          state.modalQty
+        );
+    }
+
+
+    $("modal-qty-minus").addEventListener(
+      "click",
+      () => {
+        if (state.modalQty > 1) {
+          state.modalQty--;
+          updateMealModalTotal();
+        }
+      }
+    );
+
+
+    $("modal-qty-plus").addEventListener(
+      "click",
+      () => {
+        state.modalQty++;
+        updateMealModalTotal();
+      }
+    );
+
+
+    $("meal-modal-add-btn").addEventListener(
+      "click",
+      () => {
+
+        const item = state.modalItem;
+
+        if (!item) return;
+
+
+        /* Required flavor */
+
+        if (
+          item.flavorMode === "single" &&
+          !state.modalOptions.flavor
+        ) {
+          showModal(
+            "請選擇口味",
+            "請先選擇您想要的餐點口味。",
+            "warning"
+          );
+          return;
+        }
+
+
+        /* Required dual flavor */
+
+        if (
+          (
+            item.flavorMode === "dual-original" ||
+            item.flavorMode === "dual-scallion"
+          ) &&
+          !state.modalOptions.flavor
+        ) {
+          showModal(
+            "請選擇另一種口味",
+            "雙拼／雙響丼需要選擇另一份肉品的口味。",
+            "warning"
+          );
+          return;
+        }
+
+
+        /* Dorayaki flavor */
+
+        if (
+          item.flavorMode === "dorayaki" &&
+          !state.modalOptions.dorayakiFlavor
+        ) {
+          showModal(
+            "請選擇銅鑼燒口味",
+            "單點銅鑼燒需要先選擇口味。",
+            "warning"
+          );
+          return;
+        }
+
+
+        /* Combo required choices */
+
+        if (state.modalOptions.combo) {
+
+          if (
+            !state.modalOptions.comboDrink ||
+            !state.modalOptions.comboDorayaki
+          ) {
+            showModal(
+              "套餐尚未選擇完成",
+              "套餐需要選擇 1 種飲品與 1 種銅鑼燒口味。",
+              "warning"
+            );
+            return;
+          }
+        }
+
+
+        const unitPrice =
+          getModalUnitPrice();
+
+
+        const cartItem = {
+          id: item.id,
+
+          cartId:
+            `${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2, 8)}`,
+
+          category: item.category,
+          name: item.name,
+
+          basePrice: item.price,
+          price: unitPrice,
+
+          qty: state.modalQty,
+
+          options: {
+            flavor:
+              state.modalOptions.flavor || null,
+
+            fixedFlavor:
+              state.modalOptions.fixedFlavor || null,
+
+            extraMeat:
+              state.modalOptions.extraMeat
+                ? {
+                    label:
+                      item.extraMeat?.label || "",
+                    price:
+                      item.extraMeat?.price || 0
+                  }
+                : null,
+
+            combo:
+              state.modalOptions.combo
+                ? {
+                    price: 40,
+                    drink:
+                      state.modalOptions.comboDrink,
+                    dorayaki:
+                      state.modalOptions.comboDorayaki
+                  }
+                : null,
+
+            dorayakiFlavor:
+              state.modalOptions.dorayakiFlavor || null
+          },
+
+          remark:
+            state.modalOptions.remark.trim()
+        };
+
+
+        addConfiguredItemToCart(
+          cartItem
+        );
+
+        closeMealModal();
+
+        renderCart();
+      }
+    );
+
+
+    function getItemMergeKey(item) {
+      return JSON.stringify({
+        id: item.id,
+        price: item.price,
+        options: item.options,
+        remark: item.remark
+      });
+    }
+
+
+    function addConfiguredItemToCart(newItem) {
+      const newKey =
+        getItemMergeKey(newItem);
+
+      const existing =
+        state.cart.find(
+          item =>
+            getItemMergeKey(item) === newKey
+        );
+
+      if (existing) {
+        existing.qty += newItem.qty;
+      } else {
+        state.cart.push(newItem);
+      }
+    }
+
+
+    /* =========================================================
+       12. Cart
+    ========================================================= */
+
+    function getItemOptionLines(item) {
+      const options =
+        item.options || {};
+
+      const lines = [];
+
+      if (options.fixedFlavor) {
+        if (options.flavor) {
+          lines.push(
+            `${options.fixedFlavor}＋${options.flavor}`
+          );
+        } else {
+          lines.push(
+            options.fixedFlavor
+          );
+        }
+      }
+
+      else if (options.flavor) {
+        lines.push(
+          `口味：${options.flavor}`
+        );
+      }
+
+      if (options.extraMeat) {
+        lines.push(
+          `${options.extraMeat.label} +$${options.extraMeat.price}`
+        );
+      }
+
+      if (options.combo) {
+        lines.push(
+          `套餐：${options.combo.drink}＋${options.combo.dorayaki}`
+        );
+      }
+
+      if (options.dorayakiFlavor) {
+        lines.push(
+          `口味：${options.dorayakiFlavor}`
+        );
+      }
+
+      return lines;
+    }
+
+
+    function renderCart() {
+      const container =
+        $("cart-items-container");
+
+      const totalEl =
+        $("cart-total");
+
+      const badge =
+        $("cart-count-badge");
+
+      const totalItems =
+        state.cart.reduce(
+          (sum, item) => sum + item.qty,
+          0
+        );
+
+
+      if (state.cart.length === 0) {
+
+        container.innerHTML = `
+          <div class="text-center py-8 text-[#aa9b8a]">
+            <i data-lucide="shopping-basket" class="w-10 h-10 mx-auto mb-3 opacity-60"></i>
+            <p class="text-sm font-bold">尚未選擇任何餐點</p>
+            <p class="text-xs mt-1">請從上方菜單開始點餐</p>
+          </div>
+        `;
+
+        totalEl.textContent = "0";
+
+        $("cart-delivery-status").textContent =
+          `距離外送門檻還差 $${money(STORE_CONFIG.deliveryThreshold)}`;
+
+        badge.classList.add("hidden");
+
+        lucide.createIcons();
+        return;
+      }
+
+
+      badge.textContent =
+        totalItems;
+
+      badge.classList.remove("hidden");
+
+
+      let total = 0;
+
+      container.innerHTML =
+        state.cart.map(item => {
+
+          const itemTotal =
+            item.price * item.qty;
+
+          total += itemTotal;
+
+          const optionLines =
+            getItemOptionLines(item);
+
+          return `
+            <div class="
+              bg-white
+              border
+              border-[#e6d7c5]
+              rounded-2xl
+              p-4
+              relative
+            ">
+
+              <button
+                onclick="removeFromCart('${item.cartId}')"
+                class="
+                  absolute
+                  right-2
+                  top-2
+                  w-8
+                  h-8
+                  rounded-full
+                  text-[#aa9b8a]
+                  hover:text-[#c94d2d]
+                  hover:bg-[#fff1e8]
+                  flex
+                  items-center
+                  justify-center
+                  transition-colors
+                "
+              >
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+
+
+              <div class="pr-9">
+
+                <div class="flex items-start justify-between gap-3">
+
+                  <div>
+                    <h5 class="font-black text-[#332c26]">
+                      ${escapeHTML(item.name)}
+                    </h5>
+
+                    <p class="text-xs text-[#b9823d] font-black mt-1">
+                      單價 $${money(item.price)}
+                    </p>
+                  </div>
+
+                  <strong class="text-[#c94d2d] whitespace-nowrap">
+                    $${money(itemTotal)}
+                  </strong>
+
+                </div>
+
+
+                ${
+                  optionLines.length
+                    ? `
+                      <div class="mt-3 space-y-1">
+                        ${optionLines.map(line => `
+                          <p class="
+                            text-xs
+                            text-[#65584b]
+                            bg-[#faf3eb]
+                            rounded-lg
+                            px-2.5
+                            py-1.5
+                            w-fit
+                          ">
+                            ${escapeHTML(line)}
+                          </p>
+                        `).join("")}
+                      </div>
+                    `
+                    : ""
+                }
+
+
+                <input
+                  type="text"
+                  value="${escapeHTML(item.remark || "")}"
+                  placeholder="備註，例如：飯少、不要蔥"
+                  onchange="updateCartRemark('${item.cartId}', this.value)"
+                  class="
+                    w-full
+                    mt-3
+                    px-3
+                    py-2.5
+                    rounded-xl
+                    border
+                    border-[#e6d7c5]
+                    bg-[#fffdf9]
+                    text-sm
+                    text-[#514538]
+                    placeholder-[#b7a796]
+                    focus:border-[#c94d2d]
+                  "
+                />
+
+              </div>
+
+
+              <div class="
+                mt-4
+                flex
+                items-center
+                justify-between
+              ">
+
+                <span class="text-xs text-[#806f5e] font-bold">
+                  數量
+                </span>
+
+                <div class="
+                  flex
+                  items-center
+                  gap-2
+                  bg-[#f7eee4]
+                  border
+                  border-[#e3d5c2]
+                  rounded-xl
+                  p-1
+                ">
+
+                  <button
+                    onclick="updateCartQty('${item.cartId}', -1)"
+                    class="
+                      w-8
+                      h-8
+                      rounded-lg
+                      bg-white
+                      text-[#806f5e]
+                      hover:text-[#c94d2d]
+                      flex
+                      items-center
+                      justify-center
+                    "
+                  >
+                    <i data-lucide="minus" class="w-4 h-4"></i>
+                  </button>
+
+                  <span class="w-8 text-center font-black text-[#332c26]">
+                    ${item.qty}
+                  </span>
+
+                  <button
+                    onclick="updateCartQty('${item.cartId}', 1)"
+                    class="
+                      w-8
+                      h-8
+                      rounded-lg
+                      bg-[#332c26]
+                      text-[#e8c78d]
+                      hover:bg-[#463a31]
+                      flex
+                      items-center
+                      justify-center
+                    "
+                  >
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                  </button>
+
+                </div>
+              </div>
+
+            </div>
+          `;
+        }).join("");
+
+
+      totalEl.textContent =
+        money(total);
+
+      checkDeliveryThreshold(
+        total,
+        "cart-delivery-status",
+        false
+      );
+
+      lucide.createIcons();
+    }
+
+
+    window.updateCartQty = (
+      cartId,
+      delta
+    ) => {
+      const item =
+        state.cart.find(
+          item => item.cartId === cartId
+        );
+
+      if (!item) return;
+
+      item.qty += delta;
+
+      if (item.qty < 1) {
+        removeCartItem(cartId);
+      }
+
+      renderCart();
+    };
+
+
+    window.removeFromCart = (
+      cartId
+    ) => {
+      removeCartItem(cartId);
+      renderCart();
+    };
+
+
+    function removeCartItem(cartId) {
+      state.cart =
+        state.cart.filter(
+          item => item.cartId !== cartId
+        );
+    }
+
+
+    window.updateCartRemark = (
+      cartId,
+      value
+    ) => {
+      const item =
+        state.cart.find(
+          item => item.cartId === cartId
+        );
+
+      if (item) {
+        item.remark =
+          value;
+      }
+    };
+
+
+    /* =========================================================
+       13. Delivery Threshold
+    ========================================================= */
+
+    function checkDeliveryThreshold(
+      total,
+      elementId,
+      isGlobal = false
+    ) {
+      const element =
+        $(elementId);
+
+      const difference =
+        STORE_CONFIG.deliveryThreshold -
+        total;
+
+
+      if (difference > 0) {
+
+        if (isGlobal) {
+          element.className =
+            "mt-3 rounded-2xl p-3 text-sm font-bold text-center bg-[#fff1e8] border border-[#f1c9b5] text-[#b94428]";
+
+          element.innerHTML =
+            `目前全團總額 $${money(total)}，距離外送門檻還差 <strong>$${money(difference)}</strong>`;
+        }
+
+        else {
+          element.className =
+            "mt-1 text-xs font-bold text-[#c94d2d]";
+
+          element.textContent =
+            `距離外送門檻還差 $${money(difference)}`;
+        }
+      }
+
+      else {
+
+        if (isGlobal) {
+          element.className =
+            "mt-3 rounded-2xl p-3 text-sm font-bold text-center bg-[#edf7f1] border border-[#b8ddc7] text-[#2f7d59]";
+
+          element.innerHTML =
+            `✓ 全團已達 $${money(STORE_CONFIG.deliveryThreshold)} 外送門檻`;
+        }
+
+        else {
+          element.className =
+            "mt-1 text-xs font-bold text-[#2f7d59]";
+
+          element.textContent =
+            `✓ 已達 $${money(STORE_CONFIG.deliveryThreshold)} 外送門檻`;
+        }
+      }
+    }
+
+
+    /* =========================================================
+       14. Firebase Authentication
+    ========================================================= */
+
+    signInAnonymously(auth)
+      .catch(error => {
+        console.error(
+          "匿名登入失敗：",
+          error
+        );
+
+        showModal(
+          "登入連線失敗",
+          "目前無法建立訂餐連線，請重新整理頁面後再試。",
+          "error"
+        );
+      });
+
+
+    onAuthStateChanged(
+      auth,
+      (user) => {
+
+        state.user = user;
+
+        if (!user) return;
+
+        const ordersRef =
+          getOrdersRef();
+
+        onSnapshot(
+          ordersRef,
+          (snapshot) => {
+
+            const orders =
+              snapshot.docs.map(
+                document => ({
+                  id: document.id,
+                  ...document.data()
+                })
+              );
+
+            orders.sort(
+              (a, b) => {
+
+                const timeA =
+                  a.createdAt?.toMillis?.() || 0;
+
+                const timeB =
+                  b.createdAt?.toMillis?.() || 0;
+
+                return timeA - timeB;
+              }
+            );
+
+            state.orders =
+              orders;
+
+            renderOrdersList();
+          },
+
+          (error) => {
+            console.error(
+              "讀取訂單失敗：",
+              error
+            );
+          }
+        );
+      }
+    );
+
+
+    /* =========================================================
+       15. Orders List
+    ========================================================= */
+
+    function renderOrdersList() {
+
+      const container =
+        $("orders-container");
+
+      const count =
+        state.orders.length;
+
+      $("orders-count").textContent =
+        count;
+
+      const mobileBadge =
+        $("mobile-badge");
+
+      if (count > 0) {
+        mobileBadge.textContent =
+          count;
+
+        mobileBadge.classList.remove(
+          "hidden"
+        );
+      }
+
+      else {
+        mobileBadge.classList.add(
+          "hidden"
+        );
+      }
+
+
+      const grandTotal =
+        state.orders.reduce(
+          (sum, order) =>
+            sum + Number(order.total || 0),
+          0
+        );
+
+      $("orders-grand-total").textContent =
+        money(grandTotal);
+
+      checkDeliveryThreshold(
+        grandTotal,
+        "global-delivery-status",
+        true
+      );
+
+
+      if (count === 0) {
+
+        container.innerHTML = `
+          <div class="text-center py-12 text-[#aa9b8a]">
+            <div class="
+              w-14
+              h-14
+              rounded-2xl
+              bg-[#f7eee4]
+              flex
+              items-center
+              justify-center
+              mx-auto
+              mb-3
+            ">
+              <i data-lucide="clipboard-list" class="w-7 h-7"></i>
+            </div>
+
+            <p class="font-black text-sm">
+              尚未有任何訂單
+            </p>
+
+            <p class="text-xs mt-1">
+              第一位點餐的人還沒出現
+            </p>
+          </div>
+        `;
+
+        lucide.createIcons();
+        return;
+      }
+
+
+      container.innerHTML =
+        state.orders.map(order => {
+
+          return `
+            <article class="
+              bg-white
+              border
+              border-[#e6d7c5]
+              rounded-2xl
+              overflow-hidden
+            ">
+
+              <div class="
+                p-4
+                flex
+                items-center
+                justify-between
+                gap-3
+                border-b
+                border-[#eadbca]
+                bg-[#fffdf9]
+              ">
+
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="
+                    w-9
+                    h-9
+                    rounded-xl
+                    bg-[#332c26]
+                    text-[#e8c78d]
+                    flex
+                    items-center
+                    justify-center
+                    shrink-0
+                  ">
+                    <i data-lucide="user-round" class="w-4 h-4"></i>
+                  </span>
+
+                  <div class="min-w-0">
+                    <p class="text-[10px] text-[#aa9b8a] font-black">
+                      點餐者
+                    </p>
+
+                    <h4 class="
+                      font-black
+                      text-[#332c26]
+                      truncate
+                    ">
+                      ${escapeHTML(order.userName)}
+                    </h4>
+                  </div>
+                </div>
+
+
+                <div class="flex items-center gap-1.5 shrink-0">
+
+                  <button
+                    onclick="editOrder('${order.id}')"
+                    class="
+                      w-9
+                      h-9
+                      rounded-xl
+                      bg-[#f7eee4]
+                      text-[#9c682e]
+                      hover:bg-[#efe0ca]
+                      flex
+                      items-center
+                      justify-center
+                      transition-colors
+                    "
+                    title="修改訂單"
+                  >
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                  </button>
+
+                  <button
+                    onclick="deleteOrder('${order.id}')"
+                    class="
+                      w-9
+                      h-9
+                      rounded-xl
+                      bg-[#fff1e8]
+                      text-[#c94d2d]
+                      hover:bg-[#ffe1d1]
+                      flex
+                      items-center
+                      justify-center
+                      transition-colors
+                    "
+                    title="刪除訂單"
+                  >
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+
+                </div>
+
+              </div>
+
+
+              <div class="p-4 space-y-3">
+
+                ${order.items.map(item => {
+
+                  const optionLines =
+                    getItemOptionLines(item);
+
+                  return `
+                    <div class="flex gap-3">
+
+                      <div class="w-1 rounded-full bg-gradient-to-b from-[#c94d2d] to-[#e8c78d] shrink-0"></div>
+
+                      <div class="flex-1 min-w-0">
+
+                        <div class="flex items-start justify-between gap-3">
+
+                          <div>
+                            <p class="font-black text-sm text-[#332c26]">
+                              ${escapeHTML(item.name)}
+                              <span class="text-[#c94d2d] ml-1">
+                                ×${item.qty}
+                              </span>
+                            </p>
+
+                            ${
+                              optionLines.length
+                                ? `
+                                  <div class="mt-1.5 space-y-1">
+                                    ${optionLines.map(line => `
+                                      <p class="text-[11px] text-[#806f5e]">
+                                        ・${escapeHTML(line)}
+                                      </p>
+                                    `).join("")}
+                                  </div>
+                                `
+                                : ""
+                            }
+
+                            ${
+                              item.remark
+                                ? `
+                                  <p class="
+                                    mt-2
+                                    inline-block
+                                    text-[11px]
+                                    bg-[#fff7d6]
+                                    text-[#8a641f]
+                                    px-2
+                                    py-1
+                                    rounded-lg
+                                  ">
+                                    備註：${escapeHTML(item.remark)}
+                                  </p>
+                                `
+                                : ""
+                            }
+                          </div>
+
+                          <strong class="
+                            text-sm
+                            text-[#c94d2d]
+                            whitespace-nowrap
+                          ">
+                            $${money(item.price * item.qty)}
+                          </strong>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+                  `;
+                }).join("")}
+
+              </div>
+
+
+              <div class="
+                px-4
+                py-3
+                bg-[#f7eee4]
+                border-t
+                border-[#eadbca]
+                flex
+                items-center
+                justify-between
+              ">
+                <span class="text-xs font-black text-[#806f5e]">
+                  本人訂單小計
+                </span>
+
+                <strong class="text-xl text-[#c94d2d] font-black">
+                  $${money(order.total)}
+                </strong>
+              </div>
+
+            </article>
+          `;
+        }).join("");
+
+
+      lucide.createIcons();
+    }
+
+
+    /* =========================================================
+       16. Submit Order
+    ========================================================= */
+
+    $("submit-order-btn").addEventListener(
+      "click",
+      () => {
+
+        const userName =
+          $("user-name-input")
+            .value
+            .trim();
+
+
+        if (!userName) {
+          showModal(
+            "忘記填姓名了",
+            "請輸入點餐者姓名，這樣才能知道餐點是誰的。",
+            "warning"
+          );
+          return;
+        }
+
+
+        if (state.cart.length === 0) {
+          showModal(
+            "購物車是空的",
+            "請至少選擇一項餐點後再送出。",
+            "warning"
+          );
+          return;
+        }
+
+
+        if (!state.user) {
+          showModal(
+            "連線尚未完成",
+            "目前正在建立訂餐連線，請稍候幾秒後再送出。",
+            "warning"
+          );
+          return;
+        }
+
+
+        const executeSubmit =
+          async () => {
+
+            const textEl =
+              $("submit-btn-text");
+
+            const iconEl =
+              $("submit-btn-icon");
+
+            const originalText =
+              textEl.textContent;
+
+            const originalIcon =
+              iconEl.getAttribute(
+                "data-lucide"
+              );
+
+
+            try {
+
+              $("submit-order-btn").disabled =
+                true;
+
+              $("submit-order-btn").classList.add(
+                "opacity-70",
+                "cursor-wait"
+              );
+
+              textEl.textContent =
+                "訂單處理中...";
+
+              iconEl.setAttribute(
+                "data-lucide",
+                "loader-circle"
+              );
+
+              lucide.createIcons();
+
+
+              const total =
+                state.cart.reduce(
+                  (sum, item) =>
+                    sum +
+                    (
+                      item.price *
+                      item.qty
+                    ),
+                  0
+                );
+
+
+              const cleanItems =
+                state.cart.map(item => ({
+                  id: item.id,
+                  cartId: item.cartId,
+
+                  category: item.category,
+                  name: item.name,
+
+                  basePrice: item.basePrice,
+                  price: item.price,
+
+                  qty: item.qty,
+
+                  options: item.options || {},
+
+                  remark:
+                    item.remark || ""
+                }));
+
+
+              const orderData = {
+                userName,
+
+                items:
+                  cleanItems,
+
+                total,
+
+                createdAt:
+                  serverTimestamp(),
+
+                userId:
+                  state.user.uid
+              };
+
+
+              const ordersRef =
+                getOrdersRef();
+
+
+              if (
+                state.editingOrderId
+              ) {
+
+                await updateDoc(
+                  doc(
+                    ordersRef,
+                    state.editingOrderId
+                  ),
+                  orderData
+                );
+
+                showModal(
+                  "訂單修改成功",
+                  "您的訂單已經更新完成。",
+                  "success"
+                );
+              }
+
+              else {
+
+                await addDoc(
+                  ordersRef,
+                  orderData
+                );
+
+                showModal(
+                  "訂餐成功",
+                  "您的餐點已成功送出！",
+                  "success"
+                );
+              }
+
+
+              $("user-name-input").value =
+                "";
+
+              state.cart =
+                [];
+
+              cancelEditMode();
+
+              renderCart();
+
+
+              if (
+                window.innerWidth < 1280
+              ) {
+                switchTab("list");
+              }
+
+            }
+
+            catch (error) {
+
+              console.error(
+                "寫入訂單失敗：",
+                error
+              );
+
+              showModal(
+                "訂單送出失敗",
+                "無法寫入資料庫，請檢查網路後再試一次。",
+                "error"
+              );
+            }
+
+            finally {
+
+              $("submit-order-btn").disabled =
+                false;
+
+              $("submit-order-btn").classList.remove(
+                "opacity-70",
+                "cursor-wait"
+              );
+
+              textEl.textContent =
+                originalText;
+
+              iconEl.setAttribute(
+                "data-lucide",
+                originalIcon
+              );
+
+              lucide.createIcons();
+            }
+          };
+
+
+        if (state.isPastCutoff) {
+
+          showModal(
+            "已超過訂購截止時間",
+            `目前已超過 ${String(STORE_CONFIG.cutoffHour).padStart(2, "0")}:${String(STORE_CONFIG.cutoffMinute).padStart(2, "0")} 的訂購時間。送出後請自行確認是否仍可追加訂單。`,
+            "confirm",
+            executeSubmit
+          );
+        }
+
+        else {
+          executeSubmit();
+        }
+      }
+    );
+
+
+    /* =========================================================
+       17. Edit Order
+    ========================================================= */
+
+    window.editOrder =
+      (orderId) => {
+
+        const order =
+          state.orders.find(
+            item => item.id === orderId
+          );
+
+        if (!order) return;
+
+
+        $("user-name-input").value =
+          order.userName || "";
+
+
+        state.cart =
+          JSON.parse(
+            JSON.stringify(
+              order.items || []
+            )
+          );
+
+
+        /* Ensure old / incomplete records are compatible */
+
+        state.cart =
+          state.cart.map(item => ({
+            ...item,
+
+            cartId:
+              item.cartId ||
+              `${Date.now()}-${Math.random()
+                .toString(36)
+                .slice(2, 8)}`,
+
+            options:
+              item.options || {},
+
+            remark:
+              item.remark || ""
+          }));
+
+
+        state.editingOrderId =
+          order.id;
+
+
+        $("form-title").innerHTML = `
+          <span class="
+            w-9
+            h-9
+            rounded-xl
+            bg-[#fff1d7]
+            text-[#b9823d]
+            flex
+            items-center
+            justify-center
+          ">
+            <i data-lucide="pencil-line" class="w-5 h-5"></i>
+          </span>
+
+          正在修改訂單
+        `;
+
+
+        $("submit-btn-text").textContent =
+          "確認更新這筆訂單";
+
+        $("submit-btn-icon").setAttribute(
+          "data-lucide",
+          "refresh-cw"
+        );
+
+
+        $("cancel-edit-btn")
+          .classList.remove(
+            "hidden"
+          );
+
+
+        $("submit-order-btn")
+          .classList.remove(
+            "ember-gradient"
+          );
+
+        $("submit-order-btn")
+          .classList.add(
+            "gold-gradient"
+          );
+
+
+        renderCart();
+
+        lucide.createIcons();
+
+
+        if (
+          window.innerWidth < 1280
+        ) {
+          switchTab("order");
+        }
+
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+      };
+
+
+    function cancelEditMode() {
+
+      state.editingOrderId =
+        null;
+
+
+      $("form-title").innerHTML = `
+        <span class="
+          w-9
+          h-9
+          rounded-xl
+          bg-[#fff0e6]
+          text-[#c94d2d]
+          flex
+          items-center
+          justify-center
+        ">
+          <i data-lucide="utensils-crossed" class="w-5 h-5"></i>
+        </span>
+
+        我要點餐
+      `;
+
+
+      $("submit-btn-text").textContent =
+        "確認送出訂單";
+
+      $("submit-btn-icon").setAttribute(
+        "data-lucide",
+        "circle-check-big"
+      );
+
+
+      $("cancel-edit-btn")
+        .classList.add(
+          "hidden"
+        );
+
+
+      $("submit-order-btn")
+        .classList.remove(
+          "gold-gradient"
+        );
+
+      $("submit-order-btn")
+        .classList.add(
+          "ember-gradient"
+        );
+
+
+      lucide.createIcons();
+    }
+
+
+    $("cancel-edit-btn").addEventListener(
+      "click",
+      () => {
+
+        $("user-name-input").value =
+          "";
+
+        state.cart =
+          [];
+
+        cancelEditMode();
+
+        renderCart();
+      }
+    );
+
+
+    /* =========================================================
+       18. Delete Order
+    ========================================================= */
+
+    window.deleteOrder =
+      (orderId) => {
+
+        showModal(
+          "確定刪除這筆訂單？",
+          "刪除後無法復原，確定要取消這筆訂單嗎？",
+          "confirm",
+
+          async () => {
+
+            await deleteDoc(
+              doc(
+                getOrdersRef(),
+                orderId
+              )
+            );
+
+            showModal(
+              "訂單已刪除",
+              "這筆訂單已從訂購總表移除。",
+              "success"
+            );
+          }
+        );
+      };
+
+
+    /* =========================================================
+       19. Clear All Orders
+    ========================================================= */
+
+    $("clear-all-btn").addEventListener(
+      "click",
+      () => {
+
+        if (
+          state.orders.length === 0
+        ) {
+          showModal(
+            "目前沒有訂單",
+            "現在沒有任何訂購資料可以清除。",
+            "warning"
+          );
+
+          return;
+        }
+
+
+        showModal(
+          "危險操作：清除全部訂單",
+          "確定要刪除目前所有人的訂單嗎？此動作無法復原，建議先複製 LINE 訂餐明細。",
+          "confirm",
+
+          async () => {
+
+            const orders =
+              [...state.orders];
+
+            await Promise.all(
+              orders.map(order =>
+                deleteDoc(
+                  doc(
+                    getOrdersRef(),
+                    order.id
+                  )
+                )
+              )
+            );
+
+            showModal(
+              "全部訂單已清除",
+              "新的訂餐輪次可以重新開始。",
+              "success"
+            );
+          }
+        );
+      }
+    );
+
+
+    /* =========================================================
+       20. Copy LINE Order Details
+    ========================================================= */
+
+    function getLineItemDescription(item) {
+
+      const optionLines =
+        getItemOptionLines(item);
+
+      let text =
+        `${item.name}×${item.qty}`;
+
+      if (optionLines.length) {
+        text +=
+          `（${optionLines.join("／")}）`;
+      }
+
+      if (item.remark) {
+        text +=
+          `【備註：${item.remark}】`;
+      }
+
+      return text;
+    }
+
+
+    $("copy-orders-btn").addEventListener(
+      "click",
+      async () => {
+
+        if (
+          state.orders.length === 0
+        ) {
+          showModal(
+            "目前沒有訂單",
+            "還沒有任何訂單可以複製。",
+            "warning"
+          );
+
+          return;
+        }
+
+
+        const date =
+          new Date()
+            .toLocaleDateString(
+              "zh-TW",
+              {
+                month: "2-digit",
+                day: "2-digit"
+              }
+            );
+
+
+        let text =
+          `🔥【${STORE_CONFIG.storeName}】訂餐明細（${date}）\n` +
+          `========================\n\n`;
+
+
+        let grandTotal = 0;
+
+        const itemCounts =
+          {};
+
+
+        state.orders.forEach(
+          order => {
+
+            text +=
+              `👤 ${order.userName}\n`;
+
+
+            order.items.forEach(
+              item => {
+
+                const itemText =
+                  getLineItemDescription(
+                    item
+                  );
+
+                text +=
+                  `・${itemText} = $${money(item.price * item.qty)}\n`;
+
+
+                const key =
+                  itemText
+                    .replace(
+                      `×${item.qty}`,
+                      ""
+                    );
+
+                itemCounts[key] =
+                  (
+                    itemCounts[key] ||
+                    0
+                  ) +
+                  item.qty;
+              }
+            );
+
+
+            text +=
+              `小計：$${money(order.total)}\n\n`;
+
+
+            grandTotal +=
+              Number(
+                order.total || 0
+              );
+          }
+        );
+
+
+        text +=
+          `========================\n`;
+
+        text +=
+          `📝 品項總計\n`;
+
+
+        Object
+          .keys(itemCounts)
+          .sort(
+            (a, b) =>
+              a.localeCompare(
+                b,
+                "zh-Hant"
+              )
+          )
+          .forEach(
+            itemName => {
+              text +=
+                `▫️ ${itemName}：${itemCounts[itemName]}份\n`;
+            }
+          );
+
+
+        text +=
+          `------------------------\n`;
+
+        text +=
+          `💰 總金額：$${money(grandTotal)}\n`;
+
+
+        if (
+          grandTotal >=
+          STORE_CONFIG.deliveryThreshold
+        ) {
+          text +=
+            `✅ 已達 $${money(STORE_CONFIG.deliveryThreshold)} 外送門檻\n`;
+        }
+
+        else {
+          text +=
+            `⚠️ 未達外送門檻，還差 $${money(
+              STORE_CONFIG.deliveryThreshold -
+              grandTotal
+            )}\n`;
+        }
+
+
+        try {
+
+          if (
+            navigator.clipboard &&
+            window.isSecureContext
+          ) {
+            await navigator.clipboard.writeText(
+              text
+            );
+          }
+
+          else {
+
+            const textarea =
+              document.createElement(
+                "textarea"
+              );
+
+            textarea.value =
+              text;
+
+            textarea.style.position =
+              "fixed";
+
+            textarea.style.opacity =
+              "0";
+
+            textarea.style.left =
+              "-9999px";
+
+            document.body.appendChild(
+              textarea
+            );
+
+            textarea.focus();
+            textarea.select();
+
+            document.execCommand(
+              "copy"
+            );
+
+            textarea.remove();
+          }
+
+
+          showModal(
+            "複製成功",
+            "完整訂餐明細已複製，可以直接貼到 LINE。",
+            "success"
+          );
+        }
+
+        catch (error) {
+
+          console.error(
+            "複製失敗：",
+            error
+          );
+
+          showModal(
+            "複製失敗",
+            "瀏覽器目前無法使用自動複製，請改用電腦版瀏覽器再試。",
+            "error"
+          );
+        }
+      }
+    );
+
+
+    /* =========================================================
+       21. Mobile Tabs
+    ========================================================= */
+
+    const navOrderBtn =
+      $("nav-order-btn");
+
+    const navListBtn =
+      $("nav-list-btn");
+
+    const orderSection =
+      $("tab-order-section");
+
+    const listSection =
+      $("tab-list-section");
+
+
+    function switchTab(tab) {
+
+      if (
+        window.innerWidth >= 1280
+      ) return;
+
+
+      if (tab === "order") {
+
+        orderSection.classList.remove(
+          "hidden"
+        );
+
+        listSection.classList.add(
+          "hidden"
+        );
+
+
+        navOrderBtn.className =
+          "py-3.5 flex flex-col items-center justify-center gap-1 text-[#c94d2d] border-t-2 border-[#c94d2d] bg-[#fff7ef] transition-colors";
+
+        navListBtn.className =
+          "relative py-3.5 flex flex-col items-center justify-center gap-1 text-[#8b7763] border-t-2 border-transparent transition-colors";
+      }
+
+      else {
+
+        listSection.classList.remove(
+          "hidden"
+        );
+
+        orderSection.classList.add(
+          "hidden"
+        );
+
+
+        navListBtn.className =
+          "relative py-3.5 flex flex-col items-center justify-center gap-1 text-[#c94d2d] border-t-2 border-[#c94d2d] bg-[#fff7ef] transition-colors";
+
+        navOrderBtn.className =
+          "py-3.5 flex flex-col items-center justify-center gap-1 text-[#8b7763] border-t-2 border-transparent transition-colors";
+      }
+    }
+
+
+    navOrderBtn.addEventListener(
+      "click",
+      () => switchTab("order")
+    );
+
+    navListBtn.addEventListener(
+      "click",
+      () => switchTab("list")
+    );
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        if (
+          window.innerWidth >= 1280
+        ) {
+
+          orderSection.classList.remove(
+            "hidden"
+          );
+
+          listSection.classList.remove(
+            "hidden"
+          );
+        }
+      }
+    );
+
+
+    /* =========================================================
+       22. Date and Cutoff Time
+    ========================================================= */
+
+    function updateTime() {
+
+      const now =
+        new Date();
+
+
+      $("current-time").textContent =
+        now.toLocaleTimeString(
+          "zh-TW",
+          {
+            hour12: false
+          }
+        );
+
+
+      const currentMinutes =
+        now.getHours() * 60 +
+        now.getMinutes();
+
+
+      const cutoffMinutes =
+        STORE_CONFIG.cutoffHour * 60 +
+        STORE_CONFIG.cutoffMinute;
+
+
+      state.isPastCutoff =
+        currentMinutes >=
+        cutoffMinutes;
+
+
+      const container =
+        $("clock-container");
+
+      const warning =
+        $("time-warning");
+
+
+      if (state.isPastCutoff) {
+
+        container.classList.add(
+          "bg-[#c94d2d]/30",
+          "ring-1",
+          "ring-[#e8c78d]/40"
+        );
+
+        warning.classList.remove(
+          "hidden"
+        );
+      }
+
+      else {
+
+        container.classList.remove(
+          "bg-[#c94d2d]/30",
+          "ring-1",
+          "ring-[#e8c78d]/40"
+        );
+
+        warning.classList.add(
+          "hidden"
+        );
+      }
+    }
+
+
+    function updateDate() {
+
+      $("today-date").textContent =
+        `📅 ${
+          new Date()
+            .toLocaleDateString(
+              "zh-TW",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                weekday: "long"
+              }
+            )
+        }`;
+    }
+
+
+    updateDate();
+    updateTime();
+
+    setInterval(
+      updateTime,
+      1000
+    );
+
+
+    /* =========================================================
+       23. Initialize
+    ========================================================= */
+
+    renderCategories();
+    renderMenu();
+    renderCart();
+
+    $("cart-delivery-status").textContent =
+      `距離外送門檻還差 $${money(STORE_CONFIG.deliveryThreshold)}`;
+
+    lucide.createIcons();
+
+  </script>
+
+</body>
+</html>
