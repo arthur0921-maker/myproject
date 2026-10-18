@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>教師資格與甄試雲端題庫系統V3.0</title>
+  <title>教師資格與甄試雲端題庫系統V4.0</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -16,15 +16,127 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // --- 共用邏輯：多選與送分解析器 ---
+    // --- 1. 靜態色彩映射表 (避免 Tailwind JIT 動態拼接失效) ---
+    const COLOR_THEMES = {
+      indigo: {
+        bgLight: 'bg-indigo-50',
+        bgBadge: 'bg-indigo-100',
+        textMain: 'text-indigo-600',
+        textDark: 'text-indigo-700',
+        textIcon: 'text-indigo-500',
+        groupHoverText: 'group-hover:text-indigo-600',
+        borderHover: 'hover:border-indigo-300',
+        borderLight: 'border-indigo-200',
+        btnPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+        topBar: 'bg-indigo-500',
+        progressBar: 'bg-indigo-600',
+        focusInput: 'focus:ring-indigo-500 focus:border-indigo-500',
+        optionSelected: 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm',
+        optionHover: 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50 text-gray-700',
+        navCurrent: 'ring-2 ring-offset-1 ring-indigo-600 bg-indigo-600 text-white font-extrabold',
+        navAnswered: 'bg-indigo-100 text-indigo-800 border-indigo-300 font-bold',
+      },
+      emerald: {
+        bgLight: 'bg-emerald-50',
+        bgBadge: 'bg-emerald-100',
+        textMain: 'text-emerald-600',
+        textDark: 'text-emerald-700',
+        textIcon: 'text-emerald-500',
+        groupHoverText: 'group-hover:text-emerald-600',
+        borderHover: 'hover:border-emerald-300',
+        borderLight: 'border-emerald-200',
+        btnPrimary: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+        topBar: 'bg-emerald-500',
+        progressBar: 'bg-emerald-600',
+        focusInput: 'focus:ring-emerald-500 focus:border-emerald-500',
+        optionSelected: 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm',
+        optionHover: 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50 text-gray-700',
+        navCurrent: 'ring-2 ring-offset-1 ring-emerald-600 bg-emerald-600 text-white font-extrabold',
+        navAnswered: 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold',
+      },
+      amber: {
+        bgLight: 'bg-amber-50',
+        bgBadge: 'bg-amber-100',
+        textMain: 'text-amber-600',
+        textDark: 'text-amber-700',
+        textIcon: 'text-amber-500',
+        groupHoverText: 'group-hover:text-amber-600',
+        borderHover: 'hover:border-amber-300',
+        borderLight: 'border-amber-200',
+        btnPrimary: 'bg-amber-600 hover:bg-amber-700 text-white',
+        topBar: 'bg-amber-500',
+        progressBar: 'bg-amber-600',
+        focusInput: 'focus:ring-amber-500 focus:border-amber-500',
+        optionSelected: 'border-amber-600 bg-amber-50 text-amber-900 shadow-sm',
+        optionHover: 'border-gray-200 hover:border-amber-300 hover:bg-gray-50 text-gray-700',
+        navCurrent: 'ring-2 ring-offset-1 ring-amber-600 bg-amber-600 text-white font-extrabold',
+        navAnswered: 'bg-amber-100 text-amber-800 border-amber-300 font-bold',
+      },
+      blue: {
+        bgLight: 'bg-blue-50',
+        bgBadge: 'bg-blue-100',
+        textMain: 'text-blue-600',
+        textDark: 'text-blue-700',
+        textIcon: 'text-blue-500',
+        groupHoverText: 'group-hover:text-blue-600',
+        borderHover: 'hover:border-blue-300',
+        borderLight: 'border-blue-200',
+        btnPrimary: 'bg-blue-600 hover:bg-blue-700 text-white',
+        topBar: 'bg-blue-500',
+        progressBar: 'bg-blue-600',
+        focusInput: 'focus:ring-blue-500 focus:border-blue-500',
+        optionSelected: 'border-blue-600 bg-blue-50 text-blue-900 shadow-sm',
+        optionHover: 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 text-gray-700',
+        navCurrent: 'ring-2 ring-offset-1 ring-blue-600 bg-blue-600 text-white font-extrabold',
+        navAnswered: 'bg-blue-100 text-blue-800 border-blue-300 font-bold',
+      },
+      cyan: {
+        bgLight: 'bg-cyan-50',
+        bgBadge: 'bg-cyan-100',
+        textMain: 'text-cyan-600',
+        textDark: 'text-cyan-700',
+        textIcon: 'text-cyan-500',
+        groupHoverText: 'group-hover:text-cyan-600',
+        borderHover: 'hover:border-cyan-300',
+        borderLight: 'border-cyan-200',
+        btnPrimary: 'bg-cyan-600 hover:bg-cyan-700 text-white',
+        topBar: 'bg-cyan-500',
+        progressBar: 'bg-cyan-600',
+        focusInput: 'focus:ring-cyan-500 focus:border-cyan-500',
+        optionSelected: 'border-cyan-600 bg-cyan-50 text-cyan-900 shadow-sm',
+        optionHover: 'border-gray-200 hover:border-cyan-300 hover:bg-gray-50 text-gray-700',
+        navCurrent: 'ring-2 ring-offset-1 ring-cyan-600 bg-cyan-600 text-white font-extrabold',
+        navAnswered: 'bg-cyan-100 text-cyan-800 border-cyan-300 font-bold',
+      }
+    };
+
+    // --- 2. 共用邏輯：多選與送分解析器、題幹指紋與 Fisher-Yates 洗牌 ---
     const parseCorrectAnswers = (answerStr) => {
       if (!answerStr) return [];
       if (answerStr.includes('送分')) return ['送分'];
-      // 支援全形頓號、全/半形逗號、空格作為分隔符
       return answerStr.split(/[、,，\s]+/).filter(Boolean);
     };
 
-    // --- 題庫資料設定 (支援多來源陣列與動態題數) ---
+    // 正規化題幹：去除標點、空白並統一相容漢字，作為題目唯一識別碼
+    const getQuestionFingerprint = (qText) => {
+      if (!qText) return '';
+      return qText
+        .normalize('NFKC')
+        .replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '')
+        .trim();
+    };
+
+    // 標準 Fisher-Yates 洗牌演算法，確保機率完全均等
+    const shuffleArray = (array) => {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+
+    // --- 3. 題庫資料設定 ---
     const SUBJECTS = [
       // 📚 教檢專區 (cert)
       {
@@ -91,24 +203,45 @@
       const [appState, setAppState] = useState('select_subject');
       const [selectedSubject, setSelectedSubject] = useState(null);
       const [database, setDatabase] = useState([]);
+      const [subjectCache, setSubjectCache] = useState({}); // 題庫記憶體快取
       const [currentQuestions, setCurrentQuestions] = useState([]);
       const [currentIndex, setCurrentIndex] = useState(0);
       const [userAnswers, setUserAnswers] = useState({});
       const [score, setScore] = useState(0);
       const [errorMsg, setErrorMsg] = useState('');
       const [quizLength, setQuizLength] = useState(10);
+      const [quizMode, setQuizMode] = useState('random'); // 'random' | 'year' | 'mistake'
+      const [quizTitle, setQuizTitle] = useState('');
       const [selectedYear, setSelectedYear] = useState('');
+      const [mistakeFingerprints, setMistakeFingerprints] = useState([]);
+      const [seenCount, setSeenCount] = useState(0);
+      const [removedMistakesInSession, setRemovedMistakesInSession] = useState([]);
 
+      // 載入不蒜子計數器
       useEffect(() => {
         const script = document.createElement('script');
         script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
         script.async = true;
         document.body.appendChild(script);
-        
         return () => {
-          document.body.removeChild(script);
+          if (document.body.contains(script)) {
+            document.body.removeChild(script);
+          }
         };
       }, []);
+
+      // 輔助：同步讀取 LocalStorage 的錯題本與已刷題數
+      const syncLocalStorageStats = (subjectId) => {
+        if (!subjectId) return;
+        try {
+          const savedMistakes = JSON.parse(localStorage.getItem(`mistakes_${subjectId}`) || '[]');
+          const savedSeen = JSON.parse(localStorage.getItem(`seen_pool_${subjectId}`) || '[]');
+          setMistakeFingerprints(savedMistakes);
+          setSeenCount(savedSeen.length);
+        } catch (e) {
+          console.error('LocalStorage 讀取失敗:', e);
+        }
+      };
 
       const handleImgFallback = (e) => {
         const src = e.target.src;
@@ -180,11 +313,14 @@
                 const regex = new RegExp(`^\\(${prefix}\\)\\s*`);
                 return cleaned.replace(regex, '').trim();
               };
+              const qText = rowData[1] ? rowData[1] : '';
+              const fp = getQuestionFingerprint(qText);
               parsedData.push({
-                id: `choice_${Math.random().toString(36).substr(2, 9)}_${i}`,
+                id: `choice_${fp}_${i}`,
+                fingerprint: fp,
                 type: '選擇題',
                 answer: rowData[0] ? rowData[0] : '',
-                question: rowData[1] ? rowData[1] : '',
+                question: qText,
                 options: {
                   A: cleanOption(rowData[2], 'A'),
                   B: cleanOption(rowData[3], 'B'),
@@ -217,8 +353,10 @@
               const context = rowData[2] ? rowData[2].trim() : '';
               const questionText = rowData[3] ? rowData[3].trim() : '';
               const fullQuestion = context ? `${context}\n\n${questionText}` : questionText;
+              const fp = getQuestionFingerprint(fullQuestion);
               parsedData.push({
-                id: `essay_${Math.random().toString(36).substr(2, 9)}_${i}`,
+                id: `essay_${fp}_${i}`,
+                fingerprint: fp,
                 type: '問答題',
                 year: rowData[0] ? rowData[0] : '',
                 concept: rowData[1] ? rowData[1] : '未分類',
@@ -237,13 +375,37 @@
         }
       };
 
+      // 取得去重後的選擇題清單
+      const getUniqueChoicePool = (db = database) => {
+        const seen = new Set();
+        const uniqueList = [];
+        for (const q of db) {
+          if (q.type === '問答題') continue;
+          const fp = q.fingerprint || getQuestionFingerprint(q.question);
+          if (fp && !seen.has(fp)) {
+            seen.add(fp);
+            uniqueList.push(q);
+          }
+        }
+        return uniqueList;
+      };
+
       const handleSubjectSelect = (subject) => {
         setSelectedSubject(subject);
         setSelectedYear('');
-        fetchData(subject);
+        syncLocalStorageStats(subject.id);
+        fetchData(subject, false);
       };
 
-      const fetchData = async (subject) => {
+      // 支援記憶體快取的題庫載入函式
+      const fetchData = async (subject, forceRefresh = false) => {
+        if (!forceRefresh && subjectCache[subject.id]) {
+          setDatabase(subjectCache[subject.id]);
+          syncLocalStorageStats(subject.id);
+          setAppState('ready');
+          return;
+        }
+
         setAppState('loading');
         setErrorMsg('');
         try {
@@ -269,6 +431,8 @@
 
           if (combinedData.length > 0) {
             setDatabase(combinedData);
+            setSubjectCache(prev => ({ ...prev, [subject.id]: combinedData }));
+            syncLocalStorageStats(subject.id);
             setAppState('ready');
           } else {
             throw new Error('無法解析資料，或檔案內容為空。');
@@ -280,41 +444,166 @@
         }
       };
 
+      // 模式一：隨機抽題測驗 (含去重 + 跨局不重複保護 + Fisher-Yates 洗牌)
       const startQuiz = (numQuestions) => {
-        setQuizLength(numQuestions);
-        const multipleChoiceQuestions = database.filter(q => q.type !== '問答題');
-        const shuffled = [...multipleChoiceQuestions].sort(() => 0.5 - Math.random());
-        const selected = shuffled.slice(0, Math.min(numQuestions, multipleChoiceQuestions.length));
-        
+        const uniquePool = getUniqueChoicePool();
+        if (uniquePool.length === 0) return;
+
+        const storageKey = `seen_pool_${selectedSubject.id}`;
+        let historySet = new Set(JSON.parse(localStorage.getItem(storageKey) || '[]'));
+
+        let unseenPool = uniquePool.filter(q => !historySet.has(q.fingerprint));
+        let selected = [];
+
+        if (unseenPool.length >= numQuestions) {
+          selected = shuffleArray(unseenPool).slice(0, numQuestions);
+        } else {
+          // 未考過的題目不足時，先取全部未考題，再從已考題隨機補足，並重置新一輪紀錄
+          const seenPool = uniquePool.filter(q => historySet.has(q.fingerprint));
+          const needed = numQuestions - unseenPool.length;
+          selected = [
+            ...shuffleArray(unseenPool),
+            ...shuffleArray(seenPool).slice(0, Math.max(0, needed))
+          ];
+          selected = shuffleArray(selected);
+          historySet.clear();
+        }
+
+        selected.forEach(q => historySet.add(q.fingerprint));
+        localStorage.setItem(storageKey, JSON.stringify([...historySet]));
+        setSeenCount(historySet.size);
+
+        setQuizMode('random');
+        setQuizLength(selected.length);
+        setQuizTitle(`隨機模擬測驗 (${selected.length}題)`);
         setCurrentQuestions(selected);
         setCurrentIndex(0);
         setUserAnswers({});
         setScore(0);
+        setRemovedMistakesInSession([]);
         setAppState('playing');
+      };
+
+      // 模式二：歷屆年度模擬考 (依該年度選擇題進行互動測驗)
+      const startYearQuiz = (year) => {
+        if (!year) return;
+        const yearChoiceQuestions = database.filter(q => q.year === year && q.type !== '問答題');
+        if (yearChoiceQuestions.length === 0) {
+          alert('該年度目前僅收錄問答題，請點擊「瀏覽解析」查看！');
+          return;
+        }
+        setQuizMode('year');
+        setQuizLength(yearChoiceQuestions.length);
+        setQuizTitle(`${year} 歷屆模擬考 (${yearChoiceQuestions.length}題)`);
+        setCurrentQuestions(yearChoiceQuestions);
+        setCurrentIndex(0);
+        setUserAnswers({});
+        setScore(0);
+        setRemovedMistakesInSession([]);
+        setAppState('playing');
+      };
+
+      // 模式三：錯題專屬重練
+      const startMistakeQuiz = () => {
+        const uniquePool = getUniqueChoicePool();
+        const mistakeQuestions = uniquePool.filter(q => mistakeFingerprints.includes(q.fingerprint));
+        if (mistakeQuestions.length === 0) return;
+
+        const selected = shuffleArray(mistakeQuestions).slice(0, 25); // 單次最多抽 25 題錯題
+        setQuizMode('mistake');
+        setQuizLength(selected.length);
+        setQuizTitle(`🔥 錯題專屬重練 (${selected.length}題)`);
+        setCurrentQuestions(selected);
+        setCurrentIndex(0);
+        setUserAnswers({});
+        setScore(0);
+        setRemovedMistakesInSession([]);
+        setAppState('playing');
+      };
+
+      // 重置已刷題庫進度
+      const handleResetSeenPool = () => {
+        if (!selectedSubject) return;
+        if (window.confirm('確定要將本考科的「不重複抽題進度」歸零重置嗎？')) {
+          localStorage.removeItem(`seen_pool_${selectedSubject.id}`);
+          setSeenCount(0);
+        }
+      };
+
+      // 清空本科錯題本
+      const handleClearMistakes = () => {
+        if (!selectedSubject) return;
+        if (window.confirm('確定要清空本考科目前累積的所有錯題紀錄嗎？')) {
+          localStorage.removeItem(`mistakes_${selectedSubject.id}`);
+          setMistakeFingerprints([]);
+        }
       };
 
       const handleAnswerSelect = (optionKey) => {
         setUserAnswers({ ...userAnswers, [currentIndex]: optionKey });
       };
 
+      const handlePrev = () => {
+        if (currentIndex > 0) {
+          setCurrentIndex(currentIndex - 1);
+        }
+      };
+
       const handleNext = () => {
         if (currentIndex < currentQuestions.length - 1) {
           setCurrentIndex(currentIndex + 1);
         } else {
-          calculateScore();
+          // 檢查是否有漏答題目
+          const unansweredIndexes = currentQuestions
+            .map((_, idx) => idx)
+            .filter(idx => !userAnswers[idx]);
+
+          if (unansweredIndexes.length > 0) {
+            const confirmSubmit = window.confirm(
+              `您還有 ${unansweredIndexes.length} 題尚未作答（第 ${unansweredIndexes.map(i => i + 1).join('、')} 題）。\n\n按「確定」直接交卷結算，或按「取消」自動跳轉至未作答題目。`
+            );
+            if (!confirmSubmit) {
+              setCurrentIndex(unansweredIndexes[0]);
+              return;
+            }
+          }
+          calculateScoreAndMistakes();
           setAppState('result');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       };
 
-      const calculateScore = () => {
+      // 計分並自動更新本地錯題本
+      const calculateScoreAndMistakes = () => {
         let currentScore = 0;
+        const storageKey = `mistakes_${selectedSubject.id}`;
+        let currentMistakeSet = new Set(JSON.parse(localStorage.getItem(storageKey) || '[]'));
+        const newlyRemoved = [];
+
         currentQuestions.forEach((q, index) => {
           const correctAnsArr = parseCorrectAnswers(q.answer);
           const userAnswer = userAnswers[index];
-          if (correctAnsArr.includes('送分') || correctAnsArr.includes(userAnswer)) {
-            currentScore += 100 / currentQuestions.length; 
+          const isCorrect = correctAnsArr.includes('送分') || correctAnsArr.includes(userAnswer);
+
+          if (isCorrect) {
+            currentScore += 100 / currentQuestions.length;
+            // 若在錯題重練模式中答對，自動從錯題本移除
+            if (quizMode === 'mistake' && q.fingerprint && currentMistakeSet.has(q.fingerprint)) {
+              currentMistakeSet.delete(q.fingerprint);
+              newlyRemoved.push(q.fingerprint);
+            }
+          } else {
+            // 答錯則自動加入錯題本
+            if (q.fingerprint) {
+              currentMistakeSet.add(q.fingerprint);
+            }
           }
         });
+
+        const updatedMistakes = [...currentMistakeSet];
+        localStorage.setItem(storageKey, JSON.stringify(updatedMistakes));
+        setMistakeFingerprints(updatedMistakes);
+        setRemovedMistakesInSession(newlyRemoved);
         setScore(Math.round(currentScore));
       };
 
@@ -365,23 +654,32 @@
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
-              {filteredSubjects.map((sub) => (
-                <button
-                  key={sub.id}
-                  onClick={() => handleSubjectSelect(sub)}
-                  className={`group bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl border border-gray-100 hover:border-${sub.color}-300 transition-all duration-300 flex flex-col items-center text-center transform hover:-translate-y-1`}
-                >
-                  <div className={`w-20 h-20 rounded-2xl bg-${sub.color}-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <svg className={`w-10 h-10 text-${sub.color}-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sub.icon}></path>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">{sub.name}</h3>
-                  <p className={`text-sm text-gray-500 font-medium group-hover:text-${sub.color}-600 transition-colors`}>
-                    點擊開始載入題庫
-                  </p>
-                </button>
-              ))}
+              {filteredSubjects.map((sub) => {
+                const theme = COLOR_THEMES[sub.color] || COLOR_THEMES.indigo;
+                const isCached = !!subjectCache[sub.id];
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => handleSubjectSelect(sub)}
+                    className={`group bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl border border-gray-100 ${theme.borderHover} transition-all duration-300 flex flex-col items-center text-center transform hover:-translate-y-1 relative`}
+                  >
+                    {isCached && (
+                      <span className="absolute top-4 right-4 text-xs font-bold bg-green-50 text-green-600 px-2.5 py-1 rounded-full border border-green-200">
+                        ⚡ 已快取
+                      </span>
+                    )}
+                    <div className={`w-20 h-20 rounded-2xl ${theme.bgLight} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                      <svg className={`w-10 h-10 ${theme.textMain}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sub.icon}></path>
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{sub.name}</h3>
+                    <p className={`text-sm text-gray-500 font-medium ${theme.groupHoverText} transition-colors`}>
+                      {isCached ? '點擊立即進入題庫' : '點擊開始載入題庫'}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </section>
         );
@@ -402,7 +700,7 @@
             <h2 className="text-2xl font-bold text-red-700 mb-2">載入失敗</h2>
             <p className="text-red-600 mb-6 text-sm leading-relaxed">{errorMsg}</p>
             <div className="flex flex-col gap-3">
-              <button onClick={() => fetchData(selectedSubject)} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md">
+              <button onClick={() => fetchData(selectedSubject, true)} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md">
                 重新嘗試連線
               </button>
               <button onClick={backToHome} className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3 px-6 rounded-xl transition-all border border-gray-200">
@@ -414,36 +712,56 @@
       );
 
       const renderReady = () => {
+        const theme = COLOR_THEMES[selectedSubject.color] || COLOR_THEMES.indigo;
         const availableYears = [...new Set(database.map(q => q.year).filter(y => y !== ''))].sort((a, b) => b.localeCompare(a));
+        const uniqueChoicePool = getUniqueChoicePool();
+        const validMistakes = uniqueChoicePool.filter(q => mistakeFingerprints.includes(q.fingerprint));
+
         return (
           <section className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 animate-fade-in">
-            <div className={`inline-flex items-center justify-center p-4 bg-${selectedSubject.color}-50 rounded-full mb-6`}>
-               <svg className={`w-12 h-12 text-${selectedSubject.color}-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`inline-flex items-center justify-center p-4 ${theme.bgLight} rounded-full mb-6`}>
+               <svg className={`w-12 h-12 ${theme.textMain}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={selectedSubject.icon}></path>
                </svg>
             </div>
             <div className="mb-2">
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold bg-${selectedSubject.color}-100 text-${selectedSubject.color}-700 mb-2`}>
+              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${theme.bgBadge} ${theme.textDark} mb-2`}>
                 {selectedSubject.category === 'cert' ? '教檢考科' : '教甄考科'}
               </span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2 tracking-tight">
               {selectedSubject.name}
             </h2>
-            <p className="text-gray-500 mb-8 font-medium">
-              題庫總計 <span className={`font-black text-${selectedSubject.color}-600 text-xl`}>{database.length}</span> 題
+            <p className="text-gray-500 mb-6 font-medium">
+              題庫總計 <span className={`font-black ${theme.textMain} text-xl`}>{database.length}</span> 題
+              <span className="text-xs text-gray-400 ml-2">（不重複選擇題 {uniqueChoicePool.length} 題）</span>
             </p>
 
             <div className="bg-white p-8 rounded-3xl shadow-lg max-w-md w-full border border-gray-100">
               
+              {/* 1. 隨機模擬測驗 + 不重複進度條 */}
               <div className="mb-6">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">隨機模擬測驗</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">隨機模擬測驗</h3>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>已刷進度：{Math.min(seenCount, uniqueChoicePool.length)} / {uniqueChoicePool.length}</span>
+                    {seenCount > 0 && (
+                      <button
+                        onClick={handleResetSeenPool}
+                        className="text-gray-400 hover:text-red-500 underline transition-colors"
+                        title="重置不重複抽題記憶池"
+                      >
+                        重置
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   {selectedSubject.quizLengths.map(len => (
                     <button
                       key={len}
                       onClick={() => startQuiz(len)}
-                      className={`w-full bg-${selectedSubject.color}-600 hover:bg-${selectedSubject.color}-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md flex justify-center items-center`}
+                      className={`w-full ${theme.btnPrimary} font-bold py-3 px-4 rounded-xl transition-all shadow-md flex justify-center items-center`}
                     >
                       {len} 題測驗
                     </button>
@@ -451,68 +769,130 @@
                 </div>
               </div>
 
+              {/* 2. 本地端智慧錯題本 */}
+              <div className="border-t border-gray-100 pt-6 mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">個人智慧錯題本</h3>
+                  {validMistakes.length > 0 && (
+                    <button
+                      onClick={handleClearMistakes}
+                      className="text-xs text-gray-400 hover:text-red-500 underline transition-colors"
+                    >
+                      清空錯題
+                    </button>
+                  )}
+                </div>
+                {validMistakes.length > 0 ? (
+                  <button
+                    onClick={startMistakeQuiz}
+                    className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2"
+                  >
+                    <span>🔥 錯題專屬重練（目前累積 {validMistakes.length} 題）</span>
+                  </button>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-100 text-gray-400 text-sm py-3 px-4 rounded-xl font-medium">
+                    🎉 目前無待複習錯題（測驗答錯將自動收錄）
+                  </div>
+                )}
+              </div>
+
+              {/* 3. 歷屆試題：支援瀏覽解析 & 年度模擬考 */}
               {availableYears.length > 0 && (
                 <div className="border-t border-gray-100 pt-6 mb-6">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">歷屆試題與解析瀏覽</h3>
-                  <div className="flex gap-2">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">歷屆試題練習與解析</h3>
+                  <div className="flex flex-col gap-3">
                     <select 
                       value={selectedYear} 
                       onChange={(e) => setSelectedYear(e.target.value)}
-                      className={`flex-1 bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-${selectedSubject.color}-500 focus:border-${selectedSubject.color}-500 block p-3 outline-none cursor-pointer`}
+                      className={`w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl ${theme.focusInput} block p-3 outline-none cursor-pointer`}
                     >
                       <option value="">請選擇年度...</option>
                       {availableYears.map(year => (
                         <option key={year} value={year}>{year} 試題</option>
                       ))}
                     </select>
-                    <button
-                      onClick={() => { if(selectedYear) setAppState('year_review'); }}
-                      disabled={!selectedYear}
-                      className={`px-6 py-3 rounded-xl font-bold transition-all shadow-sm ${
-                        selectedYear 
-                          ? 'bg-gray-800 hover:bg-gray-900 text-white' 
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      查看
-                    </button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => startYearQuiz(selectedYear)}
+                        disabled={!selectedYear}
+                        className={`py-3 px-4 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center ${
+                          selectedYear 
+                            ? theme.btnPrimary
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        ✍️ 年度模擬考
+                      </button>
+                      <button
+                        onClick={() => { if(selectedYear) setAppState('year_review'); }}
+                        disabled={!selectedYear}
+                        className={`py-3 px-4 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center ${
+                          selectedYear 
+                            ? 'bg-gray-800 hover:bg-gray-900 text-white' 
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        📖 瀏覽解析
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <button
-                onClick={backToHome}
-                className="w-full bg-white hover:bg-gray-50 text-gray-500 font-bold py-3 px-6 rounded-xl transition-all text-sm border border-gray-200 mt-2"
-              >
-                返回選單重新選擇科目
-              </button>
+              <div className="flex flex-col gap-2 mt-2">
+                <button
+                  onClick={backToHome}
+                  className="w-full bg-white hover:bg-gray-50 text-gray-600 font-bold py-3 px-6 rounded-xl transition-all text-sm border border-gray-200"
+                >
+                  返回選單重新選擇科目
+                </button>
+                <button
+                  onClick={() => fetchData(selectedSubject, true)}
+                  className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 transition-colors"
+                >
+                  🔄 重新同步雲端最新題庫
+                </button>
+              </div>
             </div>
           </section>
         );
       };
 
       const renderYearReview = () => {
+        const theme = COLOR_THEMES[selectedSubject.color] || COLOR_THEMES.indigo;
         const reviewQuestions = database.filter(q => q.year === selectedYear);
+        const hasChoiceQuestions = reviewQuestions.some(q => q.type !== '問答題');
+
         return (
           <section className="max-w-4xl mx-auto w-full px-4 animate-fade-in pb-12">
             <div className="bg-white rounded-3xl shadow-sm p-8 text-center mb-8 border border-gray-100 relative overflow-hidden">
-              <div className={`absolute top-0 left-0 w-full h-2 bg-${selectedSubject.color}-500`}></div>
-              <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold bg-${selectedSubject.color}-50 text-${selectedSubject.color}-700 mb-4 mt-2`}>
+              <div className={`absolute top-0 left-0 w-full h-2 ${theme.topBar}`}></div>
+              <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${theme.bgLight} ${theme.textDark} mb-4 mt-2`}>
                 {selectedSubject.name}
               </span>
               <h2 className="text-3xl font-extrabold text-gray-800 mb-2">{selectedYear} 年度歷屆試題</h2>
               <p className="text-gray-500 mb-8 font-medium">共收錄 {reviewQuestions.length} 題，附完整選項與解析</p>
               
-              <button
-                onClick={() => {
-                  setSelectedYear(''); 
-                  setAppState('ready');
-                }}
-                className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md inline-flex items-center"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                返回準備選單
-              </button>
+              <div className="flex flex-wrap justify-center gap-3">
+                {hasChoiceQuestions && (
+                  <button
+                    onClick={() => startYearQuiz(selectedYear)}
+                    className={`${theme.btnPrimary} font-bold py-3 px-8 rounded-xl transition-all shadow-md inline-flex items-center`}
+                  >
+                    ✍️ 進行本年度互動測驗
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setSelectedYear(''); 
+                    setAppState('ready');
+                  }}
+                  className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md inline-flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                  返回準備選單
+                </button>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -520,12 +900,12 @@
                 const correctAnsArr = parseCorrectAnswers(q.answer);
                 const isQuestionFree = correctAnsArr.includes('送分');
                 return (
-                  <div key={q.id} className={`bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100`}>
+                  <div key={q.id} className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
                     
                     {q.type === '問答題' ? (
                       <div className="bg-indigo-50/50 p-2 md:p-4 rounded-2xl border-none">
                         <div className="flex justify-between items-start mb-4">
-                          <span className={`text-sm font-extrabold text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-4 py-1.5 rounded-lg`}>
+                          <span className={`text-sm font-extrabold ${theme.textDark} ${theme.bgLight} px-4 py-1.5 rounded-lg`}>
                             第 {index + 1} 題 (問答)
                           </span>
                           <span className="inline-block bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md font-bold">
@@ -556,9 +936,9 @@
                     ) : (
                       <div>
                         <div className="flex justify-between items-start mb-6">
-                          <span className={`text-sm font-extrabold text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-4 py-1.5 rounded-lg`}>
+                          <span className={`text-sm font-extrabold ${theme.textDark} ${theme.bgLight} px-4 py-1.5 rounded-lg`}>
                             第 {index + 1} 題
-                           </span>
+                          </span>
                           {isQuestionFree && (
                             <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1.5 rounded-md font-bold border border-blue-200">
                                🎁 送分題
@@ -648,28 +1028,67 @@
       };
 
       const renderPlaying = () => {
+        const theme = COLOR_THEMES[selectedSubject.color] || COLOR_THEMES.indigo;
         const question = currentQuestions[currentIndex];
         const isAnswered = !!userAnswers[currentIndex];
+        const answeredCount = Object.keys(userAnswers).length;
         const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+
         return (
           <article className="max-w-3xl mx-auto w-full px-4 animate-fade-in">
-            <div className="mb-8">
+            {/* 頂部資訊與進度條 */}
+            <div className="mb-6">
               <div className="flex justify-between items-end mb-2">
-                <span className={`text-sm font-bold text-${selectedSubject.color}-600 bg-${selectedSubject.color}-50 px-3 py-1 rounded-full`}>
-                  {selectedSubject.name}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-sm font-bold ${theme.textMain} ${theme.bgLight} px-3 py-1 rounded-full`}>
+                    {selectedSubject.name}
+                  </span>
+                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+                    {quizTitle}
+                  </span>
+                </div>
                 <span className="text-sm font-medium text-gray-500">
-                  第 {currentIndex + 1} / {currentQuestions.length} 題
+                  第 {currentIndex + 1} / {currentQuestions.length} 題（已答 {answeredCount} 題）
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
-                 <div className={`bg-${selectedSubject.color}-600 h-2.5 rounded-full transition-all duration-300`} style={{ width: `${progress}%` }}></div>
+                <div className={`${theme.progressBar} h-2.5 rounded-full transition-all duration-300`} style={{ width: `${progress}%` }}></div>
+              </div>
+
+              {/* 題號快速跳轉面板 */}
+              <div className="mt-4 bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm">
+                <div className="text-xs text-gray-400 font-bold mb-2 flex justify-between items-center">
+                  <span>題號快速跳轉</span>
+                  <span className="font-normal">點擊題號可直接切換</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-0.5">
+                  {currentQuestions.map((_, idx) => {
+                    const isCurr = idx === currentIndex;
+                    const hasAns = !!userAnswers[idx];
+                    let btnClass = 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100';
+                    if (isCurr) {
+                      btnClass = theme.navCurrent;
+                    } else if (hasAns) {
+                      btnClass = theme.navAnswered;
+                    }
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentIndex(idx)}
+                        className={`w-8 h-8 rounded-lg text-xs border transition-all flex items-center justify-center ${btnClass}`}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
+            {/* 題目卡片 */}
             <div className="bg-white rounded-3xl shadow-sm p-6 md:p-8 mb-6 border border-gray-100">
               <div className="flex justify-between items-center mb-6">
-                 <div className="flex gap-2">
+                 <div className="flex gap-2 flex-wrap">
                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-md font-medium">
                      考點：{question.concept}
                    </span>
@@ -693,194 +1112,251 @@
               <div className="space-y-3">
                 {['A', 'B', 'C', 'D'].map((key) => {
                   if (!question.options[key]) return null;
+                  const isSelected = userAnswers[currentIndex] === key;
                   return (
                     <button
                       key={key}
                       onClick={() => handleAnswerSelect(key)}
                       className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start ${
-                        userAnswers[currentIndex] === key
-                          ? `border-${selectedSubject.color}-600 bg-${selectedSubject.color}-50 text-${selectedSubject.color}-900 shadow-sm`
-                          : `border-gray-200 hover:border-${selectedSubject.color}-300 hover:bg-gray-50 text-gray-700`
+                        isSelected ? theme.optionSelected : theme.optionHover
                       }`}
                     >
-                      <span className={`font-bold mr-3 text-lg flex-shrink-0 ${userAnswers[currentIndex] === key ? `text-${selectedSubject.color}-600` : 'text-gray-400'}`}>
+                      <span className={`font-bold mr-3 text-lg flex-shrink-0 ${isSelected ? theme.textMain : 'text-gray-400'}`}>
                         {key}.
                       </span>
                       <span className="text-md pt-0.5 leading-relaxed whitespace-pre-wrap">{question.options[key]}</span>
                     </button>
-                  )
+                  );
                 })}
               </div>
-             </div>
+            </div>
 
-            <div className="flex justify-between mt-8">
+            {/* 底部導覽列：中斷測驗 / 上一題 / 下一題 */}
+            <div className="flex flex-wrap justify-between items-center gap-3 mt-8">
               <button
-                 onClick={() => {
-                   if(window.confirm('確定要放棄目前的測驗進度嗎？')) setAppState('ready');
-                 }}
-                 className="px-6 py-3 rounded-xl font-bold text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"
+                onClick={() => {
+                  if(window.confirm('確定要放棄目前的測驗進度嗎？')) setAppState('ready');
+                }}
+                className="px-5 py-3 rounded-xl font-bold text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"
               >
                 中斷測驗
               </button>
-              <button
-                onClick={handleNext}
-                disabled={!isAnswered}
-                className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center ${
-                  isAnswered
-                    ? `bg-${selectedSubject.color}-600 hover:bg-${selectedSubject.color}-700 text-white shadow-md`
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                {currentIndex < currentQuestions.length - 1 ? '下一題' : '提交並查看成績'}
-                {isAnswered && currentIndex < currentQuestions.length - 1 && (
-                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-                )}
-              </button>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                  className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center border ${
+                    currentIndex > 0
+                      ? 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
+                      : 'bg-gray-100 border-gray-100 text-gray-300 cursor-not-allowed'
+                  }`}
+                >
+                  <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                  上一題
+                </button>
+
+                <button
+                  onClick={handleNext}
+                  disabled={currentIndex < currentQuestions.length - 1 && !isAnswered}
+                  className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center ${
+                    (currentIndex === currentQuestions.length - 1 || isAnswered)
+                      ? `${theme.btnPrimary} shadow-md`
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {currentIndex < currentQuestions.length - 1 ? '下一題' : '提交並查看成績'}
+                  {currentIndex < currentQuestions.length - 1 && (
+                    <svg className="w-5 h-5 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  )}
+                </button>
+              </div>
             </div>
           </article>
         );
       };
 
-      const renderResult = () => (
-        <section className="max-w-4xl mx-auto w-full px-4 animate-fade-in pb-12">
-          <div className="bg-white rounded-3xl shadow-sm p-8 text-center mb-8 border border-gray-100 relative overflow-hidden">
-            <div className={`absolute top-0 left-0 w-full h-2 bg-${selectedSubject.color}-500`}></div>
-            <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold bg-${selectedSubject.color}-50 text-${selectedSubject.color}-700 mb-4 mt-2`}>
-              {selectedSubject.name} ({quizLength}題)
-            </span>
-            <h2 className="text-3xl font-extrabold text-gray-800 mb-2">測驗完成！</h2>
-            
-            <div className="flex justify-center items-center my-8">
-              <div className={`w-40 h-40 rounded-full flex flex-col justify-center items-center border-[6px] shadow-inner ${
-                score >= 60 ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'
-              }`}>
-                <span className={`text-5xl font-black ${score >= 60 ? 'text-green-600' : 'text-red-600'}`}>
-                  {score}
-                </span>
-                <span className="text-sm font-bold text-gray-500 mt-1">/ 100 分</span>
+      const renderResult = () => {
+        const theme = COLOR_THEMES[selectedSubject.color] || COLOR_THEMES.indigo;
+        return (
+          <section className="max-w-4xl mx-auto w-full px-4 animate-fade-in pb-12">
+            <div className="bg-white rounded-3xl shadow-sm p-8 text-center mb-8 border border-gray-100 relative overflow-hidden">
+              <div className={`absolute top-0 left-0 w-full h-2 ${theme.topBar}`}></div>
+              <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${theme.bgLight} ${theme.textDark} mb-4 mt-2`}>
+                {selectedSubject.name} — {quizTitle}
+              </span>
+              <h2 className="text-3xl font-extrabold text-gray-800 mb-2">測驗完成！</h2>
+              
+              {quizMode === 'mistake' && removedMistakesInSession.length > 0 && (
+                <p className="text-sm font-bold text-emerald-600 bg-emerald-50 inline-block px-4 py-1.5 rounded-full border border-emerald-200 mt-2">
+                  🎉 太棒了！本次重練共答對並消除了 {removedMistakesInSession.length} 道錯題！
+                </p>
+              )}
+
+              <div className="flex justify-center items-center my-8">
+                <div className={`w-40 h-40 rounded-full flex flex-col justify-center items-center border-[6px] shadow-inner ${
+                  score >= 60 ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'
+                }`}>
+                  <span className={`text-5xl font-black ${score >= 60 ? 'text-green-600' : 'text-red-600'}`}>
+                    {score}
+                  </span>
+                  <span className="text-sm font-bold text-gray-500 mt-1">/ 100 分</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                {quizMode === 'random' && (
+                  <button
+                    onClick={() => startQuiz(quizLength)}
+                    className={`${theme.btnPrimary} font-bold py-3 px-8 rounded-xl transition-all shadow-md flex justify-center items-center`}
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    繼續抽題測驗（不重複）
+                  </button>
+                )}
+                {quizMode === 'year' && (
+                  <button
+                    onClick={() => startYearQuiz(selectedYear)}
+                    className={`${theme.btnPrimary} font-bold py-3 px-8 rounded-xl transition-all shadow-md flex justify-center items-center`}
+                  >
+                    重新測驗本年度試題
+                  </button>
+                )}
+                {quizMode === 'mistake' && mistakeFingerprints.length > 0 && (
+                  <button
+                    onClick={startMistakeQuiz}
+                    className="bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md flex justify-center items-center"
+                  >
+                    🔥 繼續重練剩餘錯題 ({mistakeFingerprints.length}題)
+                  </button>
+                )}
+                <button
+                  onClick={() => setAppState('ready')}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-8 rounded-xl transition-all"
+                >
+                  返回準備畫面
+                </button>
               </div>
             </div>
-            
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button
-                onClick={() => startQuiz(quizLength)}
-                className={`bg-${selectedSubject.color}-600 hover:bg-${selectedSubject.color}-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md flex justify-center items-center`}
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                重新抽題測驗
-              </button>
-              <button
-                onClick={() => setAppState('ready')}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-8 rounded-xl transition-all"
-              >
-                返回準備畫面
-              </button>
-            </div>
-          </div>
 
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-gray-800 px-2 flex items-center">
-              <svg className={`w-6 h-6 mr-2 text-${selectedSubject.color}-500`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-              作答回顧
-            </h3>
-            {currentQuestions.map((q, index) => {
-              const userAnswer = userAnswers[index];
-              const correctAnsArr = parseCorrectAnswers(q.answer);
-              const isQuestionFree = correctAnsArr.includes('送分');
-              const isQuestionCorrect = isQuestionFree || correctAnsArr.includes(userAnswer);
-              return (
-                <div key={index} className={`bg-white rounded-2xl p-6 shadow-sm border-l-[6px] ${isQuestionCorrect ? 'border-green-500' : 'border-red-500'}`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-md">第 {index + 1} 題</span>
-                    {isQuestionFree ? (
-                       <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-md font-bold flex items-center border border-blue-200">
-                         🎁 送分題
-                       </span>
-                    ) : isQuestionCorrect ? (
-                      <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-md font-bold flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                        答對
-                      </span>
-                    ) : (
-                      <span className="bg-red-100 text-red-700 text-sm px-3 py-1 rounded-md font-bold flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        答錯
-                      </span>
-                    )}
-                  </div>
-                  
-                  <p className="text-gray-800 font-medium mb-6 text-lg leading-relaxed whitespace-pre-wrap">{q.question}</p>
-                  
-                  {q.imageUrl && (
-                    <div className="mb-8 flex justify-center">
-                      <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bold text-gray-800 px-2 flex items-center">
+                <svg className={`w-6 h-6 mr-2 ${theme.textIcon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                作答回顧
+              </h3>
+              {currentQuestions.map((q, index) => {
+                const userAnswer = userAnswers[index];
+                const correctAnsArr = parseCorrectAnswers(q.answer);
+                const isQuestionFree = correctAnsArr.includes('送分');
+                const isQuestionCorrect = isQuestionFree || correctAnsArr.includes(userAnswer);
+                const wasRemovedFromMistakes = removedMistakesInSession.includes(q.fingerprint);
+
+                return (
+                  <div key={index} className={`bg-white rounded-2xl p-6 shadow-sm border-l-[6px] ${isQuestionCorrect ? 'border-green-500' : 'border-red-500'}`}>
+                    <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
+                      <span className="text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-md">第 {index + 1} 題</span>
+                      <div className="flex items-center gap-2">
+                        {wasRemovedFromMistakes && (
+                          <span className="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-md font-bold border border-emerald-200">
+                            ✨ 已從錯題本移除
+                          </span>
+                        )}
+                        {!isQuestionCorrect && (
+                          <span className="bg-rose-50 text-rose-600 text-xs px-2.5 py-1 rounded-md font-bold border border-rose-200">
+                            📌 已收錄至錯題本
+                          </span>
+                        )}
+                        {isQuestionFree ? (
+                          <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-md font-bold flex items-center border border-blue-200">
+                            🎁 送分題
+                          </span>
+                        ) : isQuestionCorrect ? (
+                          <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-md font-bold flex items-center">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                            答對
+                          </span>
+                        ) : (
+                          <span className="bg-red-100 text-red-700 text-sm px-3 py-1 rounded-md font-bold flex items-center">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            {userAnswer ? '答錯' : '未作答'}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-
-                  <div className="grid grid-cols-1 gap-3 text-sm mb-6">
-                    {['A', 'B', 'C', 'D'].map(opt => {
-                      if (!q.options[opt]) return null;
-                      const isSelected = userAnswer === opt;
-                      const isCorrectOption = isQuestionFree || correctAnsArr.includes(opt);
-                      
-                      let boxStyle = "bg-white border-gray-100 text-gray-500";
-                      let badge = null;
-
-                      if (isSelected && isCorrectOption) {
-                        boxStyle = "bg-green-50 border-green-400 text-green-900 shadow-sm border-2";
-                        badge = <span className="text-xs bg-green-500 text-white px-2.5 py-1 rounded-md font-bold shadow-sm flex items-center"><svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>您的作答 (正確)</span>;
-                      } else if (isSelected && !isCorrectOption) {
-                        boxStyle = "bg-red-50 border-red-400 text-red-900 shadow-sm border-2";
-                        badge = <span className="text-xs bg-red-500 text-white px-2.5 py-1 rounded-md font-bold shadow-sm flex items-center"><svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>您的作答 (答錯)</span>;
-                      } else if (!isSelected && isCorrectOption) {
-                        boxStyle = "bg-green-50/50 border-green-300 text-green-800 border-2";
-                        const badgeText = isQuestionFree ? "🎁 送分選項" : (isQuestionCorrect ? "💡 其他正確選項" : "🎯 正確解答");
-                        badge = <span className="text-xs bg-green-100 text-green-700 border border-green-300 px-2.5 py-1 rounded-md font-bold flex items-center">{badgeText}</span>;
-                      } else {
-                        boxStyle = "bg-white border-gray-200 text-gray-500 border";
-                      }
-
-                      return (
-                        <div key={opt} className={`p-4 rounded-xl transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${boxStyle}`}>
-                          <div className="flex items-start">
-                            <span className={`font-bold mr-3 text-lg flex-shrink-0 ${isCorrectOption ? 'text-green-600' : (isSelected ? 'text-red-500' : 'text-gray-400')}`}>{opt}.</span>
-                            <span className="text-md pt-0.5 leading-relaxed whitespace-pre-wrap">{q.options[opt]}</span>
-                          </div>
-                          {badge && <div className="flex-shrink-0 self-end sm:self-auto">{badge}</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200 font-medium">
-                        📍 考點：{q.concept}
-                      </span>
-                      {q.year && (
-                         <span className={`text-sm text-${selectedSubject.color}-700 bg-${selectedSubject.color}-50 px-3 py-1.5 rounded-md border border-${selectedSubject.color}-200 font-medium`}>
-                          📅 來源：{q.year}
-                        </span>
-                      )}
-                     </div>
                     
-                    {q.explanation && (
-                      <div className="mt-2 text-sm text-gray-800 bg-amber-50 p-4 rounded-xl border border-amber-200 leading-relaxed shadow-inner">
-                         <span className="font-bold text-amber-800 block mb-1 flex items-center text-base">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                          解析說明
-                         </span>
-                        <span className="whitespace-pre-wrap">{q.explanation}</span>
+                    <p className="text-gray-800 font-medium mb-6 text-lg leading-relaxed whitespace-pre-wrap">{q.question}</p>
+                    
+                    {q.imageUrl && (
+                      <div className="mb-8 flex justify-center">
+                        <img src={q.imageUrl} alt={`第 ${index + 1} 題附圖`} onError={handleImgFallback} className="max-w-full h-auto rounded-xl shadow-sm border border-gray-200" loading="lazy" />
                       </div>
                     )}
-                   </div>
 
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      );
+                    <div className="grid grid-cols-1 gap-3 text-sm mb-6">
+                      {['A', 'B', 'C', 'D'].map(opt => {
+                        if (!q.options[opt]) return null;
+                        const isSelected = userAnswer === opt;
+                        const isCorrectOption = isQuestionFree || correctAnsArr.includes(opt);
+                        
+                        let boxStyle = "bg-white border-gray-100 text-gray-500";
+                        let badge = null;
+
+                        if (isSelected && isCorrectOption) {
+                          boxStyle = "bg-green-50 border-green-400 text-green-900 shadow-sm border-2";
+                          badge = <span className="text-xs bg-green-500 text-white px-2.5 py-1 rounded-md font-bold shadow-sm flex items-center"><svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>您的作答 (正確)</span>;
+                        } else if (isSelected && !isCorrectOption) {
+                          boxStyle = "bg-red-50 border-red-400 text-red-900 shadow-sm border-2";
+                          badge = <span className="text-xs bg-red-500 text-white px-2.5 py-1 rounded-md font-bold shadow-sm flex items-center"><svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>您的作答 (答錯)</span>;
+                        } else if (!isSelected && isCorrectOption) {
+                          boxStyle = "bg-green-50/50 border-green-300 text-green-800 border-2";
+                          const badgeText = isQuestionFree ? "🎁 送分選項" : (isQuestionCorrect ? "💡 其他正確選項" : "🎯 正確解答");
+                          badge = <span className="text-xs bg-green-100 text-green-700 border border-green-300 px-2.5 py-1 rounded-md font-bold flex items-center">{badgeText}</span>;
+                        } else {
+                          boxStyle = "bg-white border-gray-200 text-gray-500 border";
+                        }
+
+                        return (
+                          <div key={opt} className={`p-4 rounded-xl transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${boxStyle}`}>
+                            <div className="flex items-start">
+                              <span className={`font-bold mr-3 text-lg flex-shrink-0 ${isCorrectOption ? 'text-green-600' : (isSelected ? 'text-red-500' : 'text-gray-400')}`}>{opt}.</span>
+                              <span className="text-md pt-0.5 leading-relaxed whitespace-pre-wrap">{q.options[opt]}</span>
+                            </div>
+                            {badge && <div className="flex-shrink-0 self-end sm:self-auto">{badge}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200 font-medium">
+                          📍 考點：{q.concept}
+                        </span>
+                        {q.year && (
+                           <span className={`text-sm ${theme.textDark} ${theme.bgLight} px-3 py-1.5 rounded-md border ${theme.borderLight} font-medium`}>
+                            📅 來源：{q.year}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {q.explanation && (
+                        <div className="mt-2 text-sm text-gray-800 bg-amber-50 p-4 rounded-xl border border-amber-200 leading-relaxed shadow-inner">
+                           <span className="font-bold text-amber-800 block mb-1 flex items-center text-base">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            解析說明
+                           </span>
+                          <span className="whitespace-pre-wrap">{q.explanation}</span>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      };
 
       return (
         <div className="min-h-screen flex flex-col font-sans bg-slate-50">
